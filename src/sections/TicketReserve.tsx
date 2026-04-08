@@ -114,12 +114,52 @@ const ZONE_BORDERS: Record<string, string> = {
 const fmt = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 
+// ─── Inline wheel handler: stops the event from bubbling to the page ──────────
+// React's synthetic onWheel is passive by default in modern browsers which means
+// we cannot call preventDefault() from it. We therefore use a native listener
+// attached directly to the DOM node via useCallback + ref callback.
+function useScrollRef() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const handler = (e: WheelEvent) => {
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      const canScrollUp   = scrollTop > 0;
+      const canScrollDown = scrollTop + clientHeight < scrollHeight;
+
+      // If the container can absorb this delta — let it scroll normally,
+      // but prevent the event from reaching the page/body.
+      if ((e.deltaY < 0 && canScrollUp) || (e.deltaY > 0 && canScrollDown)) {
+        e.stopPropagation();
+        // Manually drive the scroll so the browser treats this element as the target
+        el.scrollTop += e.deltaY;
+        e.preventDefault();
+      } else {
+        // At boundary — just block propagation, don't prevent default
+        // (allows native rubber-band on macOS at boundaries)
+        e.stopPropagation();
+      }
+    };
+
+    // MUST be non-passive to call preventDefault()
+    el.addEventListener('wheel', handler, { passive: false });
+    return () => el.removeEventListener('wheel', handler);
+  });
+  // No dependency array → re-runs after every render to always have fresh ref
+
+  return ref;
+}
+
 const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) => {
   const [step, setStep]                     = useState(1);
   const [qty, setQty]                       = useState(1);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [selectedZoneId, setSelectedZoneId]     = useState<string | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollRef = useScrollRef();
 
   /* reset on open / event change */
   useEffect(() => {
@@ -143,49 +183,14 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
   }, [isOpen, onClose]);
 
   /*
-   * ─── FIX: lock body scroll on desktop while modal is open ───────────────────
-   * On mobile the touch events naturally go to the overscroll-contain element.
-   * On desktop the mouse wheel fires on the document unless we explicitly block it
-   * when the pointer is over the modal's scrollable region.
+   * ─── Lock body scroll while modal is open ────────────────────────────────
+   * Simple overflow:hidden — no position:fixed trick that can shift layout.
    */
   useEffect(() => {
     if (!isOpen) return;
-
-    // Save current scroll position & lock body
-    const scrollY = window.scrollY;
+    const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = '100%';
-
-    return () => {
-      // Restore body scroll and position
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      window.scrollTo(0, scrollY);
-    };
-  }, [isOpen]);
-
-  /*
-   * ─── FIX: intercept wheel events on the scrollable container ────────────────
-   * This prevents the wheel from leaking to the page when the inner container
-   * has reached its top or bottom scroll boundary.
-   */
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-
-    const onWheel = (e: WheelEvent) => {
-      const { scrollTop, scrollHeight, clientHeight } = el;
-      const atTop    = scrollTop === 0 && e.deltaY < 0;
-      const atBottom = scrollTop + clientHeight >= scrollHeight && e.deltaY > 0;
-      if (atTop || atBottom) e.preventDefault();
-    };
-
-    el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
+    return () => { document.body.style.overflow = prev; };
   }, [isOpen]);
 
   const zones = useMemo(() => (selectedEvent ? VENUE_ZONES[selectedEvent.venueType] : []), [selectedEvent]);
@@ -218,11 +223,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
       style={{ background: 'rgba(3,6,18,0.82)', backdropFilter: 'blur(18px)' }}
       onClick={onClose}
     >
-      {/*
-        ─ OUTER SHELL ─
-        Mobile : slides up from bottom, full-width, rounded top corners, max 96dvh
-        Desktop: centred card, max-w-6xl, max-h capped at 92dvh with internal scroll
-      */}
       <div
         role="dialog"
         aria-modal="true"
@@ -236,7 +236,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
         }
         onClick={e => e.stopPropagation()}
       >
-        {/* ambient glow — non-interactive */}
+        {/* ambient glow */}
         <div
           className="absolute inset-0 opacity-20 pointer-events-none rounded-[inherit]"
           style={{
@@ -246,7 +246,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
           }}
         />
 
-        {/* ─ STICKY HEADER (never scrolls away) ─ */}
+        {/* ─ STICKY HEADER ─ */}
         <div className="relative z-10 flex-none border-b border-white/10 px-5 py-4 md:px-8 md:py-5 flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="font-mono-custom text-[10px] uppercase tracking-[0.35em] text-aira-lime/70 mb-1">
@@ -268,7 +268,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
           </button>
         </div>
 
-        {/* ─ STEP PILLS (sticky, never scrolls away) ─ */}
+        {/* ─ STEP PILLS ─ */}
         <div className="relative z-10 flex-none px-5 md:px-8 pt-4 pb-3 flex flex-wrap gap-2 border-b border-white/[0.06]">
           {steps.map(item => {
             const active    = step === item.n;
@@ -306,9 +306,8 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
 
         {/*
           ─ SCROLLABLE BODY ─
-          This is the only region that scrolls.
-          Desktop: two-column layout (main | aside)
-          Mobile : single column, aside collapses below steps
+          scrollRef attaches a native non-passive wheel listener every render,
+          guaranteeing the handler is always bound when the element is in the DOM.
         */}
         <div
           ref={scrollRef}
@@ -382,7 +381,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
 
                   {/* venue map */}
                   <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden border border-white/10 bg-[#07111f]">
-                    {/* stage label */}
                     <div className="absolute inset-x-[10%] top-[5%] h-[8%] rounded-b-[1rem] bg-aira-lime/90 flex items-center justify-center">
                       <span className="font-mono-custom text-[9px] uppercase tracking-[0.3em] text-aira-darkBlue font-bold">
                         {selectedEvent.venueType === 'festival'
@@ -422,7 +420,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                     })}
                   </div>
 
-                  {/* nav buttons */}
                   <div className="mt-5 flex items-center justify-between gap-3">
                     <button
                       className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 active:bg-white/10 transition-colors"
@@ -448,7 +445,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                   <p className="text-sm text-white/50 mb-5">Revisa el resumen antes de proceder al pago.</p>
 
                   <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-4">
-                    {/* event details grid */}
                     <div className="grid grid-cols-2 gap-3">
                       {([
                         ['Evento', selectedEvent.venue],
@@ -463,7 +459,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       ))}
                     </div>
 
-                    {/* selection + qty */}
                     <div className="flex flex-wrap items-end justify-between gap-4 border-t border-white/10 pt-4">
                       <div>
                         <p className="font-mono-custom text-[9px] uppercase tracking-[0.22em] text-white/35 mb-2">Tu selección</p>
@@ -484,7 +479,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                         </div>
                       </div>
 
-                      {/* qty stepper */}
                       <div className="flex items-center gap-1 rounded-full border border-white/10 p-1">
                         <button
                           className="w-8 h-8 rounded-full hover:bg-white/10 active:bg-white/20 flex items-center justify-center transition-colors"
@@ -504,7 +498,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       </div>
                     </div>
 
-                    {/* pricing */}
                     <div className="space-y-2 border-t border-white/10 pt-4">
                       <div className="flex justify-between font-mono-custom text-sm text-white/55">
                         <span>Subtotal</span>
@@ -522,7 +515,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       </div>
                     </div>
 
-                    {/* actions */}
                     <div className="flex flex-wrap gap-3 pt-1">
                       <button
                         className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 active:bg-white/10 transition-colors"
@@ -539,7 +531,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
               )}
             </div>
 
-            {/* ── SIDEBAR ── hidden on mobile below step list, shown on lg+ */}
+            {/* ── SIDEBAR ── */}
             <aside className="p-5 md:p-8 bg-white/[0.02] border-t lg:border-t-0 border-white/10">
               <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-3">Venue activo</p>
               <div className="rounded-2xl overflow-hidden border border-white/10 bg-white/[0.04]">
@@ -588,7 +580,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
             </aside>
           </div>
         </div>
-        {/* end scrollable body */}
       </div>
     </div>
   );
