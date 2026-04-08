@@ -1,40 +1,48 @@
 /* ============================================
    AIRA — Design Tokens
-   Art direction: Immersive 3D web → cinematic, dark-elegant
-   Palette: warm neutrals + teal accent
-   Typography: Boska (display) + Satoshi (body)
+   Art direction: Immersive 3D web → cinematic, bold-electric
+   Palette: dark neutrals + electric blue primary + lime accent
+   Typography: Figtree (display + body — single family, weight contrast)
    Density: spacious with precision moments
    ============================================ */
 
-@import url('https://api.fontshare.com/v2/css?f[]=boska@400,500,700&f[]=satoshi@300,400,500,700&display=swap');
+/* === GOOGLE FONTS: Figtree === */
+@import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap');
 
 :root, [data-theme="light"] {
-  /* --- Surfaces --- */
-  --color-bg:               #f7f6f2;
-  --color-surface:          #f9f8f5;
-  --color-surface-2:        #fbfbf9;
-  --color-surface-offset:   #f3f0ec;
-  --color-surface-offset-2: #edeae5;
-  --color-surface-dynamic:  #e6e4df;
-  --color-divider:          #dcd9d5;
-  --color-border:           #d4d1ca;
+  /* --- Surfaces (cool-neutral, clean) --- */
+  --color-bg:               #f5f5f7;
+  --color-surface:          #ffffff;
+  --color-surface-2:        #fafafa;
+  --color-surface-offset:   #efefef;
+  --color-surface-offset-2: #e8e8eb;
+  --color-surface-dynamic:  #dddde3;
+  --color-divider:          #d2d2d8;
+  --color-border:           #c8c8cf;
 
   /* --- Text --- */
-  --color-text:         #28251d;
-  --color-text-muted:   #7a7974;
-  --color-text-faint:   #bab9b4;
-  --color-text-inverse: #f9f8f4;
+  --color-text:         #0a0a0f;
+  --color-text-muted:   #6b6b78;
+  --color-text-faint:   #b0b0bc;
+  --color-text-inverse: #ffffff;
 
-  /* --- Primary Accent (Teal) --- */
-  --color-primary:           #01696f;
-  --color-primary-hover:     #0c4e54;
-  --color-primary-active:    #0f3638;
-  --color-primary-highlight: #cedcd8;
+  /* --- Primary: Electric Blue #004fff --- */
+  --color-primary:           #004fff;
+  --color-primary-hover:     #003de0;
+  --color-primary-active:    #002cbe;
+  --color-primary-highlight: #dde6ff;
+
+  /* --- Accent: Lime #e1fe52 --- */
+  --color-accent:           #e1fe52;
+  --color-accent-hover:     #d0f030;
+  --color-accent-active:    #bedd14;
+  --color-accent-highlight: #f5ffd4;
+  --color-accent-on:        #0a0a0f;
 
   /* --- Semantic --- */
-  --color-success: #437a22;
-  --color-warning: #964219;
-  --color-error:   #a12c7b;
+  --color-success: #1a7a3a;
+  --color-warning: #b85c00;
+  --color-error:   #c0183a;
 
   /* --- Radius --- */
   --radius-sm:   0.375rem;
@@ -43,20 +51,20 @@
   --radius-xl:   1rem;
   --radius-full: 9999px;
 
-  /* --- Shadows --- */
-  --shadow-sm: 0 1px 2px oklch(0.2 0.01 80 / 0.06);
-  --shadow-md: 0 4px 12px oklch(0.2 0.01 80 / 0.08);
-  --shadow-lg: 0 12px 32px oklch(0.2 0.01 80 / 0.12);
+  /* --- Shadows (cool-tinted) --- */
+  --shadow-sm: 0 1px 2px oklch(0.15 0.02 260 / 0.06);
+  --shadow-md: 0 4px 12px oklch(0.15 0.02 260 / 0.09);
+  --shadow-lg: 0 12px 32px oklch(0.15 0.02 260 / 0.14);
 
   /* --- Transitions --- */
   --transition-interactive: 180ms cubic-bezier(0.16, 1, 0.3, 1);
   --transition-smooth:      400ms cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* --- Typography --- */
-  --font-display: 'Boska', 'Georgia', serif;
-  --font-body:    'Satoshi', 'Inter', sans-serif;
+  /* --- Typography: Figtree only, weight contrast --- */
+  --font-display: 'Figtree', system-ui, sans-serif;
+  --font-body:    'Figtree', system-ui, sans-serif;
 
-  /* --- Type Scale --- */
+  /* --- Type Scale (fluid clamp) --- */
   --text-xs:   clamp(0.75rem,  0.7rem  + 0.25vw, 0.875rem);
   --text-sm:   clamp(0.875rem, 0.8rem  + 0.35vw, 1rem);
   --text-base: clamp(1rem,     0.95rem + 0.25vw, 1.125rem);
@@ -88,52 +96,64 @@
   --content-full:    100%;
 }
 
-/* === DARK MODE === */
 [data-theme="dark"] {
-  --color-bg:               #171614;
-  --color-surface:          #1c1b19;
-  --color-surface-2:        #201f1d;
-  --color-surface-offset:   #1d1c1a;
-  --color-surface-offset-2: #22211f;
-  --color-surface-dynamic:  #2d2c2a;
-  --color-divider:          #262523;
-  --color-border:           #393836;
-  --color-text:             #cdccca;
-  --color-text-muted:       #797876;
-  --color-text-faint:       #5a5957;
-  --color-text-inverse:     #2b2a28;
-  --color-primary:          #4f98a3;
-  --color-primary-hover:    #227f8b;
-  --color-primary-active:   #1a626b;
-  --color-primary-highlight:#313b3b;
-  --color-success: #6daa45;
-  --color-warning: #bb653b;
-  --color-error:   #d163a7;
-  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.2);
-  --shadow-md: 0 4px 12px oklch(0 0 0 / 0.3);
-  --shadow-lg: 0 12px 32px oklch(0 0 0 / 0.4);
+  --color-bg:               #05050a;
+  --color-surface:          #0d0d14;
+  --color-surface-2:        #12121a;
+  --color-surface-offset:   #0f0f17;
+  --color-surface-offset-2: #161620;
+  --color-surface-dynamic:  #1e1e2a;
+  --color-divider:          #1c1c28;
+  --color-border:           #28283a;
+  --color-text:             #e8e8f0;
+  --color-text-muted:       #7c7c96;
+  --color-text-faint:       #46465a;
+  --color-text-inverse:     #0a0a0f;
+  --color-primary:           #3d75ff;
+  --color-primary-hover:     #5a8aff;
+  --color-primary-active:    #7aa0ff;
+  --color-primary-highlight: #0d1a40;
+  --color-accent:           #e1fe52;
+  --color-accent-hover:     #eeff7a;
+  --color-accent-active:    #f5ffa0;
+  --color-accent-highlight: #1e2200;
+  --color-accent-on:        #0a0a0f;
+  --color-success: #3fbf5f;
+  --color-warning: #f0841a;
+  --color-error:   #ff4060;
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3);
+  --shadow-md: 0 4px 12px oklch(0 0 0 / 0.4);
+  --shadow-lg: 0 12px 32px oklch(0 0 0 / 0.55);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --color-bg:               #171614;
-    --color-surface:          #1c1b19;
-    --color-surface-2:        #201f1d;
-    --color-surface-offset:   #1d1c1a;
-    --color-surface-offset-2: #22211f;
-    --color-surface-dynamic:  #2d2c2a;
-    --color-divider:          #262523;
-    --color-border:           #393836;
-    --color-text:             #cdccca;
-    --color-text-muted:       #797876;
-    --color-text-faint:       #5a5957;
-    --color-text-inverse:     #2b2a28;
-    --color-primary:          #4f98a3;
-    --color-primary-hover:    #227f8b;
-    --color-primary-active:   #1a626b;
-    --color-primary-highlight:#313b3b;
-    --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.2);
-    --shadow-md: 0 4px 12px oklch(0 0 0 / 0.3);
-    --shadow-lg: 0 12px 32px oklch(0 0 0 / 0.4);
+    --color-bg:               #05050a;
+    --color-surface:          #0d0d14;
+    --color-surface-2:        #12121a;
+    --color-surface-offset:   #0f0f17;
+    --color-surface-offset-2: #161620;
+    --color-surface-dynamic:  #1e1e2a;
+    --color-divider:          #1c1c28;
+    --color-border:           #28283a;
+    --color-text:             #e8e8f0;
+    --color-text-muted:       #7c7c96;
+    --color-text-faint:       #46465a;
+    --color-text-inverse:     #0a0a0f;
+    --color-primary:           #3d75ff;
+    --color-primary-hover:     #5a8aff;
+    --color-primary-active:    #7aa0ff;
+    --color-primary-highlight: #0d1a40;
+    --color-accent:           #e1fe52;
+    --color-accent-hover:     #eeff7a;
+    --color-accent-active:    #f5ffa0;
+    --color-accent-highlight: #1e2200;
+    --color-accent-on:        #0a0a0f;
+    --color-success: #3fbf5f;
+    --color-warning: #f0841a;
+    --color-error:   #ff4060;
+    --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3);
+    --shadow-md: 0 4px 12px oklch(0 0 0 / 0.4);
+    --shadow-lg: 0 12px 32px oklch(0 0 0 / 0.55);
   }
 }
