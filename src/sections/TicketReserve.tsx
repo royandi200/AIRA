@@ -142,6 +142,52 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
     return () => window.removeEventListener('keydown', handler);
   }, [isOpen, onClose]);
 
+  /*
+   * ─── FIX: lock body scroll on desktop while modal is open ───────────────────
+   * On mobile the touch events naturally go to the overscroll-contain element.
+   * On desktop the mouse wheel fires on the document unless we explicitly block it
+   * when the pointer is over the modal's scrollable region.
+   */
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Save current scroll position & lock body
+    const scrollY = window.scrollY;
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+
+    return () => {
+      // Restore body scroll and position
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, scrollY);
+    };
+  }, [isOpen]);
+
+  /*
+   * ─── FIX: intercept wheel events on the scrollable container ────────────────
+   * This prevents the wheel from leaking to the page when the inner container
+   * has reached its top or bottom scroll boundary.
+   */
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      const atTop    = scrollTop === 0 && e.deltaY < 0;
+      const atBottom = scrollTop + clientHeight >= scrollHeight && e.deltaY > 0;
+      if (atTop || atBottom) e.preventDefault();
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [isOpen]);
+
   const zones = useMemo(() => (selectedEvent ? VENUE_ZONES[selectedEvent.venueType] : []), [selectedEvent]);
 
   const selectedTicket = useMemo(
