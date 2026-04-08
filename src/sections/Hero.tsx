@@ -11,7 +11,6 @@ const ICON_MAP = {
 };
 
 const Hero = () => {
-  // Null check: if config is empty, do not render
   if (!heroConfig.decodeText && !heroConfig.brandName && heroConfig.navItems.length === 0) {
     return null;
   }
@@ -25,96 +24,65 @@ const Hero = () => {
   const [displayText, setDisplayText] = useState(' '.repeat(TARGET_TEXT.length));
   const [isDecoding, setIsDecoding] = useState(true);
 
-  // Decode text effect
   useEffect(() => {
     let iteration = 0;
     const maxIterations = TARGET_TEXT.length * 8;
-
     const interval = setInterval(() => {
-      setDisplayText(() => {
-        return TARGET_TEXT.split('')
-          .map((_, index) => {
-            if (index < iteration / 8) {
-              return TARGET_TEXT[index];
-            }
-            return CHARS[Math.floor(Math.random() * CHARS.length)];
-          })
-          .join('');
-      });
-
+      setDisplayText(() =>
+        TARGET_TEXT.split('').map((_, index) => {
+          if (index < iteration / 8) return TARGET_TEXT[index];
+          return CHARS[Math.floor(Math.random() * CHARS.length)];
+        }).join('')
+      );
       iteration += 1;
-
       if (iteration >= maxIterations) {
         clearInterval(interval);
         setDisplayText(TARGET_TEXT);
         setIsDecoding(false);
       }
     }, 40);
-
     return () => clearInterval(interval);
   }, []);
 
-  // GSAP animations
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Nav slide in
-      gsap.fromTo(
-        navRef.current,
-        { y: -100, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out', delay: 0.3 }
-      );
-
-      // Subtitle fade in
-      gsap.fromTo(
-        subtitleRef.current,
-        { y: 30, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out', delay: 1.5 }
-      );
+      gsap.fromTo(navRef.current, { y: -100, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out', delay: 0.3 });
+      gsap.fromTo(subtitleRef.current, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out', delay: 1.5 });
     }, heroRef);
-
     return () => ctx.revert();
   }, []);
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
+    if (element) element.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
-    <section
-      ref={heroRef}
-      className="relative w-full h-screen overflow-hidden bg-void-black"
-    >
+    <section ref={heroRef} className="relative w-full h-screen overflow-hidden bg-void-black">
       {/* Background image */}
       <div className="absolute inset-0 z-0">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroConfig.backgroundImage})` }}
-        />
-        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${heroConfig.backgroundImage})` }} />
         <div className="absolute inset-0 video-overlay" />
-        {/* Animated gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-void-black/30 to-void-black" />
       </div>
 
-      {/* Navigation pill */}
+      {/* Navigation pill — fixed, centered, constrained on mobile */}
       <nav
         ref={navRef}
-        className="fixed top-6 left-1/2 -translate-x-1/2 z-50 nav-pill rounded-full px-2 py-2"
+        className="fixed top-4 left-1/2 -translate-x-1/2 z-50 nav-pill rounded-full px-2 py-2"
+        style={{ maxWidth: 'calc(100vw - 32px)', width: 'max-content' }}
       >
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 md:gap-1 overflow-hidden">
           {heroConfig.navItems.map((item) => {
             const IconComponent = ICON_MAP[item.icon];
             return (
               <button
                 key={item.sectionId}
                 onClick={() => scrollToSection(item.sectionId)}
-                className="flex items-center gap-2 px-4 py-2 text-xs font-mono-custom uppercase tracking-wider text-white/80 hover:text-white transition-colors rounded-full hover:bg-white/5"
+                className="flex items-center gap-1.5 px-3 py-2 md:px-4 text-[10px] md:text-xs font-mono-custom uppercase tracking-wider text-white/80 hover:text-white transition-colors rounded-full hover:bg-white/5 whitespace-nowrap"
               >
-                <IconComponent className="w-3.5 h-3.5" />
-                <span>{item.label}</span>
+                <IconComponent className="w-3 h-3 md:w-3.5 md:h-3.5 shrink-0" />
+                <span className="hidden sm:inline">{item.label}</span>
               </button>
             );
           })}
@@ -125,9 +93,7 @@ const Hero = () => {
       <div className="relative z-10 flex flex-col items-center justify-end h-full pb-20 px-4">
         {/* Logo / Brand */}
         <div className="absolute top-8 left-8">
-          <div className="flex items-center gap-2">
-            <img src="/AIRA BLANCO.png" alt="AIRA Logo" className="h-10 w-auto" />
-          </div>
+          <img src="/AIRA BLANCO.png" alt="AIRA Logo" className="h-10 w-auto" />
         </div>
 
         {/* Main title with decode effect */}
@@ -141,10 +107,7 @@ const Hero = () => {
         </h1>
 
         {/* Subtitle */}
-        <p
-          ref={subtitleRef}
-          className="font-mono-custom text-sm md:text-base text-aira-lime/70 uppercase tracking-[0.3em] mb-8"
-        >
+        <p ref={subtitleRef} className="font-mono-custom text-sm md:text-base text-aira-lime/70 uppercase tracking-[0.3em] mb-8">
           {heroConfig.subtitle}
         </p>
 
@@ -167,8 +130,6 @@ const Hero = () => {
 
       {/* Decorative elements */}
       <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-aira-lime/30 to-transparent" />
-
-      {/* Corner accents */}
       <div className="absolute top-8 right-8 text-right">
         <p className="font-mono-custom text-xs text-white/40 uppercase tracking-wider">{heroConfig.cornerLabel}</p>
         <p className="font-mono-custom text-xs text-aira-lime/60">{heroConfig.cornerDetail}</p>
