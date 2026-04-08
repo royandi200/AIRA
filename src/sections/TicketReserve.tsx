@@ -1,469 +1,419 @@
-import { useState, useRef, useEffect } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { X, Users, Zap, Crown, Star, ChevronRight, Minus, Plus, ShoppingCart } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { X, Users, Zap, Crown, Star, Minus, Plus, Check } from 'lucide-react';
 
-gsap.registerPlugin(ScrollTrigger);
+export interface ReservationEvent {
+  id: string;
+  city: string;
+  venue: string;
+  date: string;
+  time: string;
+  image?: string;
+  venueType: 'festival' | 'yacht' | 'club';
+}
 
-// ─── Types
+interface TicketReserveProps {
+  isOpen: boolean;
+  selectedEvent: ReservationEvent | null;
+  onClose: () => void;
+}
+
 interface TicketType {
   id: string;
   name: string;
   price: number;
-  currency: string;
   description: string;
   perks: string[];
-  color: string;
   accentColor: string;
   icon: React.ReactNode;
-  available: number;
-  zoneId: string;
 }
 
 interface Zone {
   id: string;
   label: string;
+  ticketId: string;
   x: number;
   y: number;
   w: number;
   h: number;
-  ticketId: string;
 }
 
-// ─── Data
 const TICKETS: TicketType[] = [
   {
     id: 'general',
     name: 'General',
     price: 120000,
-    currency: 'COP',
-    description: 'Acceso completo al festival en área general.',
-    perks: ['Acceso área general', 'Escenario principal', 'Zona de food trucks'],
-    color: 'from-white/5 to-white/10',
+    description: 'Acceso base para vivir la fecha completa desde la energía del público.',
+    perks: ['Ingreso general', 'Acceso a barras', 'Vista principal'],
     accentColor: '#ffffff',
     icon: <Users className="w-5 h-5" />,
-    available: 800,
-    zoneId: 'general',
   },
   {
     id: 'electric',
     name: 'Electric',
     price: 220000,
-    currency: 'COP',
-    description: 'Zona intermedia con mejor visibilidad y acceso prioritario.',
-    perks: ['Zona Electric exclusiva', 'Acceso prioritario', 'Lockers gratis', 'Zona de descanso'],
-    color: 'from-aira-blue/20 to-aira-blue/10',
+    description: 'Zona intermedia con mejor visual y acceso más rápido.',
+    perks: ['Fila preferencial', 'Vista mejorada', 'Zona chill'],
     accentColor: '#004fff',
     icon: <Zap className="w-5 h-5" />,
-    available: 300,
-    zoneId: 'electric',
   },
   {
     id: 'vip',
     name: 'VIP',
     price: 420000,
-    currency: 'COP',
-    description: 'Experiencia premium en primera línea con vista privilegiada.',
-    perks: ['Zona VIP exclusiva', 'Open bar premium', 'Plataforma elevada', 'Meet & greet artistas', 'Merchandising oficial'],
-    color: 'from-aira-lime/10 to-aira-lime/5',
+    description: 'Experiencia premium con comodidad, visibilidad y servicio especial.',
+    perks: ['Ingreso VIP', 'Open bar', 'Área exclusiva'],
     accentColor: '#e1fe52',
     icon: <Crown className="w-5 h-5" />,
-    available: 80,
-    zoneId: 'vip',
   },
   {
     id: 'ultrastar',
     name: 'Ultra Star',
     price: 980000,
-    currency: 'COP',
-    description: 'El máximo nivel. Plataforma privada con servicio personalizado.',
-    perks: ['Palco privado', 'Butler personal', 'Cena gourmet incluida', 'Backstage access', 'Transfer privado', 'Hotel partner'],
-    color: 'from-yellow-400/10 to-orange-400/5',
+    description: 'Máximo nivel: privacidad, servicio dedicado y ubicación dominante.',
+    perks: ['Host dedicado', 'Zona premium', 'Hospitality'],
     accentColor: '#fbbf24',
     icon: <Star className="w-5 h-5" />,
-    available: 12,
-    zoneId: 'ultrastar',
   },
 ];
 
-const ZONES: Zone[] = [
-  { id: 'ultrastar', label: 'ULTRA STAR', x: 35, y: 10, w: 30, h: 14, ticketId: 'ultrastar' },
-  { id: 'vip',       label: 'VIP',        x: 22, y: 27, w: 56, h: 14, ticketId: 'vip' },
-  { id: 'electric',  label: 'ELECTRIC',   x: 10, y: 44, w: 80, h: 16, ticketId: 'electric' },
-  { id: 'general',   label: 'GENERAL',    x: 5,  y: 65, w: 90, h: 28, ticketId: 'general' },
-];
+const VENUE_ZONES: Record<ReservationEvent['venueType'], Zone[]> = {
+  festival: [
+    { id: 'ultrastar', label: 'ULTRA STAR', ticketId: 'ultrastar', x: 35, y: 10, w: 30, h: 14 },
+    { id: 'vip', label: 'VIP', ticketId: 'vip', x: 22, y: 28, w: 56, h: 14 },
+    { id: 'electric', label: 'ELECTRIC', ticketId: 'electric', x: 10, y: 47, w: 80, h: 15 },
+    { id: 'general', label: 'GENERAL', ticketId: 'general', x: 5, y: 66, w: 90, h: 24 },
+  ],
+  yacht: [
+    { id: 'ultrastar', label: 'CABINA ULTRA', ticketId: 'ultrastar', x: 60, y: 8, w: 28, h: 18 },
+    { id: 'vip', label: 'PROA VIP', ticketId: 'vip', x: 18, y: 8, w: 34, h: 18 },
+    { id: 'electric', label: 'CUBIERTA ALTA', ticketId: 'electric', x: 18, y: 34, w: 70, h: 18 },
+    { id: 'general', label: 'CUBIERTA MAIN', ticketId: 'general', x: 12, y: 58, w: 76, h: 20 },
+  ],
+  club: [
+    { id: 'ultrastar', label: 'BOX PRIVADO', ticketId: 'ultrastar', x: 66, y: 12, w: 22, h: 18 },
+    { id: 'vip', label: 'ÁREA VIP', ticketId: 'vip', x: 18, y: 12, w: 40, h: 18 },
+    { id: 'electric', label: 'MEZANINE', ticketId: 'electric', x: 20, y: 38, w: 60, h: 16 },
+    { id: 'general', label: 'PISTA', ticketId: 'general', x: 10, y: 60, w: 80, h: 22 },
+  ],
+};
 
 const ZONE_COLORS: Record<string, string> = {
   ultrastar: 'rgba(251,191,36,0.18)',
-  vip:       'rgba(225,254,82,0.15)',
-  electric:  'rgba(0,79,255,0.18)',
-  general:   'rgba(255,255,255,0.07)',
+  vip: 'rgba(225,254,82,0.16)',
+  electric: 'rgba(0,79,255,0.18)',
+  general: 'rgba(255,255,255,0.08)',
 };
 
-const ZONE_BORDER: Record<string, string> = {
-  ultrastar: 'rgba(251,191,36,0.7)',
-  vip:       'rgba(225,254,82,0.6)',
-  electric:  'rgba(0,79,255,0.7)',
-  general:   'rgba(255,255,255,0.2)',
+const ZONE_BORDERS: Record<string, string> = {
+  ultrastar: 'rgba(251,191,36,0.75)',
+  vip: 'rgba(225,254,82,0.7)',
+  electric: 'rgba(0,79,255,0.75)',
+  general: 'rgba(255,255,255,0.25)',
 };
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 
-// ─── Component
-const TicketReserve = () => {
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const cardsRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<HTMLDivElement>(null);
-
-  const [selectedTicket, setSelectedTicket] = useState<TicketType | null>(null);
-  const [hoveredZone, setHoveredZone] = useState<string | null>(null);
+const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) => {
+  const [step, setStep] = useState(1);
   const [qty, setQty] = useState(1);
-  const [showCheckout, setShowCheckout] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!sectionRef.current) return;
-    const st = ScrollTrigger.create({
-      trigger: sectionRef.current,
-      start: 'top 75%',
-      onEnter: () => setIsVisible(true),
-    });
-    return () => st.kill();
-  }, []);
-
-  useEffect(() => {
-    if (!isVisible || !cardsRef.current) return;
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        cardsRef.current!.querySelectorAll('.ticket-card'),
-        { y: 40, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.7, stagger: 0.12, ease: 'power3.out' }
-      );
-      gsap.fromTo(
-        mapRef.current,
-        { x: 40, opacity: 0 },
-        { x: 0, opacity: 1, duration: 0.8, ease: 'power3.out', delay: 0.2 }
-      );
-    }, sectionRef);
-    return () => ctx.revert();
-  }, [isVisible]);
-
-  useEffect(() => {
-    if (!selectedTicket) return;
-    const el = document.getElementById(`zone-${selectedTicket.zoneId}`);
-    if (!el) return;
-    gsap.fromTo(el, { scale: 1 }, { scale: 1.03, duration: 0.3, yoyo: true, repeat: 1, ease: 'power2.inOut' });
-  }, [selectedTicket]);
-
-  const handleSelectTicket = (ticket: TicketType) => {
-    setSelectedTicket(ticket);
+    if (!isOpen) return;
+    setStep(1);
     setQty(1);
-    setShowCheckout(false);
-    if (window.innerWidth < 1024) {
-      setTimeout(() => {
-        mapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
-    }
-  };
+    setSelectedTicketId(null);
+    setSelectedZoneId(null);
+  }, [isOpen, selectedEvent?.id]);
 
-  const handleZoneClick = (zone: Zone) => {
-    const ticket = TICKETS.find(t => t.id === zone.ticketId);
-    if (ticket) handleSelectTicket(ticket);
-  };
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
+
+  const zones = useMemo(() => {
+    if (!selectedEvent) return [];
+    return VENUE_ZONES[selectedEvent.venueType];
+  }, [selectedEvent]);
+
+  const selectedTicket = useMemo(
+    () => TICKETS.find((ticket) => ticket.id === selectedTicketId) ?? null,
+    [selectedTicketId]
+  );
+
+  const selectedZone = useMemo(
+    () => zones.find((zone) => zone.id === selectedZoneId) ?? null,
+    [zones, selectedZoneId]
+  );
+
+  const serviceFee = selectedTicket ? Math.round(selectedTicket.price * qty * 0.05) : 0;
+  const total = selectedTicket ? selectedTicket.price * qty + serviceFee : 0;
+
+  if (!isOpen || !selectedEvent) return null;
 
   return (
-    <section
-      id="tickets"
-      ref={sectionRef}
-      className="relative w-full min-h-screen bg-void-black py-24 overflow-hidden"
+    <div
+      className="fixed inset-0 z-[120] flex items-center justify-center p-4 md:p-8"
+      style={{ background: 'rgba(3, 6, 18, 0.82)', backdropFilter: 'blur(18px)' }}
+      onClick={onClose}
     >
-      {/* Grid background */}
       <div
-        className="absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage: 'linear-gradient(#e1fe52 1px, transparent 1px), linear-gradient(90deg, #e1fe52 1px, transparent 1px)',
-          backgroundSize: '60px 60px',
-        }}
-      />
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-aira-blue/10 blur-[120px] pointer-events-none" />
+        className="relative w-full max-w-6xl rounded-[2rem] border border-white/10 bg-[#08101f] shadow-2xl overflow-hidden"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ background: 'radial-gradient(circle at top right, rgba(225,254,82,0.24), transparent 30%), radial-gradient(circle at left center, rgba(0,79,255,0.2), transparent 35%)' }} />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12">
-        {/* Header */}
-        <div className="mb-16">
-          <p className="font-mono-custom text-xs text-aira-lime/60 uppercase tracking-[0.3em] mb-3">
-            — RESERVA TU LUGAR
-          </p>
-          <h2 className="font-display text-5xl md:text-7xl text-white leading-none">
-            ELIGE TU<br />
-            <span className="text-aira-lime">EXPERIENCIA</span>
-          </h2>
-          <p className="font-mono-custom text-sm text-white/40 mt-4 max-w-md">
-            Selecciona tu zona en el plano del festival o elige directamente tu tipo de acceso.
-          </p>
+        <div className="relative z-10 border-b border-white/10 px-6 py-5 md:px-8 flex items-start justify-between gap-6">
+          <div>
+            <p className="font-mono-custom text-[11px] uppercase tracking-[0.35em] text-aira-lime/70 mb-2">
+              Reserva en 3 pasos
+            </p>
+            <h3 className="font-display text-3xl md:text-4xl text-white leading-none">
+              {selectedEvent.venue}
+            </h3>
+            <p className="font-mono-custom text-sm text-white/45 mt-3">
+              {selectedEvent.city} · {selectedEvent.date} · {selectedEvent.time}
+            </p>
+          </div>
+
+          <button
+            className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/70 hover:bg-white/10 transition-colors"
+            onClick={onClose}
+            aria-label="Cerrar modal de reserva"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        {/* Main grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 items-start">
+        <div className="relative z-10 px-6 md:px-8 pt-5 pb-3 flex flex-wrap gap-3">
+          {[
+            { n: 1, label: 'Experiencia' },
+            { n: 2, label: 'Zona' },
+            { n: 3, label: 'Confirmar' },
+          ].map((item) => {
+            const active = step === item.n;
+            const completed = step > item.n;
+            return (
+              <div
+                key={item.n}
+                className={`flex items-center gap-3 px-4 py-2 rounded-full border ${active ? 'border-aira-lime/40 bg-aira-lime/10' : 'border-white/10 bg-white/[0.03]'}`}
+              >
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-mono-custom ${completed ? 'bg-aira-lime text-aira-darkBlue' : active ? 'bg-aira-blue text-white' : 'bg-white/10 text-white/50'}`}>
+                  {completed ? <Check className="w-4 h-4" /> : item.n}
+                </div>
+                <span className={`font-mono-custom text-xs uppercase tracking-[0.22em] ${active ? 'text-white' : 'text-white/45'}`}>
+                  {item.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
 
-          {/* LEFT — Ticket cards */}
-          <div ref={cardsRef} className="space-y-3">
-            {TICKETS.map((ticket) => {
-              const isSelected = selectedTicket?.id === ticket.id;
-              return (
-                <div
-                  key={ticket.id}
-                  className={`ticket-card group relative rounded-2xl border cursor-pointer transition-all duration-300 overflow-hidden
-                    ${isSelected
-                      ? 'border-aira-lime/60 bg-gradient-to-r from-aira-lime/5 to-transparent'
-                      : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]'
-                    }`}
-                  onClick={() => handleSelectTicket(ticket)}
-                >
-                  <div
-                    className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl transition-all duration-300"
-                    style={{ background: isSelected ? ticket.accentColor : 'transparent' }}
-                  />
-                  <div className="flex items-center gap-4 p-5 pl-6">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                      style={{ background: `${ticket.accentColor}18`, color: ticket.accentColor }}
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-0 min-h-[68vh]">
+          <div className="p-6 md:p-8 border-r border-white/10">
+            {step === 1 && (
+              <div>
+                <p className="font-mono-custom text-xs uppercase tracking-[0.3em] text-white/35 mb-4">Paso 1</p>
+                <h4 className="font-display text-4xl text-white mb-3">Elige tu experiencia</h4>
+                <p className="text-white/50 max-w-2xl mb-8">Selecciona el tipo de acceso y avanzamos al plano del venue específico para esta fecha.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {TICKETS.map((ticket) => (
+                    <button
+                      key={ticket.id}
+                      className="text-left rounded-3xl border border-white/10 bg-white/[0.03] p-5 hover:border-white/30 transition-all duration-300 hover:-translate-y-1"
+                      onClick={() => {
+                        setSelectedTicketId(ticket.id);
+                        setSelectedZoneId(ticket.id);
+                        setStep(2);
+                      }}
                     >
-                      {ticket.icon}
-                    </div>
-                    <div className="flex-grow min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
-                        <span className="font-display text-lg text-white">{ticket.name}</span>
-                        {ticket.available <= 20 && (
-                          <span className="text-[10px] font-mono-custom uppercase tracking-wider px-2 py-0.5 rounded-full bg-red-500/20 text-red-400">
-                            Solo {ticket.available} left
-                          </span>
-                        )}
+                      <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-5" style={{ background: `${ticket.accentColor}20`, color: ticket.accentColor }}>
+                        {ticket.icon}
                       </div>
-                      <p className="text-xs text-white/50 font-mono-custom truncate">{ticket.description}</p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className="font-display text-lg" style={{ color: ticket.accentColor }}>
-                        {fmt(ticket.price)}
-                      </p>
-                      <p className="text-[10px] font-mono-custom text-white/30">por persona</p>
-                    </div>
-                    <ChevronRight
-                      className={`w-4 h-4 shrink-0 transition-all duration-300 ${
-                        isSelected ? 'text-aira-lime rotate-90' : 'text-white/20 group-hover:text-white/50'
-                      }`}
-                    />
-                  </div>
-
-                  <div
-                    className="overflow-hidden transition-all duration-500"
-                    style={{ maxHeight: isSelected ? '300px' : '0px' }}
-                  >
-                    <div className="px-6 pb-5 pt-1 border-t border-white/5">
-                      <div className="flex flex-wrap gap-2 mb-5">
+                      <div className="flex items-start justify-between gap-4 mb-3">
+                        <h5 className="font-display text-2xl text-white">{ticket.name}</h5>
+                        <span className="font-display text-lg" style={{ color: ticket.accentColor }}>{fmt(ticket.price)}</span>
+                      </div>
+                      <p className="text-sm text-white/50 mb-4">{ticket.description}</p>
+                      <div className="flex flex-wrap gap-2">
                         {ticket.perks.map((perk) => (
-                          <span
-                            key={perk}
-                            className="text-xs font-mono-custom px-3 py-1 rounded-full border"
-                            style={{
-                              borderColor: `${ticket.accentColor}30`,
-                              color: ticket.accentColor,
-                              background: `${ticket.accentColor}0a`,
-                            }}
-                          >
+                          <span key={perk} className="px-3 py-1 rounded-full text-[10px] font-mono-custom uppercase tracking-[0.18em] border" style={{ borderColor: `${ticket.accentColor}35`, color: ticket.accentColor, background: `${ticket.accentColor}10` }}>
                             {perk}
                           </span>
                         ))}
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1 rounded-full border border-white/10 p-1">
-                          <button
-                            className="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors"
-                            onClick={(e) => { e.stopPropagation(); setQty(q => Math.max(1, q - 1)); }}
-                          >
-                            <Minus className="w-3 h-3 text-white/60" />
-                          </button>
-                          <span className="w-8 text-center font-mono-custom text-sm text-white">{qty}</span>
-                          <button
-                            className="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors"
-                            onClick={(e) => { e.stopPropagation(); setQty(q => Math.min(ticket.available, q + 1)); }}
-                          >
-                            <Plus className="w-3 h-3 text-white/60" />
-                          </button>
-                        </div>
-                        <span className="font-mono-custom text-sm text-white/40">
-                          Total: <span className="text-white">{fmt(ticket.price * qty)}</span>
-                        </span>
-                        <button
-                          className="ml-auto flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-display uppercase tracking-wider transition-all duration-300 hover:scale-105 active:scale-95"
-                          style={{ background: ticket.accentColor, color: '#0a0a0a' }}
-                          onClick={(e) => { e.stopPropagation(); setShowCheckout(true); }}
-                        >
-                          <ShoppingCart className="w-4 h-4" />
-                          Reservar
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* RIGHT — Venue map */}
-          <div ref={mapRef} className="lg:sticky lg:top-28">
-            <p className="font-mono-custom text-xs text-white/40 uppercase tracking-wider mb-4">
-              PLANO DEL FESTIVAL — GUATAPÉ 2026
-            </p>
-            <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden border border-white/10 bg-[#0a0e1a]">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[28%] flex flex-col items-center" style={{ top: '2%' }}>
-                <div className="w-full h-[5%] min-h-[18px] rounded-b-xl bg-aira-lime/90 flex items-center justify-center">
-                  <span className="font-mono-custom text-[9px] text-void-black uppercase tracking-widest font-bold">ESCENARIO</span>
+                    </button>
+                  ))}
                 </div>
               </div>
-              {ZONES.map((zone) => {
-                const isHovered = hoveredZone === zone.id;
-                const isActive = selectedTicket?.zoneId === zone.id;
-                return (
-                  <div
-                    key={zone.id}
-                    id={`zone-${zone.id}`}
-                    className="absolute rounded-xl cursor-pointer transition-all duration-300 flex items-center justify-center"
-                    style={{
-                      left: `${zone.x}%`, top: `${zone.y}%`,
-                      width: `${zone.w}%`, height: `${zone.h}%`,
-                      background: ZONE_COLORS[zone.id],
-                      border: `1.5px solid ${isActive || isHovered ? ZONE_BORDER[zone.id] : ZONE_BORDER[zone.id].replace('0.7','0.2').replace('0.6','0.18').replace('0.2','0.08')}`,
-                      transform: isActive ? 'scale(1.01)' : 'scale(1)',
-                    }}
-                    onClick={() => handleZoneClick(zone)}
-                    onMouseEnter={() => setHoveredZone(zone.id)}
-                    onMouseLeave={() => setHoveredZone(null)}
-                  >
-                    <span
-                      className="font-mono-custom text-[10px] uppercase tracking-[0.2em] font-bold select-none"
-                      style={{ color: isActive || isHovered ? ZONE_BORDER[zone.id] : 'rgba(255,255,255,0.3)' }}
-                    >
-                      {zone.label}
+            )}
+
+            {step === 2 && selectedTicket && (
+              <div>
+                <p className="font-mono-custom text-xs uppercase tracking-[0.3em] text-white/35 mb-4">Paso 2</p>
+                <h4 className="font-display text-4xl text-white mb-3">Selecciona tu zona</h4>
+                <p className="text-white/50 max-w-2xl mb-8">El plano cambia según el venue. Ya precargamos la zona ideal para {selectedTicket.name}, pero puedes tocar otra antes de continuar.</p>
+                <div className="relative w-full aspect-[4/3] rounded-[2rem] overflow-hidden border border-white/10 bg-[#07111f] p-4">
+                  <div className="absolute inset-x-[10%] top-[5%] h-[8%] rounded-b-[1.5rem] bg-aira-lime/90 flex items-center justify-center">
+                    <span className="font-mono-custom text-[10px] uppercase tracking-[0.35em] text-aira-darkBlue font-bold">
+                      {selectedEvent.venueType === 'festival' ? 'ESCENARIO' : selectedEvent.venueType === 'yacht' ? 'DJ BOOTH' : 'CABINA'}
                     </span>
                   </div>
-                );
-              })}
-              <div className="absolute bottom-3 right-3 opacity-30">
-                <div className="w-6 h-6 border border-white/30 rounded-full flex items-center justify-center">
-                  <span className="font-mono-custom text-[8px] text-white">N</span>
+                  {zones.map((zone) => {
+                    const isActive = selectedZoneId === zone.id;
+                    return (
+                      <button
+                        key={zone.id}
+                        className="absolute rounded-2xl flex items-center justify-center transition-all duration-300"
+                        style={{
+                          left: `${zone.x}%`,
+                          top: `${zone.y}%`,
+                          width: `${zone.w}%`,
+                          height: `${zone.h}%`,
+                          background: ZONE_COLORS[zone.id],
+                          border: `1.5px solid ${isActive ? ZONE_BORDERS[zone.id] : 'rgba(255,255,255,0.12)'}`,
+                          transform: isActive ? 'scale(1.02)' : 'scale(1)',
+                          boxShadow: isActive ? `0 0 0 1px ${ZONE_BORDERS[zone.id]}, 0 20px 40px rgba(0,0,0,0.18)` : 'none',
+                        }}
+                        onClick={() => setSelectedZoneId(zone.id)}
+                      >
+                        <span className="font-mono-custom text-[10px] md:text-xs uppercase tracking-[0.22em] font-bold" style={{ color: isActive ? ZONE_BORDERS[zone.id] : 'rgba(255,255,255,0.42)' }}>
+                          {zone.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+                  <button className="px-5 py-3 rounded-full border border-white/10 text-white/70 hover:bg-white/5 transition-colors" onClick={() => setStep(1)}>
+                    Volver
+                  </button>
+                  <button
+                    className="px-7 py-3 rounded-full bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.22em] hover:bg-white transition-colors"
+                    onClick={() => setStep(3)}
+                  >
+                    Confirmar zona
+                  </button>
                 </div>
               </div>
-              <div className="absolute bottom-3 left-3 flex flex-col gap-1.5">
-                {TICKETS.map(t => (
-                  <div key={t.id} className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-sm" style={{ background: t.accentColor, opacity: 0.8 }} />
-                    <span className="font-mono-custom text-[9px] uppercase text-white/40">{t.name}</span>
+            )}
+
+            {step === 3 && selectedTicket && selectedZone && (
+              <div>
+                <p className="font-mono-custom text-xs uppercase tracking-[0.3em] text-white/35 mb-4">Paso 3</p>
+                <h4 className="font-display text-4xl text-white mb-3">Confirmar reserva</h4>
+                <p className="text-white/50 max-w-2xl mb-8">Revisa tu combinación de evento, zona y cantidad antes de conectar la pasarela de pago.</p>
+                <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-6 md:p-7 space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      ['Evento', selectedEvent.venue],
+                      ['Ciudad', selectedEvent.city],
+                      ['Fecha', selectedEvent.date],
+                      ['Hora', selectedEvent.time],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-2xl border border-white/6 bg-white/[0.02] p-4">
+                        <p className="font-mono-custom text-[10px] uppercase tracking-[0.24em] text-white/35 mb-2">{label}</p>
+                        <p className="font-display text-lg text-white">{value}</p>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-            {selectedTicket && (
-              <div
-                className="mt-4 p-4 rounded-xl border backdrop-blur-sm transition-all duration-300"
-                style={{ borderColor: `${selectedTicket.accentColor}30`, background: `${selectedTicket.accentColor}08` }}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-mono-custom text-xs text-white/40 uppercase tracking-wider">Zona seleccionada</p>
-                    <p className="font-display text-lg mt-0.5" style={{ color: selectedTicket.accentColor }}>{selectedTicket.name}</p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-end border-t border-white/10 pt-5">
+                    <div>
+                      <p className="font-mono-custom text-[10px] uppercase tracking-[0.24em] text-white/35 mb-2">Tu selección</p>
+                      <div className="flex flex-wrap gap-3">
+                        <span className="px-4 py-2 rounded-full border" style={{ borderColor: `${selectedTicket.accentColor}35`, color: selectedTicket.accentColor, background: `${selectedTicket.accentColor}10` }}>
+                          {selectedTicket.name}
+                        </span>
+                        <span className="px-4 py-2 rounded-full border border-white/10 text-white/70 bg-white/[0.03]">
+                          {selectedZone.label}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 rounded-full border border-white/10 p-1 w-fit">
+                      <button className="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center" onClick={() => setQty((value) => Math.max(1, value - 1))}>
+                        <Minus className="w-4 h-4 text-white/60" />
+                      </button>
+                      <span className="w-10 text-center font-mono-custom text-sm text-white">{qty}</span>
+                      <button className="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center" onClick={() => setQty((value) => Math.min(8, value + 1))}>
+                        <Plus className="w-4 h-4 text-white/60" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-display text-xl text-white">{fmt(selectedTicket.price * qty)}</p>
-                    <p className="font-mono-custom text-xs text-white/30">{qty} entrada{qty > 1 ? 's' : ''}</p>
+
+                  <div className="space-y-3 border-t border-white/10 pt-5">
+                    <div className="flex items-center justify-between text-white/55 font-mono-custom text-sm">
+                      <span>Subtotal</span>
+                      <span className="text-white">{fmt(selectedTicket.price * qty)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-white/55 font-mono-custom text-sm">
+                      <span>Cargo de servicio</span>
+                      <span className="text-white">{fmt(serviceFee)}</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                      <span className="font-display text-xl text-white">Total</span>
+                      <span className="font-display text-2xl" style={{ color: selectedTicket.accentColor }}>{fmt(total)}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-4 pt-2">
+                    <button className="px-5 py-3 rounded-full border border-white/10 text-white/70 hover:bg-white/5 transition-colors" onClick={() => setStep(2)}>
+                      Volver al plano
+                    </button>
+                    <button className="px-7 py-3 rounded-full bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.22em] hover:bg-white transition-colors">
+                      Confirmar reserva
+                    </button>
                   </div>
                 </div>
               </div>
             )}
           </div>
+
+          <aside className="p-6 md:p-8 bg-white/[0.02]">
+            <p className="font-mono-custom text-xs uppercase tracking-[0.3em] text-white/35 mb-4">Venue activo</p>
+            <div className="rounded-[2rem] overflow-hidden border border-white/10 bg-white/[0.04]">
+              {selectedEvent.image ? (
+                <img src={selectedEvent.image} alt={selectedEvent.venue} className="w-full aspect-[5/4] object-cover" />
+              ) : (
+                <div className="w-full aspect-[5/4] bg-gradient-to-br from-aira-blue/20 to-aira-lime/10" />
+              )}
+              <div className="p-5 border-t border-white/10">
+                <h5 className="font-display text-2xl text-white mb-2">{selectedEvent.venue}</h5>
+                <p className="text-sm text-white/45 mb-4">{selectedEvent.city} · {selectedEvent.date} · {selectedEvent.time}</p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 rounded-full bg-aira-blue/20 text-aira-lime text-[10px] font-mono-custom uppercase tracking-[0.18em]">
+                    {selectedEvent.venueType}
+                  </span>
+                  {selectedTicket && (
+                    <span className="px-3 py-1 rounded-full text-[10px] font-mono-custom uppercase tracking-[0.18em]" style={{ background: `${selectedTicket.accentColor}15`, color: selectedTicket.accentColor }}>
+                      {selectedTicket.name}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-[2rem] border border-white/10 bg-white/[0.03] p-5">
+              <p className="font-mono-custom text-[10px] uppercase tracking-[0.24em] text-white/35 mb-4">Qué cambia por venue</p>
+              <ul className="space-y-3 text-sm text-white/55">
+                <li>Festival: escenario principal, campo abierto y zonas por profundidad.</li>
+                <li>Yacht: cubierta principal, cubierta alta, proa VIP y cabina Ultra.</li>
+                <li>Club: pista, mezanine, área VIP y box privado.</li>
+              </ul>
+            </div>
+          </aside>
         </div>
       </div>
-
-      {/* Checkout modal */}
-      {showCheckout && selectedTicket && (
-        <div
-          className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }}
-          onClick={() => setShowCheckout(false)}
-        >
-          <div
-            className="relative w-full max-w-md rounded-3xl border p-8 bg-[#0d0d0d]"
-            style={{ borderColor: `${selectedTicket.accentColor}30` }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              className="absolute top-4 right-4 w-8 h-8 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors"
-              onClick={() => setShowCheckout(false)}
-            >
-              <X className="w-4 h-4 text-white/60" />
-            </button>
-            <p className="font-mono-custom text-xs text-white/40 uppercase tracking-wider mb-1">Resumen de reserva</p>
-            <h3 className="font-display text-3xl text-white mb-6">
-              Zona <span style={{ color: selectedTicket.accentColor }}>{selectedTicket.name}</span>
-            </h3>
-            <div className="space-y-3 mb-6">
-              {[
-                ['Evento', 'AIRA Festival — Guatapé 2026'],
-                ['Fecha', 'Agosto 2026'],
-              ].map(([k, v]) => (
-                <div key={k} className="flex justify-between">
-                  <span className="font-mono-custom text-sm text-white/50">{k}</span>
-                  <span className="font-mono-custom text-sm text-white">{v}</span>
-                </div>
-              ))}
-              <div className="flex justify-between">
-                <span className="font-mono-custom text-sm text-white/50">Tipo</span>
-                <span className="font-mono-custom text-sm" style={{ color: selectedTicket.accentColor }}>{selectedTicket.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-mono-custom text-sm text-white/50">Cantidad</span>
-                <span className="font-mono-custom text-sm text-white">{qty} entrada{qty > 1 ? 's' : ''}</span>
-              </div>
-              <div className="h-px bg-white/5" />
-              <div className="flex justify-between">
-                <span className="font-mono-custom text-sm text-white/50">Subtotal</span>
-                <span className="font-mono-custom text-sm text-white">{fmt(selectedTicket.price * qty)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-mono-custom text-sm text-white/50">Cargo por servicio</span>
-                <span className="font-mono-custom text-sm text-white">{fmt(selectedTicket.price * qty * 0.05)}</span>
-              </div>
-              <div className="h-px bg-white/5" />
-              <div className="flex justify-between">
-                <span className="font-display text-lg text-white">Total</span>
-                <span className="font-display text-xl" style={{ color: selectedTicket.accentColor }}>
-                  {fmt(selectedTicket.price * qty * 1.05)}
-                </span>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-1.5 mb-6">
-              {selectedTicket.perks.slice(0, 3).map(p => (
-                <span key={p} className="text-[10px] font-mono-custom px-2 py-0.5 rounded-full"
-                  style={{ background: `${selectedTicket.accentColor}15`, color: selectedTicket.accentColor }}>
-                  {p}
-                </span>
-              ))}
-            </div>
-            <button
-              className="w-full py-4 rounded-2xl font-display text-sm uppercase tracking-wider transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-              style={{ background: selectedTicket.accentColor, color: '#0a0a0a' }}
-            >
-              Confirmar Reserva
-            </button>
-            <p className="font-mono-custom text-[10px] text-white/20 text-center mt-3">
-              Recibirás confirmación por email con tu QR de acceso
-            </p>
-          </div>
-        </div>
-      )}
-
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-aira-lime/20 to-transparent" />
-    </section>
+    </div>
   );
 };
 

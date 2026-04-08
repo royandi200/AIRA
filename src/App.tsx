@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import './index.css';
 import useLenis from './hooks/useLenis';
 import { siteConfig } from './config';
@@ -6,11 +6,14 @@ import Hero from './sections/Hero';
 import AlbumCube from './sections/AlbumCube';
 import ParallaxGallery from './sections/ParallaxGallery';
 import TourSchedule from './sections/TourSchedule';
-import TicketReserve from './sections/TicketReserve';
+import TicketReserve, { type ReservationEvent } from './sections/TicketReserve';
 import Footer from './sections/Footer';
 
 function App() {
   useLenis();
+
+  const [selectedEvent, setSelectedEvent] = useState<ReservationEvent | null>(null);
+  const [isReserveOpen, setIsReserveOpen] = useState(false);
 
   useEffect(() => {
     if (siteConfig.title) {
@@ -22,14 +25,38 @@ function App() {
     }
   }, []);
 
+  const reservationEvent = useMemo(() => selectedEvent, [selectedEvent]);
+
+  const handleOpenReservation = (event: ReservationEvent) => {
+    setSelectedEvent(event);
+    setIsReserveOpen(true);
+    document.body.style.overflow = 'hidden';
+  };
+
+  const handleCloseReservation = () => {
+    setIsReserveOpen(false);
+    document.body.style.overflow = '';
+  };
+
+  useEffect(() => {
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   return (
     <main className="relative w-full min-h-screen bg-void-black overflow-x-hidden">
       <Hero />
       <AlbumCube />
       <ParallaxGallery />
-      <TourSchedule />
-      <TicketReserve />
+      <TourSchedule onOpenReservation={handleOpenReservation} />
       <Footer />
+
+      <TicketReserve
+        isOpen={isReserveOpen}
+        selectedEvent={reservationEvent}
+        onClose={handleCloseReservation}
+      />
     </main>
   );
 }
