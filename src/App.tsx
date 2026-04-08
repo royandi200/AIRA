@@ -6,6 +6,7 @@ import Hero from './sections/Hero';
 import AlbumCube from './sections/AlbumCube';
 import ParallaxGallery from './sections/ParallaxGallery';
 import TourSchedule from './sections/TourSchedule';
+import TicketReserve from './sections/TicketReserve';
 import Footer from './sections/Footer';
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
       <AlbumCube />
       <ParallaxGallery />
       <TourSchedule />
+      <TicketReserve />
       <Footer />
     </main>
   );
