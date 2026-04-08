@@ -87,14 +87,17 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Parallax title overlay */}
+        {/* Parallax logo overlay — replaces text title */}
         <div
           ref={titleRef}
           className="relative z-10 text-center will-change-transform"
         >
-          <h2 className="font-display text-[15vw] text-white leading-none tracking-tighter">
-            {footerConfig.heroTitle}
-          </h2>
+          <img
+            src="/AIRA BLANCO.png"
+            alt="AIRA"
+            className="w-[55vw] max-w-2xl mx-auto object-contain drop-shadow-2xl"
+            style={{ filter: 'drop-shadow(0 0 60px rgba(225,254,82,0.15))' }}
+          />
           <p className="font-mono-custom text-lg text-aira-lime/60 uppercase tracking-[0.5em] mt-4">
             {footerConfig.heroSubtitle}
           </p>
