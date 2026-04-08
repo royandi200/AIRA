@@ -71,7 +71,7 @@ const TourSchedule = ({ onOpenReservation }: TourScheduleProps) => {
     }
   };
 
-  const getVenueType = (venue: string) => {
+  const getVenueType = (venue: string): ReservationEvent['venueType'] => {
     const normalized = venue.toLowerCase();
     if (normalized.includes('yacht') || normalized.includes('boat') || normalized.includes('yate')) return 'yacht';
     if (normalized.includes('club') || normalized.includes('hall') || normalized.includes('arena')) return 'club';
@@ -176,7 +176,7 @@ const TourSchedule = ({ onOpenReservation }: TourScheduleProps) => {
                         <button
                           className="flex items-center gap-2 px-4 py-2 bg-aira-lime text-aira-darkBlue rounded-full text-sm font-medium hover:bg-aira-lime/80 transition-colors"
                           onClick={() => onOpenReservation({
-                            id: tour.id,
+                            id: String(tour.id),
                             city: tour.city,
                             venue: tour.venue,
                             date: tour.date,
