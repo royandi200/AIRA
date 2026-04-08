@@ -14,7 +14,6 @@ const SOCIAL_ICON_MAP = {
 };
 
 const Footer = () => {
-  // Null check: if config is empty, do not render
   if (!footerConfig.brandName && !footerConfig.heroTitle && footerConfig.socialLinks.length === 0) {
     return null;
   }
@@ -29,7 +28,6 @@ const Footer = () => {
     if (!sectionRef.current) return;
 
     const ctx = gsap.context(() => {
-      // Parallax title effect
       if (titleRef.current && portraitRef.current) {
         const st = ScrollTrigger.create({
           trigger: sectionRef.current,
@@ -38,7 +36,6 @@ const Footer = () => {
           scrub: 1,
           onUpdate: (self) => {
             if (titleRef.current) {
-              // Title moves faster than portrait
               gsap.set(titleRef.current, {
                 y: -self.progress * 100,
               });
@@ -81,13 +78,12 @@ const Footer = () => {
               alt={footerConfig.portraitAlt}
               className="w-full h-full object-cover"
             />
-            {/* Gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-aira-darkBlue via-aira-darkBlue/30 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-b from-aira-darkBlue via-transparent to-transparent opacity-50" />
           </div>
         </div>
 
-        {/* Parallax logo overlay — replaces text title */}
+        {/* Parallax logo overlay — 200% del tamaño original (w-[55vw] → w-[110vw], max-w-2xl → max-w-4xl) */}
         <div
           ref={titleRef}
           className="relative z-10 text-center will-change-transform"
@@ -95,7 +91,7 @@ const Footer = () => {
           <img
             src="/AIRA BLANCO.png"
             alt="AIRA"
-            className="w-[55vw] max-w-2xl mx-auto object-contain drop-shadow-2xl"
+            className="w-[110vw] max-w-4xl mx-auto object-contain drop-shadow-2xl"
             style={{ filter: 'drop-shadow(0 0 60px rgba(225,254,82,0.15))' }}
           />
           <p className="font-mono-custom text-lg text-aira-lime/60 uppercase tracking-[0.5em] mt-4">
@@ -115,21 +111,18 @@ const Footer = () => {
 
       {/* Footer content */}
       <div className="relative bg-aira-darkBlue py-20 px-6 md:px-12">
-        {/* Top divider */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
         <div className="max-w-7xl mx-auto">
-          {/* Footer grid - Main content */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
-            {/* Brand */}
+            {/* Brand — logo 200% (h-12 → h-24) */}
             <div>
               <div className="flex items-center gap-3 mb-6">
-                <img src="/AIRA BLANCO.png" alt="AIRA Logo" className="h-12 w-auto" />
+                <img src="/AIRA BLANCO.png" alt="AIRA Logo" className="h-24 w-auto" />
               </div>
               <p className="text-sm text-white/50 leading-relaxed mb-6">
                 {footerConfig.brandDescription}
               </p>
-              {/* Social links */}
               <div className="flex gap-4">
                 {footerConfig.socialLinks.map((social) => {
                   const IconComponent = SOCIAL_ICON_MAP[social.icon];

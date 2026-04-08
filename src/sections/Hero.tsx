@@ -66,7 +66,7 @@ const Hero = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-void-black/30 to-void-black" />
       </div>
 
-      {/* Navigation pill — fixed, centered, constrained on mobile */}
+      {/* Navigation pill */}
       <nav
         ref={navRef}
         className="fixed top-4 left-1/2 -translate-x-1/2 z-50 nav-pill rounded-full px-2 py-2"
@@ -91,9 +91,9 @@ const Hero = () => {
 
       {/* Hero content */}
       <div className="relative z-10 flex flex-col items-center justify-end h-full pb-20 px-4">
-        {/* Logo / Brand */}
-        <div className="absolute top-8 left-8">
-          <img src="/AIRA BLANCO.png" alt="AIRA Logo" className="h-10 w-auto" />
+        {/* Logo / Brand — 200% del tamaño original (h-10 → h-20) */}
+        <div className="absolute top-6 left-8">
+          <img src="/AIRA BLANCO.png" alt="AIRA Logo" className="h-20 w-auto" />
         </div>
 
         {/* Main title with decode effect */}
