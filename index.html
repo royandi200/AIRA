@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AIRA — Diseño Web 3D & Experiencias Inmersivas</title>
-  <meta name="description" content="AIRA: Diseño web 3D 360°, transiciones fuera de serie, minimalismo radical y UX/UI de élite.">
+  <title>AIRA Festival — Guatape 2026 | Musica Electronica</title>
+  <meta name="description" content="AIRA Festival: El evento de musica electronica mas inmersivo de Colombia. Agosto 2026 en Guatape, Antioquia. Una experiencia unica entre naturaleza y sonido.">
+  <meta name="theme-color" content="#000000">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,85 +23,461 @@
 
   <a href="#main-content" class="sr-only">Saltar al contenido principal</a>
 
+  <!-- Loader -->
+  <div class="loader" id="loader">
+    <div class="loader-inner">
+      <img 
+        src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/AIRA%20BLANCO-y8BmNLjSpTGo7EK6q9vll0pauH161f.png" 
+        alt="AIRA" 
+        class="loader-logo"
+      >
+      <div class="loader-bar">
+        <div class="loader-progress"></div>
+      </div>
+      <span class="loader-text">Cargando experiencia...</span>
+    </div>
+  </div>
+
   <header class="site-header" role="banner">
-    <a href="/" class="nav-logo" aria-label="AIRA inicio">
-      <svg width="26" height="26" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-        <circle cx="16" cy="16" r="14" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M10 22 L16 10 L22 22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M12 18.5h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
-      AIRA<span class="logo-dot" aria-hidden="true"></span>
+    <a href="/" class="nav-logo" aria-label="AIRA Festival inicio">
+      <img 
+        src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/AIRA%20BLANCO-y8BmNLjSpTGo7EK6q9vll0pauH161f.png" 
+        alt="AIRA" 
+        class="logo-img"
+      >
     </a>
 
-    <nav aria-label="Navegación principal">
+    <nav aria-label="Navegacion principal">
       <ul class="nav-links" role="list">
-        <li><a href="#work">Work</a></li>
-        <li><a href="#about">About</a></li>
-        <li><a href="#contact">Contact</a></li>
+        <li><a href="#lineup">Lineup</a></li>
+        <li><a href="#experience">Experiencia</a></li>
+        <li><a href="#location">Ubicacion</a></li>
+        <li><a href="#tickets">Tickets</a></li>
       </ul>
     </nav>
 
     <div class="nav-actions">
-      <button class="btn-theme" data-theme-toggle aria-label="Cambiar tema">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-        </svg>
-      </button>
+      <a href="#tickets" class="btn btn-accent btn-sm">Comprar Tickets</a>
     </div>
   </header>
 
   <main id="main-content">
 
+    <!-- HERO -->
     <section class="hero" aria-labelledby="hero-heading">
       <canvas id="canvas-3d" aria-hidden="true"></canvas>
+      <div class="hero-overlay"></div>
       <div class="hero-content">
-        <div class="hero-tag" aria-label="Categoría">✦ Web Design &amp; 3D Experiences</div>
-        <h1 class="hero-title" id="hero-heading">
-          Diseño que<br><span class="highlight-blue">trasciende</span><br>pantallas
-        </h1>
-        <p class="hero-subtitle">
-          Experiencias web inmersivas con 3D 360°, transiciones cinematográficas y arquitectura de componentes pensada desde la percepción humana.
+        <div class="hero-date" aria-label="Fecha del evento">
+          <span class="date-day">14-16</span>
+          <span class="date-month">AGO</span>
+          <span class="date-year">2026</span>
+        </div>
+        <img 
+          src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/AIRA%20BLANCO-y8BmNLjSpTGo7EK6q9vll0pauH161f.png" 
+          alt="AIRA Festival" 
+          class="hero-logo"
+          id="hero-heading"
+        >
+        <p class="hero-tagline">
+          A state of feeling
+        </p>
+        <p class="hero-location">
+          Guatape, Antioquia — Colombia
         </p>
         <div class="hero-cta">
-          <a href="#work" class="btn btn-primary">Ver proyectos</a>
-          <a href="#contact" class="btn btn-accent">Conversemos</a>
+          <a href="#tickets" class="btn btn-accent btn-lg">Obtener Tickets</a>
+          <a href="#experience" class="btn btn-ghost btn-lg">Descubrir mas</a>
+        </div>
+        <div class="hero-scroll" aria-hidden="true">
+          <span>Scroll</span>
+          <div class="scroll-line"></div>
         </div>
       </div>
     </section>
 
-    <section id="work" aria-labelledby="work-heading">
+    <!-- COUNTDOWN -->
+    <section class="countdown-section" aria-label="Cuenta regresiva">
       <div class="container">
-        <p class="section-label" data-reveal>Proyectos</p>
-        <h2 class="section-title" id="work-heading" data-reveal>Trabajo seleccionado</h2>
-        <p style="color: var(--color-text-muted); font-size: var(--text-sm);" data-reveal>
-          Próximamente — el portafolio está en construcción.
+        <div class="countdown" id="countdown">
+          <div class="countdown-item">
+            <span class="countdown-number" id="days">000</span>
+            <span class="countdown-label">Dias</span>
+          </div>
+          <div class="countdown-separator">:</div>
+          <div class="countdown-item">
+            <span class="countdown-number" id="hours">00</span>
+            <span class="countdown-label">Horas</span>
+          </div>
+          <div class="countdown-separator">:</div>
+          <div class="countdown-item">
+            <span class="countdown-number" id="minutes">00</span>
+            <span class="countdown-label">Minutos</span>
+          </div>
+          <div class="countdown-separator">:</div>
+          <div class="countdown-item">
+            <span class="countdown-number" id="seconds">00</span>
+            <span class="countdown-label">Segundos</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LINEUP -->
+    <section id="lineup" aria-labelledby="lineup-heading">
+      <div class="container">
+        <p class="section-label" data-reveal>Artistas</p>
+        <h2 class="section-title" id="lineup-heading" data-reveal>Lineup 2026</h2>
+        <p class="section-description" data-reveal>
+          Tres dias de los mejores artistas de la escena electronica mundial
+        </p>
+        
+        <div class="lineup-grid" data-reveal>
+          <div class="lineup-day">
+            <span class="day-label">Viernes 14</span>
+            <div class="artists">
+              <div class="artist artist--headliner">
+                <span class="artist-name">Artista Principal</span>
+                <span class="artist-tag">Headliner</span>
+              </div>
+              <div class="artist">
+                <span class="artist-name">DJ Invitado</span>
+              </div>
+              <div class="artist">
+                <span class="artist-name">Live Act</span>
+              </div>
+              <div class="artist">
+                <span class="artist-name">Artista Local</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="lineup-day">
+            <span class="day-label">Sabado 15</span>
+            <div class="artists">
+              <div class="artist artist--headliner">
+                <span class="artist-name">Headliner Internacional</span>
+                <span class="artist-tag">Headliner</span>
+              </div>
+              <div class="artist">
+                <span class="artist-name">DJ Set Especial</span>
+              </div>
+              <div class="artist">
+                <span class="artist-name">B2B Session</span>
+              </div>
+              <div class="artist">
+                <span class="artist-name">Rising Star</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="lineup-day">
+            <span class="day-label">Domingo 16</span>
+            <div class="artists">
+              <div class="artist artist--headliner">
+                <span class="artist-name">Cierre Epico</span>
+                <span class="artist-tag">Headliner</span>
+              </div>
+              <div class="artist">
+                <span class="artist-name">Sunrise Set</span>
+              </div>
+              <div class="artist">
+                <span class="artist-name">Closing DJ</span>
+              </div>
+              <div class="artist">
+                <span class="artist-name">+ Mas por anunciar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <p class="lineup-note" data-reveal>Lineup completo proximamente</p>
+      </div>
+    </section>
+
+    <!-- EXPERIENCE -->
+    <section id="experience" class="experience-section" aria-labelledby="experience-heading">
+      <div class="container">
+        <p class="section-label" data-reveal>La Experiencia</p>
+        <h2 class="section-title" id="experience-heading" data-reveal>Mas que un festival</h2>
+        
+        <div class="experience-grid">
+          <div class="experience-card" data-reveal>
+            <div class="experience-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M9 18V5l12-2v13"/>
+                <circle cx="6" cy="18" r="3"/>
+                <circle cx="18" cy="16" r="3"/>
+              </svg>
+            </div>
+            <h3>3 Escenarios</h3>
+            <p>Diseño de sonido de clase mundial con sistemas de audio inmersivo en cada escenario</p>
+          </div>
+          
+          <div class="experience-card" data-reveal>
+            <div class="experience-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+            </div>
+            <h3>Ubicacion Unica</h3>
+            <p>A orillas del embalse de Guatape con vista a la iconica Piedra del Penol</p>
+          </div>
+          
+          <div class="experience-card" data-reveal>
+            <div class="experience-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707"/>
+                <circle cx="12" cy="12" r="4"/>
+              </svg>
+            </div>
+            <h3>Naturaleza + Musica</h3>
+            <p>Una fusion perfecta entre el verde de Antioquia y los beats de la mejor electronica</p>
+          </div>
+          
+          <div class="experience-card" data-reveal>
+            <div class="experience-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"/>
+              </svg>
+            </div>
+            <h3>Comunidad</h3>
+            <p>Un espacio seguro para conectar con personas que comparten tu pasion por la musica</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="experience-visual">
+        <img 
+          src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/AIRA-3-p5seOE5rFNNYXQNIPC4po1j2ujP9I8.png" 
+          alt="DJ en AIRA Festival" 
+          class="experience-img"
+          data-reveal
+        >
+      </div>
+    </section>
+
+    <!-- GALLERY MARQUEE -->
+    <section class="marquee-section" aria-label="Galeria">
+      <div class="marquee">
+        <div class="marquee-content">
+          <span class="marquee-item">GUATAPE</span>
+          <span class="marquee-dot"></span>
+          <span class="marquee-item">AGOSTO 2026</span>
+          <span class="marquee-dot"></span>
+          <span class="marquee-item">3 DIAS</span>
+          <span class="marquee-dot"></span>
+          <span class="marquee-item">ELECTRONICA</span>
+          <span class="marquee-dot"></span>
+          <span class="marquee-item">A STATE OF FEELING</span>
+          <span class="marquee-dot"></span>
+          <span class="marquee-item">GUATAPE</span>
+          <span class="marquee-dot"></span>
+          <span class="marquee-item">AGOSTO 2026</span>
+          <span class="marquee-dot"></span>
+          <span class="marquee-item">3 DIAS</span>
+          <span class="marquee-dot"></span>
+          <span class="marquee-item">ELECTRONICA</span>
+          <span class="marquee-dot"></span>
+          <span class="marquee-item">A STATE OF FEELING</span>
+          <span class="marquee-dot"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOCATION -->
+    <section id="location" class="location-section" aria-labelledby="location-heading">
+      <div class="container">
+        <div class="location-content">
+          <div class="location-text">
+            <p class="section-label" data-reveal>Ubicacion</p>
+            <h2 class="section-title" id="location-heading" data-reveal>Guatape, Antioquia</h2>
+            <p class="location-description" data-reveal>
+              A solo 2 horas de Medellin, Guatape es uno de los destinos mas hermosos de Colombia. 
+              El festival se llevara a cabo en un predio privado con vista directa al embalse y 
+              la majestuosa Piedra del Penol.
+            </p>
+            <ul class="location-features" data-reveal>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                <span>Transporte desde Medellin disponible</span>
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                <span>Zona de camping premium</span>
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                <span>Hoteles cercanos con convenio</span>
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                <span>Parqueadero gratuito</span>
+              </li>
+            </ul>
+          </div>
+          <div class="location-map" data-reveal>
+            <div class="map-placeholder">
+              <span class="map-pin">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0C7.31 0 3.5 3.81 3.5 8.5c0 6.38 8.5 15.5 8.5 15.5s8.5-9.12 8.5-15.5C20.5 3.81 16.69 0 12 0zm0 12a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/>
+                </svg>
+              </span>
+              <span class="map-label">Guatape, Antioquia</span>
+              <span class="map-coords">6.2342° N, 75.1574° W</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TICKETS -->
+    <section id="tickets" class="tickets-section" aria-labelledby="tickets-heading">
+      <div class="container">
+        <p class="section-label" data-reveal>Entradas</p>
+        <h2 class="section-title" id="tickets-heading" data-reveal>Tickets</h2>
+        <p class="section-description" data-reveal>
+          Asegura tu lugar en la experiencia AIRA 2026
+        </p>
+        
+        <div class="tickets-grid">
+          <div class="ticket-card" data-reveal>
+            <div class="ticket-phase">Early Bird</div>
+            <div class="ticket-price">
+              <span class="currency">COP</span>
+              <span class="amount">350.000</span>
+            </div>
+            <ul class="ticket-features">
+              <li>Acceso 3 dias</li>
+              <li>Kit de bienvenida</li>
+              <li>Acceso a todas las areas</li>
+            </ul>
+            <span class="ticket-status ticket-status--sold">Agotado</span>
+          </div>
+          
+          <div class="ticket-card ticket-card--featured" data-reveal>
+            <div class="ticket-badge">Disponible</div>
+            <div class="ticket-phase">General</div>
+            <div class="ticket-price">
+              <span class="currency">COP</span>
+              <span class="amount">480.000</span>
+            </div>
+            <ul class="ticket-features">
+              <li>Acceso 3 dias</li>
+              <li>Kit de bienvenida</li>
+              <li>Acceso a todas las areas</li>
+              <li>Brazalete coleccionable</li>
+            </ul>
+            <a href="#" class="btn btn-accent btn-full">Comprar ahora</a>
+          </div>
+          
+          <div class="ticket-card" data-reveal>
+            <div class="ticket-phase">VIP</div>
+            <div class="ticket-price">
+              <span class="currency">COP</span>
+              <span class="amount">850.000</span>
+            </div>
+            <ul class="ticket-features">
+              <li>Acceso 3 dias</li>
+              <li>Kit premium exclusivo</li>
+              <li>Zona VIP con bar abierto</li>
+              <li>Meet & Greet con artistas</li>
+              <li>Acceso backstage</li>
+            </ul>
+            <a href="#" class="btn btn-primary btn-full">Reservar</a>
+          </div>
+        </div>
+        
+        <p class="tickets-note" data-reveal>
+          Pagos seguros via PSE, tarjeta de credito y efectivo en puntos autorizados
         </p>
       </div>
     </section>
 
-    <section id="about" aria-labelledby="about-heading">
+    <!-- NEWSLETTER -->
+    <section class="newsletter-section" aria-labelledby="newsletter-heading">
       <div class="container">
-        <p class="section-label" data-reveal>Sobre AIRA</p>
-        <h2 class="section-title" id="about-heading" data-reveal>Diseño con intención</h2>
-        <p style="color: var(--color-text-muted); max-width: 60ch;" data-reveal>
-          AIRA nace de la convicción de que el diseño web es un medio artístico. Cada píxel, cada transición, cada microinteracción tiene propósito. Especialistas en 3D 360°, GSAP, Three.js y sistemas de diseño de alto rendimiento.
-        </p>
-      </div>
-    </section>
-
-    <section id="contact" aria-labelledby="contact-heading">
-      <div class="container">
-        <p class="section-label" data-reveal>Contacto</p>
-        <h2 class="section-title" id="contact-heading" data-reveal>¿Tienes un proyecto?</h2>
-        <a href="mailto:hola@aira.design" class="btn btn-primary" data-reveal>hola@aira.design</a>
+        <div class="newsletter-content">
+          <h2 class="newsletter-title" id="newsletter-heading" data-reveal>
+            Se el primero en enterarte
+          </h2>
+          <p class="newsletter-description" data-reveal>
+            Anuncios de lineup, preventas exclusivas y novedades del festival
+          </p>
+          <form class="newsletter-form" data-reveal>
+            <input 
+              type="email" 
+              placeholder="tu@email.com" 
+              required 
+              aria-label="Correo electronico"
+            >
+            <button type="submit" class="btn btn-accent">Suscribirse</button>
+          </form>
+        </div>
       </div>
     </section>
 
   </main>
 
   <footer class="site-footer" role="contentinfo">
-    <span class="footer-text">© 2026 AIRA<span class="footer-accent"> ✦</span> Diseño con intención.</span>
-    <span class="footer-text">Bogotá, Colombia</span>
+    <div class="container">
+      <div class="footer-main">
+        <div class="footer-brand">
+          <img 
+            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/AIRA%20BLANCO-y8BmNLjSpTGo7EK6q9vll0pauH161f.png" 
+            alt="AIRA" 
+            class="footer-logo"
+          >
+          <p class="footer-tagline">A state of feeling</p>
+        </div>
+        
+        <div class="footer-links">
+          <div class="footer-col">
+            <h4>Festival</h4>
+            <ul>
+              <li><a href="#lineup">Lineup</a></li>
+              <li><a href="#experience">Experiencia</a></li>
+              <li><a href="#location">Ubicacion</a></li>
+              <li><a href="#tickets">Tickets</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h4>Info</h4>
+            <ul>
+              <li><a href="#">FAQ</a></li>
+              <li><a href="#">Terminos</a></li>
+              <li><a href="#">Privacidad</a></li>
+              <li><a href="#">Contacto</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h4>Social</h4>
+            <ul>
+              <li><a href="#">Instagram</a></li>
+              <li><a href="#">TikTok</a></li>
+              <li><a href="#">Twitter</a></li>
+              <li><a href="#">YouTube</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <span class="footer-copy">© 2026 AIRA Festival. Todos los derechos reservados.</span>
+        <span class="footer-location">Guatape, Antioquia — Colombia</span>
+      </div>
+    </div>
   </footer>
 
 </body>

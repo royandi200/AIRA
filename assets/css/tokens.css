@@ -1,66 +1,76 @@
 /* ============================================
-   AIRA — Design Tokens
-   Art direction: Immersive 3D web → cinematic, bold-electric
-   Palette: dark neutrals + electric blue primary + lime accent
-   Typography: Figtree (display + body — single family, weight contrast)
-   Density: spacious with precision moments
+   AIRA Festival — Design Tokens
+   Brand: Electric Blue #004fff + Lime #e1fe52
+   Typography: Figtree
+   Art direction: Dark, immersive, festival vibes
    ============================================ */
 
-/* === GOOGLE FONTS: Figtree === */
 @import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap');
 
-:root, [data-theme="light"] {
-  /* --- Surfaces (cool-neutral, clean) --- */
-  --color-bg:               #f5f5f7;
-  --color-surface:          #ffffff;
-  --color-surface-2:        #fafafa;
-  --color-surface-offset:   #efefef;
-  --color-surface-offset-2: #e8e8eb;
-  --color-surface-dynamic:  #dddde3;
-  --color-divider:          #d2d2d8;
-  --color-border:           #c8c8cf;
+:root, [data-theme="dark"] {
+  /* --- Brand Colors (from MARCA AIRA) --- */
+  --color-blue:        #004fff;
+  --color-blue-dark:   #00164c;
+  --color-lime:        #e1fe52;
+  --color-light:       #f4f4f4;
+  --color-black:       #000000;
+
+  /* --- Surfaces (dark theme default) --- */
+  --color-bg:               #000000;
+  --color-surface:          #0a0a0a;
+  --color-surface-2:        #111111;
+  --color-surface-offset:   #0d0d0d;
+  --color-surface-offset-2: #151515;
+  --color-surface-dynamic:  #1a1a1a;
+  --color-divider:          #1f1f1f;
+  --color-border:           #2a2a2a;
 
   /* --- Text --- */
-  --color-text:         #0a0a0f;
-  --color-text-muted:   #6b6b78;
-  --color-text-faint:   #b0b0bc;
-  --color-text-inverse: #ffffff;
+  --color-text:         #f4f4f4;
+  --color-text-muted:   #888888;
+  --color-text-faint:   #555555;
+  --color-text-inverse: #000000;
 
   /* --- Primary: Electric Blue #004fff --- */
   --color-primary:           #004fff;
-  --color-primary-hover:     #003de0;
-  --color-primary-active:    #002cbe;
-  --color-primary-highlight: #dde6ff;
+  --color-primary-hover:     #3373ff;
+  --color-primary-active:    #6699ff;
+  --color-primary-highlight: #001a4d;
 
   /* --- Accent: Lime #e1fe52 --- */
   --color-accent:           #e1fe52;
-  --color-accent-hover:     #d0f030;
-  --color-accent-active:    #bedd14;
-  --color-accent-highlight: #f5ffd4;
-  --color-accent-on:        #0a0a0f;
+  --color-accent-hover:     #eaff7a;
+  --color-accent-active:    #f2ffa3;
+  --color-accent-highlight: #2a3300;
+  --color-accent-on:        #000000;
 
   /* --- Semantic --- */
-  --color-success: #1a7a3a;
-  --color-warning: #b85c00;
-  --color-error:   #c0183a;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error:   #ef4444;
 
   /* --- Radius --- */
-  --radius-sm:   0.375rem;
+  --radius-sm:   0.25rem;
   --radius-md:   0.5rem;
   --radius-lg:   0.75rem;
   --radius-xl:   1rem;
+  --radius-2xl:  1.5rem;
   --radius-full: 9999px;
 
-  /* --- Shadows (cool-tinted) --- */
-  --shadow-sm: 0 1px 2px oklch(0.15 0.02 260 / 0.06);
-  --shadow-md: 0 4px 12px oklch(0.15 0.02 260 / 0.09);
-  --shadow-lg: 0 12px 32px oklch(0.15 0.02 260 / 0.14);
+  /* --- Shadows (glow effects for festival) --- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.7);
+  --shadow-glow-blue: 0 0 40px rgba(0, 79, 255, 0.4);
+  --shadow-glow-lime: 0 0 40px rgba(225, 254, 82, 0.4);
 
   /* --- Transitions --- */
+  --transition-fast:        120ms cubic-bezier(0.16, 1, 0.3, 1);
   --transition-interactive: 180ms cubic-bezier(0.16, 1, 0.3, 1);
   --transition-smooth:      400ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow:        600ms cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* --- Typography: Figtree only, weight contrast --- */
+  /* --- Typography: Figtree --- */
   --font-display: 'Figtree', system-ui, sans-serif;
   --font-body:    'Figtree', system-ui, sans-serif;
 
@@ -72,7 +82,7 @@
   --text-xl:   clamp(1.5rem,   1.2rem  + 1.25vw, 2.25rem);
   --text-2xl:  clamp(2rem,     1.2rem  + 2.5vw,  3.5rem);
   --text-3xl:  clamp(2.5rem,   1rem    + 4vw,    5rem);
-  --text-hero: clamp(3rem,     0.5rem  + 7vw,    8rem);
+  --text-hero: clamp(3.5rem,   1rem    + 8vw,    10rem);
 
   /* --- Spacing (4px base) --- */
   --space-1:  0.25rem;
@@ -96,64 +106,24 @@
   --content-full:    100%;
 }
 
-[data-theme="dark"] {
-  --color-bg:               #05050a;
-  --color-surface:          #0d0d14;
-  --color-surface-2:        #12121a;
-  --color-surface-offset:   #0f0f17;
-  --color-surface-offset-2: #161620;
-  --color-surface-dynamic:  #1e1e2a;
-  --color-divider:          #1c1c28;
-  --color-border:           #28283a;
-  --color-text:             #e8e8f0;
-  --color-text-muted:       #7c7c96;
-  --color-text-faint:       #46465a;
-  --color-text-inverse:     #0a0a0f;
-  --color-primary:           #3d75ff;
-  --color-primary-hover:     #5a8aff;
-  --color-primary-active:    #7aa0ff;
-  --color-primary-highlight: #0d1a40;
-  --color-accent:           #e1fe52;
-  --color-accent-hover:     #eeff7a;
-  --color-accent-active:    #f5ffa0;
-  --color-accent-highlight: #1e2200;
-  --color-accent-on:        #0a0a0f;
-  --color-success: #3fbf5f;
-  --color-warning: #f0841a;
-  --color-error:   #ff4060;
-  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3);
-  --shadow-md: 0 4px 12px oklch(0 0 0 / 0.4);
-  --shadow-lg: 0 12px 32px oklch(0 0 0 / 0.55);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) {
-    --color-bg:               #05050a;
-    --color-surface:          #0d0d14;
-    --color-surface-2:        #12121a;
-    --color-surface-offset:   #0f0f17;
-    --color-surface-offset-2: #161620;
-    --color-surface-dynamic:  #1e1e2a;
-    --color-divider:          #1c1c28;
-    --color-border:           #28283a;
-    --color-text:             #e8e8f0;
-    --color-text-muted:       #7c7c96;
-    --color-text-faint:       #46465a;
-    --color-text-inverse:     #0a0a0f;
-    --color-primary:           #3d75ff;
-    --color-primary-hover:     #5a8aff;
-    --color-primary-active:    #7aa0ff;
-    --color-primary-highlight: #0d1a40;
-    --color-accent:           #e1fe52;
-    --color-accent-hover:     #eeff7a;
-    --color-accent-active:    #f5ffa0;
-    --color-accent-highlight: #1e2200;
-    --color-accent-on:        #0a0a0f;
-    --color-success: #3fbf5f;
-    --color-warning: #f0841a;
-    --color-error:   #ff4060;
-    --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3);
-    --shadow-md: 0 4px 12px oklch(0 0 0 / 0.4);
-    --shadow-lg: 0 12px 32px oklch(0 0 0 / 0.55);
-  }
+[data-theme="light"] {
+  --color-bg:               #f4f4f4;
+  --color-surface:          #ffffff;
+  --color-surface-2:        #fafafa;
+  --color-surface-offset:   #f0f0f0;
+  --color-surface-offset-2: #e8e8e8;
+  --color-surface-dynamic:  #e0e0e0;
+  --color-divider:          #d4d4d4;
+  --color-border:           #c4c4c4;
+  --color-text:             #000000;
+  --color-text-muted:       #666666;
+  --color-text-faint:       #999999;
+  --color-text-inverse:     #f4f4f4;
+  --color-primary-highlight: #e6edff;
+  --color-accent-highlight: #f5ffd4;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.15);
+  --shadow-glow-blue: 0 0 40px rgba(0, 79, 255, 0.2);
+  --shadow-glow-lime: 0 0 40px rgba(225, 254, 82, 0.3);
 }
