@@ -135,8 +135,6 @@ function useLockBodyScroll(isOpen: boolean) {
 }
 
 // ─── Wheel handler: desktop-only scroll containment ───────────────────────
-// Fix TS2345: useRef<HTMLDivElement>(null) returns RefObject<HTMLDivElement | null>
-// so the parameter type must match exactly.
 function useWheelLock(ref: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const el = ref.current;
@@ -188,7 +186,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
     return () => window.removeEventListener('keydown', handler);
   }, [isOpen, onClose]);
 
-  const zones = useMemo(() => (selectedEvent ? VENUE_ZONES[selectedEvent.venueType] : []), [selectedEvent]);
+  const zones          = useMemo(() => (selectedEvent ? VENUE_ZONES[selectedEvent.venueType] : []), [selectedEvent]);
   const selectedTicket = useMemo(() => TICKETS.find(t => t.id === selectedTicketId) ?? null, [selectedTicketId]);
   const selectedZone   = useMemo(() => zones.find(z => z.id === selectedZoneId) ?? null, [zones, selectedZoneId]);
 
@@ -289,6 +287,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
             {/* MAIN PANEL */}
             <div className="p-5 md:p-8 lg:border-r border-white/10">
 
+              {/* STEP 1 */}
               {step === 1 && (
                 <div>
                   <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-3">Paso 1</p>
@@ -311,8 +310,11 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                         <p className="text-xs text-white/50 mb-3 leading-relaxed">{ticket.description}</p>
                         <div className="flex flex-wrap gap-1.5">
                           {ticket.perks.map(perk => (
-                            <span key={perk} className="px-2.5 py-1 rounded-full text-[9px] font-mono-custom uppercase tracking-[0.18em] border"
-                              style={{ borderColor: `${ticket.accentColor}35`, color: ticket.accentColor, background: `${ticket.accentColor}10` }}>
+                            <span
+                              key={perk}
+                              className="px-2.5 py-1 rounded-full text-[9px] font-mono-custom uppercase tracking-[0.18em] border"
+                              style={{ borderColor: `${ticket.accentColor}35`, color: ticket.accentColor, background: `${ticket.accentColor}10` }}
+                            >
                               {perk}
                             </span>
                           ))}
@@ -323,11 +325,14 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                 </div>
               )}
 
+              {/* STEP 2 */}
               {step === 2 && selectedTicket && (
                 <div>
                   <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-3">Paso 2</p>
                   <h4 className="font-display text-3xl md:text-4xl text-white mb-2">Selecciona tu zona</h4>
-                  <p className="text-sm text-white/50 mb-5">Plano específico para este venue. Zona precargada: <strong className="text-white">{selectedTicket.name}</strong></p>
+                  <p className="text-sm text-white/50 mb-5">
+                    Plano específico para este venue. Zona precargada: <strong className="text-white">{selectedTicket.name}</strong>
+                  </p>
                   <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden border border-white/10 bg-[#07111f]">
                     <div className="absolute inset-x-[10%] top-[5%] h-[8%] rounded-b-[1rem] bg-aira-lime/90 flex items-center justify-center">
                       <span className="font-mono-custom text-[9px] uppercase tracking-[0.3em] text-aira-darkBlue font-bold">
@@ -337,7 +342,9 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                     {zones.map(zone => {
                       const active = selectedZoneId === zone.id;
                       return (
-                        <button key={zone.id} className="absolute rounded-xl flex items-center justify-center transition-all duration-250"
+                        <button
+                          key={zone.id}
+                          className="absolute rounded-xl flex items-center justify-center transition-all duration-250"
                           style={{
                             left: `${zone.x}%`, top: `${zone.y}%`, width: `${zone.w}%`, height: `${zone.h}%`,
                             background: ZONE_COLORS[zone.id],
@@ -347,8 +354,10 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                           }}
                           onClick={() => setSelectedZoneId(zone.id)}
                         >
-                          <span className="font-mono-custom text-[9px] sm:text-[10px] uppercase tracking-[0.22em] font-bold"
-                            style={{ color: active ? ZONE_BORDERS[zone.id] : 'rgba(255,255,255,0.42)' }}>
+                          <span
+                            className="font-mono-custom text-[9px] sm:text-[10px] uppercase tracking-[0.22em] font-bold"
+                            style={{ color: active ? ZONE_BORDERS[zone.id] : 'rgba(255,255,255,0.42)' }}
+                          >
                             {zone.label}
                           </span>
                         </button>
@@ -356,55 +365,104 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                     })}
                   </div>
                   <div className="mt-5 flex items-center justify-between gap-3">
-                    <button className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 active:bg-white/10 transition-colors" onClick={() => setStep(1)}>Volver</button>
-                    <button className="px-6 py-2.5 rounded-full bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] hover:bg-white active:scale-[0.97] transition-all" onClick={() => setStep(3)}>Confirmar zona</button>
+                    <button
+                      className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 active:bg-white/10 transition-colors"
+                      onClick={() => setStep(1)}
+                    >
+                      Volver
+                    </button>
+                    <button
+                      className="px-6 py-2.5 rounded-full bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] hover:bg-white active:scale-[0.97] transition-all"
+                      onClick={() => setStep(3)}
+                    >
+                      Confirmar zona
+                    </button>
                   </div>
                 </div>
               )}
 
+              {/* STEP 3 */}
               {step === 3 && selectedTicket && selectedZone && (
                 <div>
                   <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-3">Paso 3</p>
                   <h4 className="font-display text-3xl md:text-4xl text-white mb-2">Confirmar reserva</h4>
                   <p className="text-sm text-white/50 mb-5">Revisa el resumen antes de proceder al pago.</p>
                   <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-4">
+
+                    {/* Event details grid */}
                     <div className="grid grid-cols-2 gap-3">
-                      {(['Evento', selectedEvent.venue], ['Ciudad', selectedEvent.city], ['Fecha', selectedEvent.date], ['Hora', selectedEvent.time],
-                        [['Evento', selectedEvent.venue], ['Ciudad', selectedEvent.city], ['Fecha', selectedEvent.date], ['Hora', selectedEvent.time]] as [string, string][]).flat(1).map(([label, value]) => (
+                      {([
+                        ['Evento', selectedEvent.venue],
+                        ['Ciudad', selectedEvent.city],
+                        ['Fecha',  selectedEvent.date],
+                        ['Hora',   selectedEvent.time],
+                      ] as [string, string][]).map(([label, value]) => (
                         <div key={label} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
                           <p className="font-mono-custom text-[9px] uppercase tracking-[0.22em] text-white/35 mb-1">{label}</p>
                           <p className="font-display text-base text-white truncate">{value}</p>
                         </div>
                       ))}
                     </div>
+
                     <div className="flex flex-wrap items-end justify-between gap-4 border-t border-white/10 pt-4">
                       <div>
                         <p className="font-mono-custom text-[9px] uppercase tracking-[0.22em] text-white/35 mb-2">Tu selección</p>
                         <div className="flex flex-wrap gap-2">
-                          <span className="px-3 py-1.5 rounded-full border text-sm"
-                            style={{ borderColor: `${selectedTicket.accentColor}35`, color: selectedTicket.accentColor, background: `${selectedTicket.accentColor}10` }}>
+                          <span
+                            className="px-3 py-1.5 rounded-full border text-sm"
+                            style={{ borderColor: `${selectedTicket.accentColor}35`, color: selectedTicket.accentColor, background: `${selectedTicket.accentColor}10` }}
+                          >
                             {selectedTicket.name}
                           </span>
-                          <span className="px-3 py-1.5 rounded-full border border-white/10 text-white/70 bg-white/[0.03] text-sm">{selectedZone.label}</span>
+                          <span className="px-3 py-1.5 rounded-full border border-white/10 text-white/70 bg-white/[0.03] text-sm">
+                            {selectedZone.label}
+                          </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-1 rounded-full border border-white/10 p-1">
-                        <button className="w-8 h-8 rounded-full hover:bg-white/10 active:bg-white/20 flex items-center justify-center transition-colors" onClick={() => setQty(v => Math.max(1, v - 1))} aria-label="Reducir cantidad"><Minus className="w-3.5 h-3.5 text-white/60" /></button>
+                        <button
+                          className="w-8 h-8 rounded-full hover:bg-white/10 active:bg-white/20 flex items-center justify-center transition-colors"
+                          onClick={() => setQty(v => Math.max(1, v - 1))}
+                          aria-label="Reducir cantidad"
+                        >
+                          <Minus className="w-3.5 h-3.5 text-white/60" />
+                        </button>
                         <span className="w-8 text-center font-mono-custom text-sm text-white">{qty}</span>
-                        <button className="w-8 h-8 rounded-full hover:bg-white/10 active:bg-white/20 flex items-center justify-center transition-colors" onClick={() => setQty(v => Math.min(8, v + 1))} aria-label="Aumentar cantidad"><Plus className="w-3.5 h-3.5 text-white/60" /></button>
+                        <button
+                          className="w-8 h-8 rounded-full hover:bg-white/10 active:bg-white/20 flex items-center justify-center transition-colors"
+                          onClick={() => setQty(v => Math.min(8, v + 1))}
+                          aria-label="Aumentar cantidad"
+                        >
+                          <Plus className="w-3.5 h-3.5 text-white/60" />
+                        </button>
                       </div>
                     </div>
+
                     <div className="space-y-2 border-t border-white/10 pt-4">
-                      <div className="flex justify-between font-mono-custom text-sm text-white/55"><span>Subtotal</span><span className="text-white">{fmt(selectedTicket.price * qty)}</span></div>
-                      <div className="flex justify-between font-mono-custom text-sm text-white/55"><span>Cargo de servicio</span><span className="text-white">{fmt(serviceFee)}</span></div>
+                      <div className="flex justify-between font-mono-custom text-sm text-white/55">
+                        <span>Subtotal</span>
+                        <span className="text-white">{fmt(selectedTicket.price * qty)}</span>
+                      </div>
+                      <div className="flex justify-between font-mono-custom text-sm text-white/55">
+                        <span>Cargo de servicio</span>
+                        <span className="text-white">{fmt(serviceFee)}</span>
+                      </div>
                       <div className="flex justify-between pt-2 border-t border-white/10">
                         <span className="font-display text-xl text-white">Total</span>
                         <span className="font-display text-2xl" style={{ color: selectedTicket.accentColor }}>{fmt(total)}</span>
                       </div>
                     </div>
+
                     <div className="flex flex-wrap gap-3 pt-1">
-                      <button className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 active:bg-white/10 transition-colors" onClick={() => setStep(2)}>Volver al plano</button>
-                      <button className="flex-1 min-w-[160px] px-6 py-2.5 rounded-full bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] hover:bg-white active:scale-[0.97] transition-all">Confirmar reserva</button>
+                      <button
+                        className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 active:bg-white/10 transition-colors"
+                        onClick={() => setStep(2)}
+                      >
+                        Volver al plano
+                      </button>
+                      <button className="flex-1 min-w-[160px] px-6 py-2.5 rounded-full bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] hover:bg-white active:scale-[0.97] transition-all">
+                        Confirmar reserva
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -422,10 +480,14 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                   <h5 className="font-display text-xl text-white mb-1">{selectedEvent.venue}</h5>
                   <p className="text-xs text-white/45 mb-3">{selectedEvent.city} · {selectedEvent.date} · {selectedEvent.time}</p>
                   <div className="flex flex-wrap gap-1.5">
-                    <span className="px-2.5 py-1 rounded-full bg-aira-blue/20 text-aira-lime text-[9px] font-mono-custom uppercase tracking-[0.18em]">{selectedEvent.venueType}</span>
+                    <span className="px-2.5 py-1 rounded-full bg-aira-blue/20 text-aira-lime text-[9px] font-mono-custom uppercase tracking-[0.18em]">
+                      {selectedEvent.venueType}
+                    </span>
                     {selectedTicket && (
-                      <span className="px-2.5 py-1 rounded-full text-[9px] font-mono-custom uppercase tracking-[0.18em]"
-                        style={{ background: `${selectedTicket.accentColor}15`, color: selectedTicket.accentColor }}>
+                      <span
+                        className="px-2.5 py-1 rounded-full text-[9px] font-mono-custom uppercase tracking-[0.18em]"
+                        style={{ background: `${selectedTicket.accentColor}15`, color: selectedTicket.accentColor }}
+                      >
                         {selectedTicket.name}
                       </span>
                     )}
@@ -441,6 +503,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                 </ul>
               </div>
             </aside>
+
           </div>
         </div>
       </div>
