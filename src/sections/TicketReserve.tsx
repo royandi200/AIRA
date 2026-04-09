@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { X, Users, Zap, Crown, Star, Minus, Plus, Check } from 'lucide-react';
 
 export interface ReservationEvent {
@@ -134,39 +134,32 @@ function useLockBodyScroll(isOpen: boolean) {
   }, [isOpen]);
 }
 
-// ─── Wheel handler: desktop-only scroll containment ───────────────────────
-function useWheelLock(ref: React.RefObject<HTMLDivElement | null>) {
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const handler = (e: WheelEvent) => {
-      const { scrollTop, scrollHeight, clientHeight } = el;
-      const canScrollUp   = scrollTop > 0;
-      const canScrollDown = scrollTop + clientHeight < scrollHeight - 1;
-      if ((e.deltaY < 0 && canScrollUp) || (e.deltaY > 0 && canScrollDown)) {
-        e.stopPropagation();
-        el.scrollTop += e.deltaY;
-        e.preventDefault();
-      } else {
-        e.stopPropagation();
-      }
-    };
-    el.addEventListener('wheel', handler, { passive: false });
-    return () => el.removeEventListener('wheel', handler);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-}
-
 const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) => {
   const [step, setStep]                         = useState(1);
   const [qty, setQty]                           = useState(1);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [selectedZoneId, setSelectedZoneId]     = useState<string | null>(null);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
-
   useLockBodyScroll(isOpen);
-  useWheelLock(scrollRef);
+
+  // ─── Callback ref: registers the wheel listener the instant the node
+  // is inserted into the DOM. Solves the issue where useRef(null) + useEffect([])
+  // ran before the modal was rendered, leaving ref.current as null forever.
+  const scrollRef = useCallback((el: HTMLDivElement | null) => {
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      const atTop    = scrollTop <= 0;
+      const atBottom = scrollTop + clientHeight >= scrollHeight - 1;
+      if (atTop    && e.deltaY < 0) { e.stopPropagation(); return; }
+      if (atBottom && e.deltaY > 0) { e.stopPropagation(); return; }
+      e.stopPropagation();
+      e.preventDefault();
+      el.scrollTop += e.deltaY;
+    };
+    el.addEventListener('wheel', handler, { passive: false });
+    // No cleanup needed — when the modal unmounts the node is removed from DOM
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -175,10 +168,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
     setSelectedTicketId(null);
     setSelectedZoneId(null);
   }, [isOpen, selectedEvent?.id]);
-
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [step]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape' && isOpen) onClose(); };
@@ -276,7 +265,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
           })}
         </div>
 
-        {/* SCROLLABLE BODY */}
+        {/* SCROLLABLE BODY — callback ref binds wheel listener when node enters DOM */}
         <div
           ref={scrollRef}
           className="relative z-10 flex-1 overflow-y-auto overscroll-contain"
@@ -388,8 +377,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                   <h4 className="font-display text-3xl md:text-4xl text-white mb-2">Confirmar reserva</h4>
                   <p className="text-sm text-white/50 mb-5">Revisa el resumen antes de proceder al pago.</p>
                   <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-4">
-
-                    {/* Event details grid */}
                     <div className="grid grid-cols-2 gap-3">
                       {([
                         ['Evento', selectedEvent.venue],
@@ -403,7 +390,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                         </div>
                       ))}
                     </div>
-
                     <div className="flex flex-wrap items-end justify-between gap-4 border-t border-white/10 pt-4">
                       <div>
                         <p className="font-mono-custom text-[9px] uppercase tracking-[0.22em] text-white/35 mb-2">Tu selección</p>
@@ -437,22 +423,14 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                         </button>
                       </div>
                     </div>
-
                     <div className="space-y-2 border-t border-white/10 pt-4">
-                      <div className="flex justify-between font-mono-custom text-sm text-white/55">
-                        <span>Subtotal</span>
-                        <span className="text-white">{fmt(selectedTicket.price * qty)}</span>
-                      </div>
-                      <div className="flex justify-between font-mono-custom text-sm text-white/55">
-                        <span>Cargo de servicio</span>
-                        <span className="text-white">{fmt(serviceFee)}</span>
-                      </div>
+                      <div className="flex justify-between font-mono-custom text-sm text-white/55"><span>Subtotal</span><span className="text-white">{fmt(selectedTicket.price * qty)}</span></div>
+                      <div className="flex justify-between font-mono-custom text-sm text-white/55"><span>Cargo de servicio</span><span className="text-white">{fmt(serviceFee)}</span></div>
                       <div className="flex justify-between pt-2 border-t border-white/10">
                         <span className="font-display text-xl text-white">Total</span>
                         <span className="font-display text-2xl" style={{ color: selectedTicket.accentColor }}>{fmt(total)}</span>
                       </div>
                     </div>
-
                     <div className="flex flex-wrap gap-3 pt-1">
                       <button
                         className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 active:bg-white/10 transition-colors"
@@ -480,9 +458,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                   <h5 className="font-display text-xl text-white mb-1">{selectedEvent.venue}</h5>
                   <p className="text-xs text-white/45 mb-3">{selectedEvent.city} · {selectedEvent.date} · {selectedEvent.time}</p>
                   <div className="flex flex-wrap gap-1.5">
-                    <span className="px-2.5 py-1 rounded-full bg-aira-blue/20 text-aira-lime text-[9px] font-mono-custom uppercase tracking-[0.18em]">
-                      {selectedEvent.venueType}
-                    </span>
+                    <span className="px-2.5 py-1 rounded-full bg-aira-blue/20 text-aira-lime text-[9px] font-mono-custom uppercase tracking-[0.18em]">{selectedEvent.venueType}</span>
                     {selectedTicket && (
                       <span
                         className="px-2.5 py-1 rounded-full text-[9px] font-mono-custom uppercase tracking-[0.18em]"
