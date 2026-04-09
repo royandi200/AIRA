@@ -114,13 +114,38 @@ const ZONE_BORDERS: Record<string, string> = {
 const fmt = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 
-// ─── Inline wheel handler: stops the event from bubbling to the page ──────────
-// React's synthetic onWheel is passive by default in modern browsers which means
-// we cannot call preventDefault() from it. We therefore use a native listener
-// attached directly to the DOM node via useCallback + ref callback.
-function useScrollRef() {
-  const ref = useRef<HTMLDivElement>(null);
+// ─── Body scroll lock — iOS-safe ─────────────────────────────────────────────
+// On iOS, overflow:hidden on body alone does NOT freeze the page — the browser
+// still allows momentum scrolling. The fix is to also set position:fixed + save/
+// restore scrollY so the page doesn't jump to top on unlock.
+function useLockBodyScroll(isOpen: boolean) {
+  useEffect(() => {
+    if (!isOpen) return;
 
+    const scrollY = window.scrollY;
+    const body    = document.body;
+
+    // Freeze
+    body.style.overflow = 'hidden';
+    body.style.position = 'fixed';
+    body.style.top      = `-${scrollY}px`;
+    body.style.width    = '100%';
+
+    return () => {
+      // Unfreeze — MUST restore position before scrollTo, order matters
+      body.style.overflow = '';
+      body.style.position = '';
+      body.style.top      = '';
+      body.style.width    = '';
+      // Restore scroll position without visible jump
+      window.scrollTo({ top: scrollY, behavior: 'instant' as ScrollBehavior });
+    };
+  }, [isOpen]);
+}
+
+// ─── Wheel handler: desktop-only, prevents scroll leaking to the page ─────────
+// We run this only once (on mount) since the scrollable element never changes.
+function useWheelLock(ref: React.RefObject<HTMLDivElement>) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -128,38 +153,37 @@ function useScrollRef() {
     const handler = (e: WheelEvent) => {
       const { scrollTop, scrollHeight, clientHeight } = el;
       const canScrollUp   = scrollTop > 0;
-      const canScrollDown = scrollTop + clientHeight < scrollHeight;
+      const canScrollDown = scrollTop + clientHeight < scrollHeight - 1;
 
-      // If the container can absorb this delta — let it scroll normally,
-      // but prevent the event from reaching the page/body.
       if ((e.deltaY < 0 && canScrollUp) || (e.deltaY > 0 && canScrollDown)) {
         e.stopPropagation();
-        // Manually drive the scroll so the browser treats this element as the target
         el.scrollTop += e.deltaY;
         e.preventDefault();
       } else {
-        // At boundary — just block propagation, don't prevent default
-        // (allows native rubber-band on macOS at boundaries)
         e.stopPropagation();
       }
     };
 
-    // MUST be non-passive to call preventDefault()
     el.addEventListener('wheel', handler, { passive: false });
     return () => el.removeEventListener('wheel', handler);
-  });
-  // No dependency array → re-runs after every render to always have fresh ref
-
-  return ref;
+  // Intentionally empty — we only want to bind once on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 }
 
 const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) => {
-  const [step, setStep]                     = useState(1);
-  const [qty, setQty]                       = useState(1);
+  const [step, setStep]                         = useState(1);
+  const [qty, setQty]                           = useState(1);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [selectedZoneId, setSelectedZoneId]     = useState<string | null>(null);
 
-  const scrollRef = useScrollRef();
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // iOS-safe body lock
+  useLockBodyScroll(isOpen);
+
+  // Desktop wheel containment (bound once on mount)
+  useWheelLock(scrollRef);
 
   /* reset on open / event change */
   useEffect(() => {
@@ -182,17 +206,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
     return () => window.removeEventListener('keydown', handler);
   }, [isOpen, onClose]);
 
-  /*
-   * ─── Lock body scroll while modal is open ────────────────────────────────
-   * Simple overflow:hidden — no position:fixed trick that can shift layout.
-   */
-  useEffect(() => {
-    if (!isOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
-  }, [isOpen]);
-
   const zones = useMemo(() => (selectedEvent ? VENUE_ZONES[selectedEvent.venueType] : []), [selectedEvent]);
 
   const selectedTicket = useMemo(
@@ -210,7 +223,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
 
   if (!isOpen || !selectedEvent) return null;
 
-  /* ─── STEP INDICATORS ─── */
   const steps = [
     { n: 1, label: 'Experiencia' },
     { n: 2, label: 'Zona' },
@@ -304,11 +316,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
           })}
         </div>
 
-        {/*
-          ─ SCROLLABLE BODY ─
-          scrollRef attaches a native non-passive wheel listener every render,
-          guaranteeing the handler is always bound when the element is in the DOM.
-        */}
+        {/* ─ SCROLLABLE BODY ─ */}
         <div
           ref={scrollRef}
           className="relative z-10 flex-1 overflow-y-auto overscroll-contain"
