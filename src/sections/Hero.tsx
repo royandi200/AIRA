@@ -91,8 +91,8 @@ const Hero = () => {
 
       {/* Hero content */}
       <div className="relative z-10 flex flex-col items-center justify-end h-full pb-20 px-4">
-        {/* Logo / Brand — 200% del tamaño original (h-10 → h-20) */}
-        <div className="absolute top-6 left-8">
+        {/* Logo / Brand — alineado verticalmente con el nav pill (top-4, flex items-center) */}
+        <div className="absolute top-4 left-8 flex items-center" style={{ height: 'calc(1rem + 2.5rem)' }}>
           <img src="/AIRA BLANCO.png" alt="AIRA Logo" className="h-20 w-auto" />
         </div>
 
