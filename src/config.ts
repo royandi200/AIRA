@@ -64,6 +64,9 @@ export interface Album {
   id: number;
   title: string;
   subtitle: string;
+  description: string;
+  tag: string;
+  price: string;
   image: string;
 }
 
@@ -77,26 +80,38 @@ export const albumCubeConfig: AlbumCubeConfig = {
   albums: [
     {
       id: 1,
-      title: "MAIN STAGE",
-      subtitle: "EXPERIENCIA",
-      image: "/main-stage.jpg",
-    },
-    {
-      id: 2,
-      title: "BEACH STAGE",
-      subtitle: "NATURALEZA",
-      image: "/beach-party.jpg",
-    },
-    {
-      id: 3,
-      title: "YACHT PARTY",
-      subtitle: "EXCLUSIVIDAD",
+      title: "AFTER YATES",
+      subtitle: "DÍA 1",
+      description: "La fiesta arranca en el agua. Yacht party en el embalse más mágico de Colombia, rodeado de naturaleza y música electrónica.",
+      tag: "15 AGO",
+      price: "$80.000",
       image: "/yacht-party.jpg",
     },
     {
+      id: 2,
+      title: "MAJESTIC",
+      subtitle: "DÍA 2",
+      description: "El yate de agua dulce más grande de Latinoamérica se convierte en el escenario más exclusivo. Fiesta en Majestic y noche en Stage Joinn.",
+      tag: "16 AGO",
+      price: "$150.000",
+      image: "/main-stage.jpg",
+    },
+    {
+      id: 3,
+      title: "OPEN DECK",
+      subtitle: "DÍA 3",
+      description: "El cierre perfecto. Open deck en el embalse al atardecer, con sessiones de meditación y la mejor música para despedir el festival.",
+      tag: "17 AGO",
+      price: "$50.000",
+      image: "/beach-party.jpg",
+    },
+    {
       id: 4,
-      title: "VIP LOUNGE",
-      subtitle: "LUJO",
+      title: "PASS VIP",
+      subtitle: "UPGRADE",
+      description: "Acceso exclusivo al Yate VIP, Zona VIP en Majestic y Zona VIP en Stage Joinn. La experiencia AIRA en su máxima expresión.",
+      tag: "3 DÍAS",
+      price: "$500.000",
       image: "/vip-area.jpg",
     },
   ],
