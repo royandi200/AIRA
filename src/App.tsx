@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import './index.css';
 import useLenis from './hooks/useLenis';
 import { siteConfig } from './config';
@@ -7,41 +7,44 @@ import AlbumCube from './sections/AlbumCube';
 import ParallaxGallery from './sections/ParallaxGallery';
 import TourSchedule from './sections/TourSchedule';
 import TicketReserve, { type ReservationEvent } from './sections/TicketReserve';
+import SuiteReserve from './sections/SuiteReserve';
 import Footer from './sections/Footer';
 
 function App() {
   useLenis();
 
-  const [selectedEvent, setSelectedEvent] = useState<ReservationEvent | null>(null);
-  const [isReserveOpen, setIsReserveOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent]   = useState<ReservationEvent | null>(null);
+  const [isReserveOpen, setIsReserveOpen]   = useState(false);
+  const [isSuiteOpen,   setIsSuiteOpen]     = useState(false);
 
   useEffect(() => {
-    if (siteConfig.title) {
-      document.title = siteConfig.title;
-    }
+    if (siteConfig.title) document.title = siteConfig.title;
     const metaViewport = document.querySelector('meta[name="viewport"]');
     if (metaViewport) {
-      metaViewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+      metaViewport.setAttribute(
+        'content',
+        'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no',
+      );
     }
   }, []);
 
   const reservationEvent = useMemo(() => selectedEvent, [selectedEvent]);
 
-  const handleOpenReservation = (event: ReservationEvent) => {
+  const handleOpenReservation = useCallback((event: ReservationEvent) => {
     setSelectedEvent(event);
     setIsReserveOpen(true);
-    document.body.style.overflow = 'hidden';
-  };
+  }, []);
 
-  const handleCloseReservation = () => {
+  const handleCloseReservation = useCallback(() => {
     setIsReserveOpen(false);
-    document.body.style.overflow = '';
-  };
+  }, []);
 
+  const handleOpenSuite  = useCallback(() => setIsSuiteOpen(true),  []);
+  const handleCloseSuite = useCallback(() => setIsSuiteOpen(false), []);
+
+  // Cleanup on unmount
   useEffect(() => {
-    return () => {
-      document.body.style.overflow = '';
-    };
+    return () => { document.body.style.overflow = ''; };
   }, []);
 
   return (
@@ -49,13 +52,21 @@ function App() {
       <Hero />
       <AlbumCube />
       <ParallaxGallery />
-      <TourSchedule onOpenReservation={handleOpenReservation} />
+      <TourSchedule
+        onOpenReservation={handleOpenReservation}
+        onOpenSuite={handleOpenSuite}
+      />
       <Footer />
 
       <TicketReserve
         isOpen={isReserveOpen}
         selectedEvent={reservationEvent}
         onClose={handleCloseReservation}
+      />
+
+      <SuiteReserve
+        isOpen={isSuiteOpen}
+        onClose={handleCloseSuite}
       />
     </main>
   );
