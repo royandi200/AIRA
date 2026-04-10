@@ -18,16 +18,13 @@ const Cube = ({ rotationProgress }: CubeProps) => {
 
   const textures = useTexture(albumCubeConfig.cubeTextures);
 
-  // Responsive cube size
   const cubeSize = Math.min(viewport.width * 0.4, 3);
 
   useFrame(() => {
     if (meshRef.current) {
-      // Map rotation progress (0-1) to rotation angles
       const targetRotationY = rotationProgress * Math.PI * 2;
       const targetRotationX = Math.sin(rotationProgress * Math.PI) * 0.3;
 
-      // Smooth interpolation
       meshRef.current.rotation.y = THREE.MathUtils.lerp(
         meshRef.current.rotation.y,
         targetRotationY,
@@ -58,17 +55,19 @@ const Cube = ({ rotationProgress }: CubeProps) => {
 };
 
 const AlbumCube = () => {
-  // Null check: if config is empty, do not render
   if (albumCubeConfig.albums.length === 0 || albumCubeConfig.cubeTextures.length === 0) {
     return null;
   }
 
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLDivElement>(null);
-  const [rotationProgress, setRotationProgress] = useState(0);
+  const sectionRef   = useRef<HTMLDivElement>(null);
+  const titleRef     = useRef<HTMLDivElement>(null);
+  const overlayRef   = useRef<HTMLDivElement>(null);
+  const [rotationProgress,  setRotationProgress]  = useState(0);
   const [currentAlbumIndex, setCurrentAlbumIndex] = useState(0);
-  const [blurAmount, setBlurAmount] = useState(0);
-  const [letterSpacing, setLetterSpacing] = useState(0);
+  const [blurAmount,        setBlurAmount]        = useState(0);
+  const [letterSpacing,     setLetterSpacing]     = useState(0);
+  const [isTransitioning,   setIsTransitioning]   = useState(false);
+  const prevIndexRef = useRef(0);
   const scrollTriggerRef = useRef<ScrollTrigger | null>(null);
 
   useEffect(() => {
@@ -84,31 +83,44 @@ const AlbumCube = () => {
         const progress = self.progress;
         setRotationProgress(progress);
 
-        // Calculate current album index
         const albumIndex = Math.min(
           Math.floor(progress * 4),
           albumCubeConfig.albums.length - 1
         );
-        setCurrentAlbumIndex(albumIndex);
 
-        // Velocity-based blur effect
+        // trigger fade transition when index changes
+        if (albumIndex !== prevIndexRef.current) {
+          prevIndexRef.current = albumIndex;
+          setIsTransitioning(true);
+          setTimeout(() => {
+            setCurrentAlbumIndex(albumIndex);
+            setIsTransitioning(false);
+          }, 180);
+        }
+
         const velocity = Math.abs(self.getVelocity());
-        const targetBlur = Math.min(velocity / 500, 8);
+        const targetBlur    = Math.min(velocity / 500, 8);
         const targetSpacing = Math.min(velocity / 100, 30);
 
-        setBlurAmount(prev => prev + (targetBlur - prev) * 0.2);
-        setLetterSpacing(prev => prev + (targetSpacing - prev) * 0.2);
+        setBlurAmount(prev    => prev    + (targetBlur    - prev)    * 0.2);
+        setLetterSpacing(prev => prev    + (targetSpacing - prev)    * 0.2);
       },
     });
 
     scrollTriggerRef.current = st;
-
-    return () => {
-      st.kill();
-    };
+    return () => { st.kill(); };
   }, []);
 
   const currentAlbum = albumCubeConfig.albums[currentAlbumIndex];
+
+  // accent color per experience
+  const accentColors: Record<number, string> = {
+    0: '#004fff',   // Día 1 — azul AIRA
+    1: '#e1fe52',   // Día 2 — lima AIRA
+    2: '#ffffff',   // Día 3 — blanco
+    3: '#facc15',   // Pass VIP — dorado
+  };
+  const accent = accentColors[currentAlbumIndex] ?? '#e1fe52';
 
   return (
     <section
@@ -116,17 +128,19 @@ const AlbumCube = () => {
       ref={sectionRef}
       className="relative w-full h-screen bg-void-black overflow-hidden"
     >
-      {/* Background title with blur effect */}
+      {/* Background watermark — experience name blurred */}
       <div
         ref={titleRef}
         className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
         style={{
           filter: `blur(${blurAmount}px)`,
           letterSpacing: `${letterSpacing}px`,
+          transition: 'opacity 0.18s ease',
+          opacity: isTransitioning ? 0 : 1,
         }}
       >
-        <h2 className="font-display text-[20vw] text-white/5 uppercase whitespace-nowrap select-none">
-          {currentAlbum.subtitle}
+        <h2 className="font-display text-[18vw] text-white/5 uppercase whitespace-nowrap select-none">
+          {currentAlbum.title}
         </h2>
       </div>
 
@@ -159,45 +173,96 @@ const AlbumCube = () => {
         </Canvas>
       </div>
 
-      {/* Album info overlay */}
-      <div className="absolute bottom-12 left-12 z-20">
-        <p className="font-mono-custom text-xs text-neon-soft/60 uppercase tracking-wider mb-2">
-          Album {String(currentAlbum.id).padStart(2, '0')} / {String(albumCubeConfig.albums.length).padStart(2, '0')}
-        </p>
-        <h3 className="font-display text-5xl md:text-7xl text-white mb-2 transition-all duration-300">
-          {currentAlbum.title}
-        </h3>
-        <p className="font-mono-custom text-sm text-white/50">
-          {currentAlbum.subtitle}
-        </p>
-      </div>
+      {/* ── OVERLAY INFERIOR — info de la experiencia ── */}
+      <div
+        ref={overlayRef}
+        className="absolute bottom-0 left-0 right-0 z-20 px-8 md:px-12 pb-10 pt-20"
+        style={{
+          background: 'linear-gradient(to top, rgba(3,6,18,0.92) 0%, rgba(3,6,18,0.5) 60%, transparent 100%)',
+          transition: 'opacity 0.18s ease',
+          opacity: isTransitioning ? 0 : 1,
+        }}
+      >
+        <div className="flex items-end justify-between gap-6 flex-wrap">
 
-      {/* Progress indicator */}
-      <div className="absolute right-12 top-1/2 -translate-y-1/2 z-20">
-        <div className="flex flex-col gap-3">
-          {albumCubeConfig.albums.map((album, index) => (
-            <div
-              key={album.id}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                index === currentAlbumIndex
-                  ? 'bg-neon-cyan w-2 h-8'
-                  : 'bg-white/20'
-              }`}
-            />
-          ))}
+          {/* Left — day + title + description */}
+          <div className="max-w-lg">
+            {/* Day pill */}
+            <div className="flex items-center gap-3 mb-3">
+              <span
+                className="px-3 py-1 rounded-full font-mono-custom text-[9px] uppercase tracking-[0.3em] border"
+                style={{
+                  color: accent,
+                  borderColor: `${accent}40`,
+                  background: `${accent}15`,
+                }}
+              >
+                {currentAlbum.subtitle}
+              </span>
+              <span
+                className="font-mono-custom text-[9px] uppercase tracking-[0.25em]"
+                style={{ color: `${accent}80` }}
+              >
+                {currentAlbum.tag}
+              </span>
+            </div>
+
+            {/* Title */}
+            <h3
+              className="font-display text-5xl md:text-7xl leading-none mb-3"
+              style={{ color: '#ffffff' }}
+            >
+              {currentAlbum.title}
+            </h3>
+
+            {/* Description */}
+            <p className="text-sm md:text-base text-white/55 leading-relaxed max-w-md">
+              {currentAlbum.description}
+            </p>
+          </div>
+
+          {/* Right — price + counter */}
+          <div className="flex flex-col items-end gap-4">
+            {/* Price */}
+            <div className="text-right">
+              <p className="font-mono-custom text-[9px] uppercase tracking-[0.25em] text-white/35 mb-1">Desde</p>
+              <p
+                className="font-display text-4xl md:text-5xl"
+                style={{ color: accent }}
+              >
+                {currentAlbum.price}
+              </p>
+              <p className="font-mono-custom text-[9px] text-white/35 mt-0.5">por persona</p>
+            </div>
+
+            {/* Dot progress */}
+            <div className="flex gap-2">
+              {albumCubeConfig.albums.map((_, index) => (
+                <div
+                  key={index}
+                  className="rounded-full transition-all duration-400"
+                  style={{
+                    width:  index === currentAlbumIndex ? '24px' : '6px',
+                    height: '6px',
+                    background: index === currentAlbumIndex ? accent : 'rgba(255,255,255,0.2)',
+                  }}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Scroll hint */}
-      <div className="absolute bottom-12 right-12 z-20">
-        <p className="font-mono-custom text-xs text-white/40 uppercase tracking-wider">
+      <div className="absolute bottom-10 right-12 z-20">
+        <p className="font-mono-custom text-xs text-white/30 uppercase tracking-wider">
           {albumCubeConfig.scrollHint}
         </p>
       </div>
 
       {/* Decorative corner lines */}
-      <div className="absolute top-12 left-12 w-20 h-px bg-gradient-to-r from-neon-cyan/50 to-transparent" />
-      <div className="absolute top-12 left-12 w-px h-20 bg-gradient-to-b from-neon-cyan/50 to-transparent" />
+      <div className="absolute top-12 left-12 w-20 h-px bg-gradient-to-r from-aira-lime/40 to-transparent" />
+      <div className="absolute top-12 left-12 w-px h-20 bg-gradient-to-b from-aira-lime/40 to-transparent" />
     </section>
   );
 };
