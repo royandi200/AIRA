@@ -261,6 +261,9 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
 
   useLockBodyScroll(isOpen);
 
+  // true cuando el flujo es día 1, 2 o 3 (no paquete)
+  const isDayTicket = accessType === 'day1' || accessType === 'day2' || accessType === 'day3';
+
   const scrollRef = useCallback((el: HTMLDivElement | null) => {
     if (!el) return;
     const handler = (e: WheelEvent) => {
@@ -276,7 +279,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
     el.addEventListener('wheel', handler, { passive: false });
   }, []);
 
-  // Reset cada vez que se abre (o cambia el evento)
   useEffect(() => {
     if (!isOpen) return;
     const ia = selectedEvent?.initialAccessType ?? null;
@@ -315,11 +317,14 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
 
   const serviceFee = Math.round(basePrice * 0.05);
   const passTotal  = addPassVip   ? passVipPrice    * qty : 0;
-  const transTotal = addTransport ? TRANSPORT_PRICE * qty : 0;
+  // Transporte solo disponible para paquete
+  const transTotal = (!isDayTicket && addTransport) ? TRANSPORT_PRICE * qty : 0;
   const total      = basePrice + serviceFee + passTotal + transTotal;
 
   const selectedPlan = ABONO_PLANS.find(p => p.id === abonoPlanId) ?? ABONO_PLANS[0];
-  const primerPago   = paymentMode === 'full' ? total : Math.ceil(total * selectedPlan.pct);
+  // Cuotas solo disponibles para paquete; días siempre pago completo
+  const effectivePaymentMode: PaymentMode = isDayTicket ? 'full' : paymentMode;
+  const primerPago = effectivePaymentMode === 'full' ? total : Math.ceil(total * selectedPlan.pct);
 
   const ticketLabel = selectedDay ? `${selectedDay.label} · ${selectedDay.title}` : null;
   const stageLabel  = accessType === 'package' && selectedStage ? selectedStage.label : null;
@@ -350,8 +355,12 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
         body: JSON.stringify({
           name: buyerName.trim(), email: buyerEmail.trim(), phone: buyerPhone.trim(),
           eventId: selectedEvent?.id, accessType, ticketLabel, stageLabel,
-          qty, basePrice, addPassVip, passVipPrice, addTransport, total,
-          paymentMode, abonoPlan: paymentMode === 'abono' ? abonoPlanId : null, primerPago,
+          qty, basePrice, addPassVip, passVipPrice,
+          addTransport: isDayTicket ? false : addTransport,
+          total,
+          paymentMode: effectivePaymentMode,
+          abonoPlan: effectivePaymentMode === 'abono' ? abonoPlanId : null,
+          primerPago,
           items: [{
             ticketTypeId: 0, quantity: qty,
             _unitPrice: basePrice > 0 ? Math.round(basePrice / qty) : Math.round(total / qty),
@@ -376,14 +385,12 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
 
   if (!isOpen || !selectedEvent) return null;
 
-  // Pills: si ya hay accessType definido (flujo directo), no mostrar step 1
   const visibleSteps = step === 1
     ? [{ n: 1, label: 'Acceso' }, { n: 2, label: 'Zona' }, { n: 3, label: 'Confirmar' }]
     : accessType === 'package'
       ? [{ n: 1, label: 'Acceso' }, { n: 2, label: 'Etapa' }, { n: 3, label: 'Confirmar' }]
       : [{ n: 3, label: 'Confirmar' }];
 
-  // Título dinámico del modal según el día
   const modalTitle = accessType === 'day1' ? 'DÍA 1 · After Fiesta de Yates'
     : accessType === 'day2' ? 'DÍA 2 · Fiesta Majestic & Stage Joinn'
     : accessType === 'day3' ? 'DÍA 3 · Open Deck'
@@ -446,7 +453,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
             {/* MAIN PANEL */}
             <div className="p-5 md:p-8 lg:border-r border-white/10">
 
-              {/* ── STEP 1: Selección general (sin initialAccessType) ── */}
+              {/* ── STEP 1 ── */}
               {step === 1 && (
                 <div>
                   <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-2">Paso 1</p>
@@ -533,14 +540,14 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                 </div>
               )}
 
-              {/* ── STEP 3: Confirmar y pagar ── */}
+              {/* ── STEP 3: Confirmar ── */}
               {step === 3 && (
                 <div>
                   <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-2">
                     {accessType === 'package' ? 'Paso 3' : 'Confirmar'}
                   </p>
                   <h4 className="font-display text-3xl md:text-4xl text-white mb-1">Confirmar y pagar</h4>
-                  <p className="text-sm text-white/50 mb-5">Revisa tu pedido, elige cómo pagar y completa tus datos.</p>
+                  <p className="text-sm text-white/50 mb-5">Revisa tu pedido y completa tus datos.</p>
 
                   <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-5">
 
@@ -591,37 +598,41 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       <PassVipBanner addPassVip={addPassVip} setAddPassVip={setAddPassVip} qty={qty} passVipPrice={passVipPrice} compact />
                     </div>
 
-                    {/* Transporte */}
-                    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <Bus className="w-4 h-4 text-white/40" />
-                        <div>
-                          <p className="text-sm text-white">Transporte Bogotá – Guatapé</p>
-                          <p className="font-mono-custom text-[9px] text-white/40">Ida y regreso · {fmt(TRANSPORT_PRICE)}/persona</p>
+                    {/* Transporte — solo para paquete */}
+                    {!isDayTicket && (
+                      <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Bus className="w-4 h-4 text-white/40" />
+                          <div>
+                            <p className="text-sm text-white">Transporte Bogotá – Guatapé</p>
+                            <p className="font-mono-custom text-[9px] text-white/40">Ida y regreso · {fmt(TRANSPORT_PRICE)}/persona</p>
+                          </div>
                         </div>
+                        <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                          <span className="font-display text-sm text-white/70">{fmt(TRANSPORT_PRICE)}</span>
+                          <input type="checkbox" checked={addTransport} onChange={e => setAddTransport(e.target.checked)} className="w-4 h-4 accent-white" />
+                        </label>
                       </div>
-                      <label className="flex items-center gap-2 cursor-pointer shrink-0">
-                        <span className="font-display text-sm text-white/70">{fmt(TRANSPORT_PRICE)}</span>
-                        <input type="checkbox" checked={addTransport} onChange={e => setAddTransport(e.target.checked)} className="w-4 h-4 accent-white" />
-                      </label>
-                    </div>
+                    )}
 
                     {/* Totales */}
                     <div className="space-y-2 border-t border-white/10 pt-4">
                       <div className="flex justify-between font-mono-custom text-sm text-white/55"><span>Subtotal</span><span className="text-white">{fmt(basePrice)}</span></div>
                       <div className="flex justify-between font-mono-custom text-sm text-white/55"><span>Cargo de servicio (5%)</span><span className="text-white">{fmt(serviceFee)}</span></div>
-                      {addPassVip   && <div className="flex justify-between font-mono-custom text-sm text-white/55"><span>Pass VIP ×{qty}</span><span className="text-yellow-300">{fmt(passTotal)}</span></div>}
-                      {addTransport && <div className="flex justify-between font-mono-custom text-sm text-white/55"><span>Transporte ×{qty}</span><span className="text-white/70">{fmt(transTotal)}</span></div>}
+                      {addPassVip && <div className="flex justify-between font-mono-custom text-sm text-white/55"><span>Pass VIP ×{qty}</span><span className="text-yellow-300">{fmt(passTotal)}</span></div>}
+                      {!isDayTicket && addTransport && <div className="flex justify-between font-mono-custom text-sm text-white/55"><span>Transporte ×{qty}</span><span className="text-white/70">{fmt(transTotal)}</span></div>}
                       <div className="flex justify-between pt-2 border-t border-white/10">
                         <span className="font-display text-xl text-white">Total</span>
                         <span className="font-display text-2xl text-aira-lime">{fmt(total)}</span>
                       </div>
                     </div>
 
-                    {/* Pago */}
-                    <div className="border-t border-white/10 pt-5">
-                      <AbonoSelector paymentMode={paymentMode} setPaymentMode={setPaymentMode} abonoPlanId={abonoPlanId} setAbonoPlanId={setAbonoPlanId} total={total} />
-                    </div>
+                    {/* Pago — cuotas solo para paquete */}
+                    {!isDayTicket && (
+                      <div className="border-t border-white/10 pt-5">
+                        <AbonoSelector paymentMode={paymentMode} setPaymentMode={setPaymentMode} abonoPlanId={abonoPlanId} setAbonoPlanId={setAbonoPlanId} total={total} />
+                      </div>
+                    )}
 
                     {/* Datos comprador */}
                     <div className="border-t border-white/10 pt-5">
@@ -642,7 +653,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                     )}
 
                     <div className="flex flex-wrap gap-3 pt-1 items-center">
-                      {/* Volver: si vino de un botón directo (initialAccessType), cerrar en vez de ir al step 1 */}
                       {!selectedEvent.initialAccessType || accessType === 'package' ? (
                         <button
                           className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 transition-colors"
@@ -657,7 +667,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       >
                         {isSubmitting
                           ? <><Loader2 className="w-4 h-4 animate-spin" /> Procesando...</>
-                          : <><Ticket className="w-4 h-4" /> {paymentMode === 'abono' ? `Abonar ${fmt(primerPago)}` : `Pagar ${fmt(total)}`}</>
+                          : <><Ticket className="w-4 h-4" /> Pagar {fmt(total)}</>
                         }
                       </button>
                     </div>
@@ -683,7 +693,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                 </div>
               </div>
 
-              {/* Precio destacado del día seleccionado */}
               {selectedDay && (
                 <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                   <p className="font-mono-custom text-[9px] uppercase tracking-[0.24em] text-white/35 mb-2">{selectedDay.label} · Precio</p>
@@ -692,21 +701,24 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                 </div>
               )}
 
-              <div className="mt-4 rounded-2xl border border-aira-lime/15 bg-aira-lime/5 p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <CalendarClock className="w-4 h-4 text-aira-lime" />
-                  <p className="font-mono-custom text-[9px] uppercase tracking-[0.24em] text-aira-lime">Paga en cuotas</p>
+              {/* Cuotas en sidebar solo si es paquete */}
+              {!isDayTicket && (
+                <div className="mt-4 rounded-2xl border border-aira-lime/15 bg-aira-lime/5 p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <CalendarClock className="w-4 h-4 text-aira-lime" />
+                    <p className="font-mono-custom text-[9px] uppercase tracking-[0.24em] text-aira-lime">Paga en cuotas</p>
+                  </div>
+                  <div className="space-y-2">
+                    {ABONO_PLANS.map(plan => (
+                      <div key={plan.id} className="flex items-center justify-between rounded-xl bg-aira-lime/5 border border-aira-lime/10 px-3 py-2">
+                        <p className="font-mono-custom text-[9px] uppercase tracking-[0.15em] text-white/50">{plan.label}</p>
+                        <p className="font-mono-custom text-[9px] text-aira-lime">{Math.round(plan.pct * 100)}% ahora</p>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="font-mono-custom text-[8px] text-white/30 mt-3 leading-relaxed">Tu cupo queda reservado desde el primer abono.</p>
                 </div>
-                <div className="space-y-2">
-                  {ABONO_PLANS.map(plan => (
-                    <div key={plan.id} className="flex items-center justify-between rounded-xl bg-aira-lime/5 border border-aira-lime/10 px-3 py-2">
-                      <p className="font-mono-custom text-[9px] uppercase tracking-[0.15em] text-white/50">{plan.label}</p>
-                      <p className="font-mono-custom text-[9px] text-aira-lime">{Math.round(plan.pct * 100)}% ahora</p>
-                    </div>
-                  ))}
-                </div>
-                <p className="font-mono-custom text-[8px] text-white/30 mt-3 leading-relaxed">Tu cupo queda reservado desde el primer abono.</p>
-              </div>
+              )}
 
               <div className="mt-4 rounded-2xl border border-yellow-400/20 bg-yellow-400/5 p-4">
                 <div className="flex items-center gap-2 mb-3"><Sparkles className="w-4 h-4 text-yellow-300" /><p className="font-mono-custom text-[9px] uppercase tracking-[0.24em] text-yellow-300">Pass VIP</p></div>
