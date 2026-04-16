@@ -1,0 +1,293 @@
+import { useEffect, useState, useCallback } from 'react';
+
+const ADMIN_TOKEN_KEY = 'aira_admin_token';
+
+interface Overview {
+  revenue: {
+    total_revenue: number; paid_revenue: number;
+    total_orders: number; paid_orders: number;
+    pending_orders: number; cancelled_orders: number;
+  };
+  tickets: Array<{
+    name: string; access_type: string;
+    available_qty: number; sold_qty: number;
+    reserved_qty: number; price: number;
+  }>;
+  recentOrders: Array<{
+    id: number; order_ref: string; total: number; status: string;
+    payment_mode: string; reserved_until: string; created_at: string;
+    customer_name: string; customer_email: string;
+  }>;
+  dailyRevenue: Array<{ day: string; revenue: number; orders: number }>;
+}
+
+const fmt = (n: number) =>
+  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
+
+const statusColor: Record<string, string> = {
+  paid:      'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
+  pending:   'bg-amber-500/20   text-amber-300   border border-amber-500/30',
+  cancelled: 'bg-red-500/20     text-red-300     border border-red-500/30',
+};
+
+export default function AdminDashboard({ onClose }: { onClose: () => void }) {
+  const [token,    setToken]    = useState(() => sessionStorage.getItem(ADMIN_TOKEN_KEY) || '');
+  const [password, setPassword] = useState('');
+  const [authed,   setAuthed]   = useState(() => !!sessionStorage.getItem(ADMIN_TOKEN_KEY));
+  const [data,     setData]     = useState<Overview | null>(null);
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState('');
+  const [tab,      setTab]      = useState<'kpis'|'orders'|'tickets'>('kpis');
+
+  const fetchData = useCallback(async (tk: string) => {
+    setLoading(true); setError('');
+    try {
+      const r = await fetch('/api/admin?section=overview', {
+        headers: { 'x-admin-token': tk },
+      });
+      if (r.status === 401) { setAuthed(false); sessionStorage.removeItem(ADMIN_TOKEN_KEY); setError('Token inválido'); return; }
+      if (!r.ok) throw new Error(await r.text());
+      setData(await r.json());
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleLogin = () => {
+    sessionStorage.setItem(ADMIN_TOKEN_KEY, password);
+    setToken(password);
+    setAuthed(true);
+    fetchData(password);
+  };
+
+  useEffect(() => {
+    if (authed && token) fetchData(token);
+  }, [authed, token, fetchData]);
+
+  // Cerrar con Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  // ── Login ──────────────────────────────────────────────────────────────────
+  if (!authed) return (
+    <div className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-8 w-full max-w-sm">
+        <h2 className="text-white text-xl font-bold mb-1">Admin AIRA</h2>
+        <p className="text-zinc-400 text-sm mb-6">Ingresa el token de acceso</p>
+        <input
+          type="password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleLogin()}
+          placeholder="Token..."
+          className="w-full bg-zinc-800 border border-zinc-600 rounded-lg px-4 py-3 text-white placeholder-zinc-500 outline-none focus:border-zinc-400 mb-3"
+        />
+        {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
+        <button
+          onClick={handleLogin}
+          className="w-full bg-white text-black font-semibold rounded-lg py-3 hover:bg-zinc-200 transition-colors"
+        >Entrar</button>
+        <button onClick={onClose} className="w-full mt-3 text-zinc-500 text-sm hover:text-zinc-300 transition-colors">Cancelar</button>
+      </div>
+    </div>
+  );
+
+  // ── Dashboard ──────────────────────────────────────────────────────────────
+  const r = data?.revenue;
+  const maxRevenue = data?.dailyRevenue.length
+    ? Math.max(...data.dailyRevenue.map(d => d.revenue), 1)
+    : 1;
+
+  return (
+    <div className="fixed inset-0 z-[200] bg-black/95 overflow-y-auto">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-zinc-950/90 backdrop-blur border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-white font-bold text-lg tracking-tight">AIRA</span>
+          <span className="text-zinc-500 text-sm">/ Admin</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => fetchData(token)}
+            className="text-zinc-400 hover:text-white text-sm transition-colors flex items-center gap-1"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            Actualizar
+          </button>
+          <button onClick={onClose} className="text-zinc-400 hover:text-white transition-colors">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {loading && (
+          <div className="flex items-center justify-center py-24">
+            <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+          </div>
+        )}
+        {error && !loading && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-300 text-sm">{error}</div>
+        )}
+
+        {data && !loading && (
+          <>
+            {/* KPI Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+              {[
+                { label: 'Recaudado', value: fmt(r?.paid_revenue ?? 0), sub: 'pagos aprobados' },
+                { label: 'Total generado', value: fmt(r?.total_revenue ?? 0), sub: 'todas las órdenes' },
+                { label: 'Órdenes total', value: String(r?.total_orders ?? 0), sub: 'creadas' },
+                { label: 'Pagadas', value: String(r?.paid_orders ?? 0), sub: 'aprobadas Bold' },
+                { label: 'Pendientes', value: String(r?.pending_orders ?? 0), sub: 'sin pagar' },
+                { label: 'Canceladas', value: String(r?.cancelled_orders ?? 0), sub: 'rechazadas' },
+              ].map(kpi => (
+                <div key={kpi.label} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+                  <p className="text-zinc-500 text-xs uppercase tracking-widest mb-1">{kpi.label}</p>
+                  <p className="text-white text-xl font-bold tabular-nums">{kpi.value}</p>
+                  <p className="text-zinc-600 text-xs mt-0.5">{kpi.sub}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-1 mb-6 bg-zinc-900 border border-zinc-800 rounded-xl p-1 w-fit">
+              {(['kpis', 'orders', 'tickets'] as const).map(t => (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    tab === t
+                      ? 'bg-white text-black'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  {{ kpis: 'Ingresos', orders: 'Órdenes', tickets: 'Cupos' }[t]}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab: Ingresos (chart de barras) */}
+            {tab === 'kpis' && (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                <h3 className="text-white font-semibold mb-6">Ingresos últimos 30 días</h3>
+                {data.dailyRevenue.length === 0 ? (
+                  <p className="text-zinc-500 text-sm text-center py-12">Sin datos de ingresos aún</p>
+                ) : (
+                  <div className="flex items-end gap-1 h-48">
+                    {data.dailyRevenue.map(d => (
+                      <div key={d.day} className="flex-1 flex flex-col items-center gap-1 group">
+                        <div className="relative w-full">
+                          <div
+                            className="w-full bg-white/80 rounded-sm transition-all group-hover:bg-white"
+                            style={{ height: `${Math.round((d.revenue / maxRevenue) * 160)}px`, minHeight: d.revenue > 0 ? '4px' : '1px' }}
+                          />
+                          <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-zinc-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
+                            {d.day}<br />{fmt(d.revenue)}
+                          </div>
+                        </div>
+                        <span className="text-zinc-600 text-[10px] rotate-45 origin-left hidden md:block">
+                          {d.day.slice(5)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tab: Órdenes */}
+            {tab === 'orders' && (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-zinc-800">
+                        {['Ref', 'Cliente', 'Total', 'Modo', 'Estado', 'Fecha'].map(h => (
+                          <th key={h} className="text-left text-zinc-500 text-xs uppercase tracking-widest px-4 py-3 font-medium">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.recentOrders.map(o => (
+                        <tr key={o.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
+                          <td className="px-4 py-3 font-mono text-xs text-zinc-300">{o.order_ref}</td>
+                          <td className="px-4 py-3">
+                            <p className="text-white text-xs font-medium">{o.customer_name}</p>
+                            <p className="text-zinc-500 text-xs">{o.customer_email}</p>
+                          </td>
+                          <td className="px-4 py-3 text-white tabular-nums text-xs">{fmt(o.total)}</td>
+                          <td className="px-4 py-3">
+                            <span className="text-zinc-400 text-xs capitalize">{o.payment_mode}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor[o.status] ?? 'bg-zinc-700 text-zinc-300'}`}>
+                              {o.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-zinc-500 text-xs tabular-nums">
+                            {new Date(o.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {data.recentOrders.length === 0 && (
+                    <p className="text-zinc-500 text-sm text-center py-12">Sin órdenes aún</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Tab: Cupos */}
+            {tab === 'tickets' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {data.tickets.map(t => {
+                  const total = t.available_qty;
+                  const free  = Math.max(0, total - t.sold_qty - t.reserved_qty);
+                  const soldPct = total > 0 ? (t.sold_qty / total) * 100 : 0;
+                  const resPct  = total > 0 ? (t.reserved_qty / total) * 100 : 0;
+                  return (
+                    <div key={t.name} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <p className="text-white font-semibold text-sm">{t.name}</p>
+                          <p className="text-zinc-500 text-xs capitalize mt-0.5">{t.access_type}</p>
+                        </div>
+                        <span className="text-zinc-400 text-sm tabular-nums">{fmt(t.price)}</span>
+                      </div>
+                      {/* Barra de progreso */}
+                      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden flex mb-3">
+                        <div className="bg-emerald-500 h-full transition-all" style={{ width: `${soldPct}%` }} />
+                        <div className="bg-amber-400 h-full transition-all" style={{ width: `${resPct}%` }} />
+                      </div>
+                      <div className="flex gap-4 text-xs">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                          <span className="text-zinc-400">Vendidos: <b className="text-white">{t.sold_qty}</b></span>
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                          <span className="text-zinc-400">Reservados: <b className="text-white">{t.reserved_qty}</b></span>
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-zinc-600 inline-block" />
+                          <span className="text-zinc-400">Libres: <b className="text-white">{free}</b></span>
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
