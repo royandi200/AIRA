@@ -1,5 +1,18 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import pool from './db';
+import mysql from 'mysql2/promise';
+
+// Inline pool — evita el problema de resolución de módulos ESM en Vercel
+const pool = mysql.createPool({
+  host:               process.env.DB_HOST,
+  user:               process.env.DB_USER,
+  password:           process.env.DB_PASS,
+  database:           process.env.DB_NAME,
+  port:               Number(process.env.DB_PORT) || 3306,
+  waitForConnections: true,
+  connectionLimit:    10,
+  ssl:                { rejectUnauthorized: false },
+});
 
 async function generateOrderRef(conn: any): Promise<string> {
   const [rows]: any = await conn.query('SELECT COUNT(*) as total FROM orders');
@@ -9,11 +22,11 @@ async function generateOrderRef(conn: any): Promise<string> {
 
 function calcDueDate(cuotaNumber: number, cuotas: number, eventDate: string): string {
   const event = new Date(eventDate);
-  const now = Date.now();
-  const msRange = event.getTime() - now;
+  const now   = Date.now();
+  const msRange    = event.getTime() - now;
   const msPerCuota = msRange / cuotas;
-  const due = new Date(now + msPerCuota * cuotaNumber);
-  const final = due < event ? due : event;
+  const due        = new Date(now + msPerCuota * cuotaNumber);
+  const final      = due < event ? due : event;
   return final.toISOString().split('T')[0];
 }
 
@@ -24,74 +37,46 @@ async function validateAbonoEligibility(conn: any, items: any[]): Promise<void> 
       [item.ticketTypeId]
     );
     if (!tt) throw new Error(`Tipo de boleta ${item.ticketTypeId} no encontrado`);
-    const isVipPackage =
-      tt.access_type === 'package' && tt.name.toLowerCase().includes('vip');
-    if (!isVipPackage) {
-      throw new Error(
-        `El pago en cuotas solo está disponible para el Paquete VIP 3 Días. "${tt.name}" requiere pago completo.`
-      );
-    }
+    const isVipPackage = tt.access_type === 'package' && tt.name.toLowerCase().includes('vip');
+    if (!isVipPackage)
+      throw new Error(`El pago en cuotas solo está disponible para el Paquete VIP 3 Días. "${tt.name}" requiere pago completo.`);
   }
 }
 
-// ── Genera el link de pago Bold ────────────────────────────────────────────
-async function createBoldPaymentLink({
-  orderId,
-  orderRef,
-  amount,
-  customerName,
-  customerEmail,
-  customerPhone,
-  description,
-}: {
-  orderId: number;
-  orderRef: string;
-  amount: number;
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  description: string;
+async function createBoldPaymentLink(params: {
+  orderId: number; orderRef: string; amount: number;
+  customerName: string; customerEmail: string; customerPhone: string; description: string;
 }): Promise<string> {
   const BOLD_API_KEY = process.env.BOLD_API_KEY;
-  const BOLD_API_URL = 'https://api.bold.co/online/link/v1';
-  const FRONTEND_URL = process.env.VITE_APP_URL || process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : 'https://aira.vercel.app';
+  const BASE_URL     = process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : 'https://v0-aira-event.vercel.app';
 
-  const body = {
-    amount: {
-      currency: 'COP',
-      total_amount: Math.round(amount),
-    },
-    description,
-    order_id: orderRef,
-    redirect_url: `${FRONTEND_URL}/checkout/success?order_id=${orderId}`,
-    customer: {
-      full_name: customerName,
-      email: customerEmail,
-      phone: customerPhone,
-    },
-    metadata: {
-      internal_order_id: String(orderId),
-    },
-  };
-
-  const response = await fetch(BOLD_API_URL, {
-    method: 'POST',
+  const response = await fetch('https://api.bold.co/online/link/v1', {
+    method:  'POST',
     headers: {
-      'Content-Type': 'application/json',
-      Authorization: `x-api-key ${BOLD_API_KEY}`,
+      'Content-Type':  'application/json',
+      'Authorization': `x-api-key ${BOLD_API_KEY}`,
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      amount:       { currency: 'COP', total_amount: Math.round(params.amount) },
+      description:  params.description,
+      order_id:     params.orderRef,
+      redirect_url: `${BASE_URL}/checkout/success?order_id=${params.orderId}`,
+      customer: {
+        full_name: params.customerName,
+        email:     params.customerEmail,
+        phone:     params.customerPhone,
+      },
+      metadata: { internal_order_id: String(params.orderId) },
+    }),
   });
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`Bold API error ${response.status}: ${err}`);
+    throw new Error(`Bold API ${response.status}: ${err}`);
   }
-
   const data = await response.json();
-  // Bold retorna { payload: { url: 'https://checkout.bold.co/...' } }
   return data?.payload?.url ?? data?.url;
 }
 
@@ -110,16 +95,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     await conn.beginTransaction();
 
-    if (paymentMode === 'abono') {
-      await validateAbonoEligibility(conn, items);
-    }
+    if (paymentMode === 'abono') await validateAbonoEligibility(conn, items);
 
     // 1. Upsert usuario
     await conn.query(
       `INSERT INTO users (name, email, phone, doc_type, doc_number)
        VALUES (?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE name=VALUES(name), phone=VALUES(phone), updated_at=NOW()`,
-      [name, email, phone, docType || 'CC', docNumber]
+      [name, email, phone, docType || 'CC', docNumber || null]
     );
     const [[user]]: any = await conn.query('SELECT id FROM users WHERE email = ?', [email]);
 
@@ -131,15 +114,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         [item.ticketTypeId]
       );
       const unitPrice = item.isVip && tt.vip_price ? tt.vip_price : tt.price;
-      const remaining = tt.available_qty - tt.sold_qty - tt.reserved_qty;
-      if (remaining < item.quantity) throw new Error(`Sin cupos para la boleta seleccionada`);
-      subtotal += unitPrice * item.quantity;
-      item._unitPrice = unitPrice;
+      const remaining = tt.available_qty - tt.sold_qty - (tt.reserved_qty || 0);
+      if (remaining < item.quantity) throw new Error('Sin cupos para la boleta seleccionada');
+      subtotal         += unitPrice * item.quantity;
+      item._unitPrice   = unitPrice;
     }
 
     const serviceFee     = Math.round(subtotal * 0.05 * 100) / 100;
-    const passVipTotal   = addPassVip ? 500000 : 0;
-    const transportTotal = addTransport ? (150000 * transportPassengers) : 0;
+    const passVipTotal   = addPassVip   ? 500000 : 0;
+    const transportTotal = addTransport ? 150000 * transportPassengers : 0;
     const total          = subtotal + serviceFee + passVipTotal + transportTotal;
 
     // 3. Crear orden
@@ -181,8 +164,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 6. Cuotas abono
     if (paymentMode === 'abono' && abonoPlanKey) {
       const [[plan]]: any = await conn.query(
-        'SELECT * FROM abono_plans WHERE plan_key = ? AND is_active = 1',
-        [abonoPlanKey]
+        'SELECT * FROM abono_plans WHERE plan_key = ? AND is_active = 1', [abonoPlanKey]
       );
       if (!plan) throw new Error('Plan de abono no válido');
       const [[event]]: any = await conn.query(
@@ -190,47 +172,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
       const cuotaAmount = Math.round((total / plan.cuotas) * 100) / 100;
       for (let i = 1; i <= plan.cuotas; i++) {
-        const dueDate = calcDueDate(i, plan.cuotas, event.event_date);
         await conn.query(
           `INSERT INTO abono_payments (order_id, abono_plan_id, cuota_number, amount, due_date)
            VALUES (?,?,?,?,?)`,
-          [orderId, plan.id, i, cuotaAmount, dueDate]
+          [orderId, plan.id, i, cuotaAmount, calcDueDate(i, plan.cuotas, event.event_date)]
         );
       }
     }
 
     await conn.commit();
 
-    // 7. ── Generar link de pago Bold ──────────────────────────────────────
-    const [[eventRow]]: any = await pool.query(
-      'SELECT name FROM events WHERE id = ?', [eventId]
-    );
-    const description = `AIRA ${eventRow?.name ?? 'Evento'} · ${orderRef}`;
-
+    // 7. Bold payment link
+    const [[eventRow]]: any = await pool.query('SELECT name FROM events WHERE id = ?', [eventId]);
     const paymentUrl = await createBoldPaymentLink({
-      orderId,
-      orderRef,
-      amount: total,
-      customerName: name,
+      orderId, orderRef, amount: total,
+      customerName:  name,
       customerEmail: email,
       customerPhone: phone,
-      description,
+      description:   `AIRA ${eventRow?.name ?? 'Evento'} · ${orderRef}`,
     });
 
-    // Guardar bold_link en la orden
-    await pool.query(
-      'UPDATE orders SET bold_link = ? WHERE id = ?',
-      [paymentUrl, orderId]
-    );
+    await pool.query('UPDATE orders SET bold_link = ? WHERE id = ?', [paymentUrl, orderId]);
 
-    return res.status(201).json({
-      orderId,
-      orderRef,
-      total,
-      reservedUntil,
-      paymentMode,
-      paymentUrl,   // ← el frontend hace window.location.href = paymentUrl
-    });
+    return res.status(201).json({ orderId, orderRef, total, reservedUntil, paymentMode, paymentUrl });
 
   } catch (err: any) {
     await conn.rollback();

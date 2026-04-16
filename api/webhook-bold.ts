@@ -1,16 +1,26 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import pool from './db';   // ← pool compartido, no duplicado
+import mysql from 'mysql2/promise';
 import { createHmac } from 'crypto';
+
+const pool = mysql.createPool({
+  host:               process.env.DB_HOST,
+  user:               process.env.DB_USER,
+  password:           process.env.DB_PASS,
+  database:           process.env.DB_NAME,
+  port:               Number(process.env.DB_PORT) || 3306,
+  waitForConnections: true,
+  connectionLimit:    5,
+  ssl:                { rejectUnauthorized: false },
+});
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  // ── Verificar firma Bold ──────────────────────────────────────────────────
   const signature = req.headers['x-bold-signature'] as string | undefined;
   const rawBody   = JSON.stringify(req.body);
   const expected  = createHmac('sha256', process.env.BOLD_SECRET_KEY || '')
-    .update(rawBody)
-    .digest('hex');
+    .update(rawBody).digest('hex');
 
   if (!signature || signature !== expected) {
     console.warn('[webhook-bold] firma inválida');
@@ -28,43 +38,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-
     await conn.query(
       `UPDATE orders SET status = ?, payment_id = ?, updated_at = NOW() WHERE id = ?`,
       [newStatus, transaction_id || null, order_id]
     );
 
-    // Si el pago fue aprobado, consolidar cupos vendidos
     if (newStatus === 'paid') {
       const [items]: any = await conn.query(
-        'SELECT ticket_type_id, quantity FROM order_items WHERE order_id = ?',
-        [order_id]
+        'SELECT ticket_type_id, quantity FROM order_items WHERE order_id = ?', [order_id]
       );
-      for (const item of items) {
+      for (const item of items)
         await conn.query(
-          `UPDATE ticket_types
-           SET sold_qty     = sold_qty     + ?,
-               reserved_qty = reserved_qty - ?
-           WHERE id = ?`,
+          `UPDATE ticket_types SET sold_qty = sold_qty + ?, reserved_qty = reserved_qty - ? WHERE id = ?`,
           [item.quantity, item.quantity, item.ticket_type_id]
         );
-      }
     }
 
-    // Si fue rechazado, liberar cupos reservados
     if (newStatus === 'cancelled') {
       const [items]: any = await conn.query(
-        'SELECT ticket_type_id, quantity FROM order_items WHERE order_id = ?',
-        [order_id]
+        'SELECT ticket_type_id, quantity FROM order_items WHERE order_id = ?', [order_id]
       );
-      for (const item of items) {
+      for (const item of items)
         await conn.query(
-          `UPDATE ticket_types
-           SET reserved_qty = reserved_qty - ?
-           WHERE id = ?`,
+          `UPDATE ticket_types SET reserved_qty = reserved_qty - ? WHERE id = ?`,
           [item.quantity, item.ticket_type_id]
         );
-      }
     }
 
     await conn.commit();
