@@ -28,22 +28,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (firstCuota) amountToPay = firstCuota.amount;
     }
 
-    // Bold Checkout — genera el objeto de pago
-    // Docs: https://developers.bold.co
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+
+    // Bold Checkout
     const boldPayload = {
       amount: { currency: 'COP', total_amount: Math.round(amountToPay) },
       description: `${order.event_name} — ${orderRef}`,
       metadata: { order_ref: orderRef, order_id: order.id },
       customer: { name: order.name, email: order.email, phone: order.phone },
-      redirect_url: `${process.env.FRONTEND_URL}/checkout/success?ref=${orderRef}`,
-      cancel_url:   `${process.env.FRONTEND_URL}/checkout/cancelled?ref=${orderRef}`,
+      redirect_url: `${siteUrl}/checkout/success?ref=${orderRef}`,
+      cancel_url:   `${siteUrl}/checkout/cancelled?ref=${orderRef}`,
     };
 
     const boldRes = await fetch('https://checkout.bold.co/api/v1/checkout', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.BOLD_API_KEY}`
+        'Authorization': `x-api-key ${process.env.BOLD_API_KEY}`
       },
       body: JSON.stringify(boldPayload)
     });
