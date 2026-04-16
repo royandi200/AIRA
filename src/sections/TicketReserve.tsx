@@ -20,7 +20,6 @@ interface TicketReserveProps {
 type AccessType = 'day' | 'package';
 type PaymentMode = 'full' | 'abono';
 
-// Cuotas disponibles
 const ABONO_PLANS = [
   { id: 'a50',  label: '2 cuotas',  pct: 0.50, desc: '50% ahora · 50% antes del evento', badge: 'Popular' },
   { id: 'a33',  label: '3 cuotas',  pct: 0.33, desc: '33% ahora · 33% · 33% antes del evento', badge: null },
@@ -109,7 +108,6 @@ function PassVipBanner({ addPassVip, setAddPassVip, qty, compact = false }: {
   );
 }
 
-// ─── ABONO SELECTOR ───────────────────────────────────────────────────────────
 function AbonoSelector({ paymentMode, setPaymentMode, abonoPlanId, setAbonoPlanId, total }: {
   paymentMode: PaymentMode;
   setPaymentMode: (m: PaymentMode) => void;
@@ -124,7 +122,6 @@ function AbonoSelector({ paymentMode, setPaymentMode, abonoPlanId, setAbonoPlanI
     <div className="space-y-3">
       <p className="font-mono-custom text-[9px] uppercase tracking-[0.28em] text-white/35 mb-1">Forma de pago</p>
 
-      {/* Modo: Pago completo */}
       <button
         onClick={() => setPaymentMode('full')}
         className={`w-full text-left rounded-2xl border p-4 transition-all duration-200 flex items-center gap-4 ${
@@ -148,7 +145,6 @@ function AbonoSelector({ paymentMode, setPaymentMode, abonoPlanId, setAbonoPlanI
         <p className="font-display text-lg text-aira-lime shrink-0">{fmt(total)}</p>
       </button>
 
-      {/* Modo: Abono */}
       <button
         onClick={() => setPaymentMode('abono')}
         className={`w-full text-left rounded-2xl border p-4 transition-all duration-200 ${
@@ -174,7 +170,6 @@ function AbonoSelector({ paymentMode, setPaymentMode, abonoPlanId, setAbonoPlanI
           <p className="font-display text-lg text-aira-lime shrink-0">Desde {fmt(Math.ceil(total * 0.25))}</p>
         </div>
 
-        {/* Sub-planes de cuotas — solo visible si modo abono activo */}
         {paymentMode === 'abono' && (
           <div className="mt-4 pt-4 border-t border-white/10 space-y-2" onClick={e => e.stopPropagation()}>
             {ABONO_PLANS.map(plan => (
@@ -209,7 +204,6 @@ function AbonoSelector({ paymentMode, setPaymentMode, abonoPlanId, setAbonoPlanI
               </button>
             ))}
 
-            {/* Aviso legal abonos */}
             <div className="flex items-start gap-2.5 rounded-xl border border-amber-400/20 bg-amber-400/5 px-3 py-2.5 mt-1">
               <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
               <p className="font-mono-custom text-[9px] text-amber-300/70 leading-relaxed">
@@ -220,7 +214,6 @@ function AbonoSelector({ paymentMode, setPaymentMode, abonoPlanId, setAbonoPlanI
         )}
       </button>
 
-      {/* Resumen del primer pago */}
       {paymentMode === 'abono' && (
         <div className="rounded-xl border border-aira-lime/20 bg-aira-lime/5 px-4 py-3 flex items-center justify-between">
           <div>
@@ -237,7 +230,6 @@ function AbonoSelector({ paymentMode, setPaymentMode, abonoPlanId, setAbonoPlanI
   );
 }
 
-// ─── BUYER FORM ───────────────────────────────────────────────────────────────
 function BuyerForm({ name, email, phone, onChange }: {
   name: string; email: string; phone: string;
   onChange: (field: 'name' | 'email' | 'phone', value: string) => void;
@@ -262,7 +254,6 @@ function BuyerForm({ name, email, phone, onChange }: {
   );
 }
 
-// ─── COMPONENT ────────────────────────────────────────────────────────────────
 const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) => {
   const [step, setStep]                       = useState(1);
   const [accessType, setAccessType]           = useState<AccessType | null>(null);
@@ -273,16 +264,13 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
   const [addTransport, setAddTransport]       = useState(false);
   const [qty, setQty]                         = useState(1);
 
-  // Pago
   const [paymentMode, setPaymentMode]   = useState<PaymentMode>('full');
   const [abonoPlanId, setAbonoPlanId]   = useState(ABONO_PLANS[0].id);
 
-  // Buyer info
   const [buyerName,  setBuyerName]  = useState('');
   const [buyerEmail, setBuyerEmail] = useState('');
   const [buyerPhone, setBuyerPhone] = useState('');
 
-  // Payment state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
@@ -371,25 +359,44 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          // Datos del comprador
           name:         buyerName.trim(),
           email:        buyerEmail.trim(),
           phone:        buyerPhone.trim(),
+          // Evento
           eventId:      selectedEvent?.id,
+          // Selección (payload simplificado + items[] para compatibilidad)
           accessType,
           ticketLabel,
           stageLabel,
           isVip,
           qty,
+          basePrice,
           addPassVip,
           addTransport,
           total,
           paymentMode,
           abonoPlan:    paymentMode === 'abono' ? abonoPlanId : null,
           primerPago,
+          // items[] explícito para el backend
+          items: [{
+            ticketTypeId: 0,
+            quantity:     qty,
+            isVip:        !!isVip,
+            _unitPrice:   basePrice > 0 ? Math.round(basePrice / qty) : Math.round(total / qty),
+            _label:       ticketLabel ?? stageLabel ?? accessType ?? 'Entrada',
+          }],
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al crear la orden');
+      if (!data.paymentUrl) {
+        // Mostrar error detallado de Bold si está disponible
+        const boldMsg = data.boldError
+          ? `Error Bold: ${data.boldError.substring(0, 120)}`
+          : 'No se pudo generar el link de pago. Intenta de nuevo.';
+        throw new Error(boldMsg);
+      }
       window.location.href = data.paymentUrl;
     } catch (err: any) {
       setPaymentError(err.message || 'Ocurrió un error. Intenta de nuevo.');
@@ -411,7 +418,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
         className="relative w-full sm:max-w-6xl rounded-t-[2rem] sm:rounded-[2rem] border border-white/10 bg-[#08101f] shadow-2xl flex flex-col max-h-[96dvh] sm:max-h-[92dvh]"
         onClick={e => e.stopPropagation()}
       >
-        {/* ambient glow */}
         <div className="absolute inset-0 opacity-20 pointer-events-none rounded-[inherit]" style={{
           background:
             'radial-gradient(circle at top right,rgba(225,254,82,0.24),transparent 30%),' +
@@ -577,7 +583,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                 </div>
               )}
 
-              {/* STEP 3: Resumen + Abonos + Buyer + Pago */}
+              {/* STEP 3 */}
               {step === 3 && (
                 <div>
                   <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-2">Paso 3</p>
@@ -586,7 +592,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
 
                   <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-5">
 
-                    {/* Event info */}
                     <div className="grid grid-cols-2 gap-3">
                       {(([['Evento', selectedEvent.venue], ['Ciudad', selectedEvent.city], ['Fecha', selectedEvent.date], ['Hora', selectedEvent.time]]) as [string,string][]).map(([label, value]) => (
                         <div key={label} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
@@ -596,7 +601,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       ))}
                     </div>
 
-                    {/* Selección */}
                     <div className="border-t border-white/10 pt-4">
                       <p className="font-mono-custom text-[9px] uppercase tracking-[0.22em] text-white/35 mb-2">Tu selección</p>
                       <div className="flex flex-wrap gap-2">
@@ -617,7 +621,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       </div>
                     </div>
 
-                    {/* Qty */}
                     <div className="flex items-center justify-between border-t border-white/10 pt-4">
                       <p className="font-mono-custom text-[9px] uppercase tracking-[0.22em] text-white/35">{accessType === 'package' ? 'Personas' : 'Boletas'}</p>
                       <div className="flex items-center gap-1 rounded-full border border-white/10 p-1">
@@ -627,12 +630,10 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       </div>
                     </div>
 
-                    {/* Pass VIP */}
                     <div className="border-t border-white/10 pt-4">
                       <PassVipBanner addPassVip={addPassVip} setAddPassVip={setAddPassVip} qty={qty} compact />
                     </div>
 
-                    {/* Transporte */}
                     <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
                         <Bus className="w-4 h-4 text-white/40" />
@@ -647,7 +648,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       </label>
                     </div>
 
-                    {/* Totales */}
                     <div className="space-y-2 border-t border-white/10 pt-4">
                       <div className="flex justify-between font-mono-custom text-sm text-white/55"><span>Subtotal</span><span className="text-white">{fmt(basePrice)}</span></div>
                       <div className="flex justify-between font-mono-custom text-sm text-white/55"><span>Cargo de servicio (5%)</span><span className="text-white">{fmt(serviceFee)}</span></div>
@@ -659,7 +659,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       </div>
                     </div>
 
-                    {/* ── SELECTOR DE ABONOS ── */}
                     <div className="border-t border-white/10 pt-5">
                       <AbonoSelector
                         paymentMode={paymentMode}
@@ -670,7 +669,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       />
                     </div>
 
-                    {/* Buyer Form */}
                     <div className="border-t border-white/10 pt-5">
                       <BuyerForm
                         name={buyerName} email={buyerEmail} phone={buyerPhone}
@@ -682,14 +680,12 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       />
                     </div>
 
-                    {/* Error */}
                     {paymentError && (
                       <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3">
                         <p className="text-sm text-red-400">{paymentError}</p>
                       </div>
                     )}
 
-                    {/* Acciones */}
                     <div className="flex flex-wrap gap-3 pt-1 items-center">
                       <button
                         className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 transition-colors"
@@ -714,7 +710,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                 </div>
               )}
 
-            </div>{/* end main panel */}
+            </div>
 
             {/* SIDEBAR */}
             <aside className="p-5 md:p-8 bg-white/[0.02] border-t lg:border-t-0 border-white/10">
@@ -729,7 +725,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                 </div>
               </div>
 
-              {/* Info cuotas en sidebar */}
               <div className="mt-4 rounded-2xl border border-aira-lime/15 bg-aira-lime/5 p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <CalendarClock className="w-4 h-4 text-aira-lime" />
