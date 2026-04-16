@@ -29,6 +29,12 @@ function calcDueDate(cuotaNumber: number, cuotas: number, eventDate: string): st
   return final.toISOString().split('T')[0];
 }
 
+// Siempre resuelve al event_id=1 (único evento AIRA en DB).
+// El eventId del frontend puede ser '1','2','3','day1','day2','day3','package', etc.
+function resolveEventId(_eventId: any): number {
+  return 1;
+}
+
 async function createBoldPaymentLink(params: {
   orderId: number; orderRef: string; amount: number;
   customerName: string; customerEmail: string; customerPhone: string; description: string;
@@ -136,6 +142,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     total: frontendTotal, abonoPlan: abonoPlanId,
   } = body;
 
+  // Siempre usar event_id=1 (único evento en DB)
+  const dbEventId = resolveEventId(eventId);
+
   const items = resolveItems(body);
   const conn  = await pool.getConnection();
   try {
@@ -179,7 +188,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
          (order_ref, user_id, event_id, subtotal, service_fee, pass_vip_total,
           transport_total, total, payment_mode, reserved_until, add_pass_vip, add_transport)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [orderRef, user.id, eventId ?? null, subtotal, serviceFee, passVipTotal,
+      [orderRef, user.id, dbEventId, subtotal, serviceFee, passVipTotal,
        transportTotal, total, paymentMode, reservedUntil,
        addPassVip ? 1 : 0, addTransport ? 1 : 0]
     );
@@ -212,7 +221,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (plan) {
         let eventDate = '2026-08-15';
         try {
-          const [[ev]]: any = await conn.query('SELECT event_date FROM events WHERE id = ?', [eventId]);
+          const [[ev]]: any = await conn.query('SELECT event_date FROM events WHERE id = ?', [dbEventId]);
           if (ev?.event_date) eventDate = ev.event_date;
         } catch { /* ignore */ }
         const cuotaAmount = Math.round((total / plan.cuotas) * 100) / 100;
@@ -230,7 +239,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ── Bold payment link ────────────────────────────────────────────────────────
     let eventName = 'Evento';
     try {
-      const [[ev]]: any = await pool.query('SELECT name FROM events WHERE id = ?', [eventId]);
+      const [[ev]]: any = await pool.query('SELECT name FROM events WHERE id = ?', [dbEventId]);
       if (ev?.name) eventName = ev.name;
     } catch { /* ignore */ }
 
@@ -241,7 +250,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         customerName: name, customerEmail: email, customerPhone: phone,
         description: `AIRA ${eventName} · ${orderRef}`,
       });
-      // Guardar link — si la columna todavía no existe (antes de /api/migrate), lo ignoramos
       try {
         await pool.query('UPDATE orders SET bold_link = ? WHERE id = ?', [paymentUrl, orderId]);
       } catch (dbErr: any) {
