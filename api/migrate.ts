@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * GET /api/migrate
- * Aplica migraciones pendientes de forma idempotente (IF NOT EXISTS / IF EXISTS).
- * Llamar una vez después de cada deploy que agregue columnas nuevas.
+ * Agrega columnas nuevas de forma idempotente usando INFORMATION_SCHEMA.
+ * Compatible con MySQL 5.7+ (no usa ADD COLUMN IF NOT EXISTS).
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import mysql from 'mysql2/promise';
@@ -18,34 +18,40 @@ const pool = mysql.createPool({
   ssl:                { rejectUnauthorized: false },
 });
 
-const migrations: Array<{ name: string; sql: string }> = [
-  {
-    name: 'orders.bold_link',
-    sql: `ALTER TABLE orders
-          ADD COLUMN IF NOT EXISTS bold_link VARCHAR(2048) NULL AFTER payment_mode`,
-  },
-  {
-    name: 'orders.bold_payment_id',
-    sql: `ALTER TABLE orders
-          ADD COLUMN IF NOT EXISTS bold_payment_id VARCHAR(255) NULL AFTER bold_link`,
-  },
-  {
-    name: 'orders.paid_at',
-    sql: `ALTER TABLE orders
-          ADD COLUMN IF NOT EXISTS paid_at DATETIME NULL AFTER bold_payment_id`,
-  },
+interface ColMigration {
+  table:  string;
+  column: string;
+  ddl:    string; // fragmento después de ADD COLUMN
+}
+
+const columns: ColMigration[] = [
+  { table: 'orders', column: 'bold_link',       ddl: 'bold_link VARCHAR(2048) NULL AFTER payment_mode' },
+  { table: 'orders', column: 'bold_payment_id', ddl: 'bold_payment_id VARCHAR(255) NULL AFTER bold_link' },
+  { table: 'orders', column: 'paid_at',         ddl: 'paid_at DATETIME NULL AFTER bold_payment_id' },
 ];
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
   const results: Record<string, string> = {};
-  const conn = await pool.getConnection();
+  const dbName = process.env.DB_NAME ?? '';
+  const conn   = await pool.getConnection();
   try {
-    for (const m of migrations) {
+    for (const m of columns) {
+      const key = `${m.table}.${m.column}`;
       try {
-        await conn.query(m.sql);
-        results[m.name] = 'OK';
+        // Verificar si la columna ya existe
+        const [rows]: any = await conn.query(
+          `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS
+           WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+          [dbName, m.table, m.column]
+        );
+        if (rows[0].cnt > 0) {
+          results[key] = 'ALREADY EXISTS';
+          continue;
+        }
+        await conn.query(`ALTER TABLE \`${m.table}\` ADD COLUMN ${m.ddl}`);
+        results[key] = 'OK';
       } catch (e: any) {
-        results[m.name] = `ERROR: ${e.message}`;
+        results[key] = `ERROR: ${e.message}`;
       }
     }
     return res.status(200).json({ status: 'done', results });
