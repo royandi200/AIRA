@@ -17,7 +17,7 @@ interface TicketReserveProps {
   onClose: () => void;
 }
 
-type AccessType = 'day' | 'package';
+type AccessType = 'day1' | 'day2' | 'day3' | 'package';
 type PaymentMode = 'full' | 'abono';
 
 const ABONO_PLANS = [
@@ -26,21 +26,28 @@ const ABONO_PLANS = [
   { id: 'a25',  label: '4 cuotas',  pct: 0.25, desc: '25% ahora · resto en 3 cuotas', badge: null },
 ];
 
+// Precios Pass VIP por día
+const PASS_VIP_PRICES: Record<AccessType, number> = {
+  day1:    50_000,
+  day2:   100_000,
+  day3:    40_000,
+  package: 500_000,
+};
+
 const DAYS = [
-  { id: 'day1', label: 'DÍA 1', title: 'After Fiesta de Yates', price: 80_000, vipPrice: null, qty: 80, includes: ['After yacht party', 'Noche de fiesta'], accentColor: '#004fff', icon: <Zap className="w-5 h-5" /> },
-  { id: 'day2', label: 'DÍA 2', title: 'Fiesta Majestic & Stage Joinn', price: 150_000, vipPrice: 250_000, qty: 80, includes: ['Yacht party', 'Yate Majestic', 'Noche de fiesta'], accentColor: '#e1fe52', icon: <Crown className="w-5 h-5" /> },
-  { id: 'day3', label: 'DÍA 3', title: 'Open Deck', price: 50_000, vipPrice: null, qty: 80, includes: ['Yacht party open deck'], accentColor: '#ffffff', icon: <Star className="w-5 h-5" /> },
+  { id: 'day1' as AccessType, label: 'DÍA 1', title: 'After Fiesta de Yates',       price: 80_000,  accentColor: '#004fff', icon: <Zap   className="w-5 h-5" /> },
+  { id: 'day2' as AccessType, label: 'DÍA 2', title: 'Fiesta Majestic & Stage Joinn', price: 150_000, accentColor: '#e1fe52', icon: <Crown className="w-5 h-5" /> },
+  { id: 'day3' as AccessType, label: 'DÍA 3', title: 'Open Deck',                    price: 50_000,  accentColor: '#ffffff', icon: <Star  className="w-5 h-5" /> },
 ];
 
 const STAGES = [
-  { id: 'creyentes', label: 'Creyentes',  price: 590_000, slots: 35, dates: '15 ABR – 5 MAY', locked: true,  lockNote: 'Exclusivo asistentes Melomania' },
-  { id: 'referidos', label: 'Referidos',  price: 690_000, slots: 35, dates: '15 ABR – 5 MAY', locked: false },
-  { id: 'primera',   label: '1ª Etapa',   price: 790_000, slots: 28, dates: '5 MAY – 5 JUN',  locked: false },
-  { id: 'segunda',   label: '2ª Etapa',   price: 890_000, slots: 28, dates: '5 JUN – 5 JUL',  locked: false },
-  { id: 'tercera',   label: '3ª Etapa',   price: 1_000_000, slots: 7, dates: '5 JUL – 15 AGO', locked: false, urgent: true },
+  { id: 'creyentes', label: 'Creyentes',  price: 590_000,   slots: 35, dates: '15 ABR – 5 MAY', locked: true,  lockNote: 'Exclusivo asistentes Melomania' },
+  { id: 'referidos', label: 'Referidos',  price: 690_000,   slots: 35, dates: '15 ABR – 5 MAY', locked: false },
+  { id: 'primera',   label: '1ª Etapa',   price: 790_000,   slots: 28, dates: '5 MAY – 5 JUN',  locked: false },
+  { id: 'segunda',   label: '2ª Etapa',   price: 890_000,   slots: 28, dates: '5 JUN – 5 JUL',  locked: false },
+  { id: 'tercera',   label: '3ª Etapa',   price: 1_000_000, slots: 7,  dates: '5 JUL – 15 AGO', locked: false, urgent: true },
 ];
 
-const PASS_VIP_PRICE  = 500_000;
 const TRANSPORT_PRICE = 150_000;
 
 const fmt = (n: number) =>
@@ -65,8 +72,8 @@ function useLockBodyScroll(isOpen: boolean) {
   }, [isOpen]);
 }
 
-function PassVipBanner({ addPassVip, setAddPassVip, qty, compact = false }: {
-  addPassVip: boolean; setAddPassVip: (v: boolean) => void; qty: number; compact?: boolean;
+function PassVipBanner({ addPassVip, setAddPassVip, qty, passVipPrice, compact = false }: {
+  addPassVip: boolean; setAddPassVip: (v: boolean) => void; qty: number; passVipPrice: number; compact?: boolean;
 }) {
   return (
     <div className={`rounded-2xl border transition-all duration-200 ${
@@ -81,11 +88,11 @@ function PassVipBanner({ addPassVip, setAddPassVip, qty, compact = false }: {
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <p className={`font-mono-custom uppercase tracking-[0.22em] text-yellow-300 ${compact ? 'text-[8px]' : 'text-[9px]'}`}>Add-on · Pass VIP</p>
               <span className="px-2 py-0.5 rounded-full text-[8px] font-mono-custom uppercase tracking-[0.15em] bg-yellow-400/15 text-yellow-300 border border-yellow-400/25">
-                {fmt(PASS_VIP_PRICE)}{qty > 1 ? ` × ${qty}` : ''}
+                {fmt(passVipPrice)}{qty > 1 ? ` × ${qty}` : ''}
               </span>
             </div>
-            <p className={`font-display text-white leading-snug ${compact ? 'text-sm' : 'text-base'} mb-1`}>Yate VIP · Zona VIP Majestic · Zona VIP Stage Joinn</p>
-            {!compact && <p className="text-xs text-white/45">Acceso exclusivo a las 3 experiencias premium del evento</p>}
+            <p className={`font-display text-white leading-snug ${compact ? 'text-sm' : 'text-base'} mb-1`}>Acceso VIP exclusivo</p>
+            {!compact && <p className="text-xs text-white/45">Upgrade premium para tu experiencia en el evento</p>}
           </div>
         </div>
         <label className="flex flex-col items-center gap-1.5 cursor-pointer shrink-0 mt-0.5">
@@ -95,15 +102,6 @@ function PassVipBanner({ addPassVip, setAddPassVip, qty, compact = false }: {
           <span className="font-mono-custom text-[8px] uppercase tracking-[0.18em] text-white/40">{addPassVip ? 'Activo' : 'Agregar'}</span>
         </label>
       </div>
-      {addPassVip && (
-        <div className="mt-3 pt-3 border-t border-yellow-400/20 grid grid-cols-3 gap-2">
-          {['🛥 Yate VIP', '👑 Zona VIP Majestic', '🎵 Zona VIP Stage Joinn'].map(b => (
-            <div key={b} className="rounded-xl bg-yellow-400/10 border border-yellow-400/20 px-2 py-1.5 text-center">
-              <p className="font-mono-custom text-[8px] uppercase tracking-[0.12em] text-yellow-300 leading-snug">{b}</p>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -255,17 +253,15 @@ function BuyerForm({ name, email, phone, onChange }: {
 }
 
 const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) => {
-  const [step, setStep]                       = useState(1);
-  const [accessType, setAccessType]           = useState<AccessType | null>(null);
-  const [selectedDayId, setSelectedDayId]     = useState<string | null>(null);
-  const [isVip, setIsVip]                     = useState(false);
+  const [step, setStep]               = useState(1);
+  const [accessType, setAccessType]   = useState<AccessType | null>(null);
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
-  const [addPassVip, setAddPassVip]           = useState(false);
-  const [addTransport, setAddTransport]       = useState(false);
-  const [qty, setQty]                         = useState(1);
+  const [addPassVip, setAddPassVip]   = useState(false);
+  const [addTransport, setAddTransport] = useState(false);
+  const [qty, setQty]                 = useState(1);
 
-  const [paymentMode, setPaymentMode]   = useState<PaymentMode>('full');
-  const [abonoPlanId, setAbonoPlanId]   = useState(ABONO_PLANS[0].id);
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>('full');
+  const [abonoPlanId, setAbonoPlanId] = useState(ABONO_PLANS[0].id);
 
   const [buyerName,  setBuyerName]  = useState('');
   const [buyerEmail, setBuyerEmail] = useState('');
@@ -293,8 +289,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
 
   useEffect(() => {
     if (!isOpen) return;
-    setStep(1); setAccessType(null); setSelectedDayId(null);
-    setIsVip(false); setSelectedStageId(null);
+    setStep(1); setAccessType(null); setSelectedStageId(null);
     setAddPassVip(false); setAddTransport(false); setQty(1);
     setPaymentMode('full'); setAbonoPlanId(ABONO_PLANS[0].id);
     setBuyerName(''); setBuyerEmail(''); setBuyerPhone('');
@@ -307,44 +302,52 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
     return () => window.removeEventListener('keydown', handler);
   }, [isOpen, onClose]);
 
-  const selectedDay   = useMemo(() => DAYS.find(d => d.id === selectedDayId) ?? null,    [selectedDayId]);
   const selectedStage = useMemo(() => STAGES.find(s => s.id === selectedStageId) ?? null, [selectedStageId]);
+  const selectedDay   = useMemo(() => DAYS.find(d => d.id === accessType) ?? null, [accessType]);
+
+  // Precio Pass VIP según el accessType activo
+  const passVipPrice = accessType ? PASS_VIP_PRICES[accessType] : 500_000;
 
   const basePrice = useMemo(() => {
-    if (accessType === 'day' && selectedDay)
-      return (isVip && selectedDay.vipPrice ? selectedDay.vipPrice : selectedDay.price) * qty;
-    if (accessType === 'package' && selectedStage)
-      return selectedStage.price * qty;
+    if (accessType === 'day1') return 80_000  * qty;
+    if (accessType === 'day2') return 150_000 * qty;
+    if (accessType === 'day3') return 50_000  * qty;
+    if (accessType === 'package' && selectedStage) return selectedStage.price * qty;
     return 0;
-  }, [accessType, selectedDay, selectedStage, isVip, qty]);
+  }, [accessType, selectedStage, qty]);
 
   const serviceFee = Math.round(basePrice * 0.05);
-  const passTotal  = addPassVip   ? PASS_VIP_PRICE  * qty : 0;
+  const passTotal  = addPassVip   ? passVipPrice    * qty : 0;
   const transTotal = addTransport ? TRANSPORT_PRICE * qty : 0;
   const total      = basePrice + serviceFee + passTotal + transTotal;
 
-  const selectedPlan  = ABONO_PLANS.find(p => p.id === abonoPlanId) ?? ABONO_PLANS[0];
-  const primerPago    = paymentMode === 'full' ? total : Math.ceil(total * selectedPlan.pct);
+  const selectedPlan = ABONO_PLANS.find(p => p.id === abonoPlanId) ?? ABONO_PLANS[0];
+  const primerPago   = paymentMode === 'full' ? total : Math.ceil(total * selectedPlan.pct);
 
-  const ticketLabel = accessType === 'day' && selectedDay
-    ? `${selectedDay.label}${isVip && selectedDay.vipPrice ? ' VIP' : ''}`
-    : null;
-  const stageLabel = accessType === 'package' && selectedStage ? selectedStage.label : null;
+  // Labels para resumen y checkout
+  const ticketLabel = selectedDay ? `${selectedDay.label} · ${selectedDay.title}` : null;
+  const stageLabel  = accessType === 'package' && selectedStage ? selectedStage.label : null;
 
-  const stepLabels = [
-    { n: 1, label: 'Acceso' },
-    { n: 2, label: accessType === 'package' ? 'Etapa' : 'Zona' },
-    { n: 3, label: 'Confirmar' },
-  ];
+  // Steps: 1 = selección inicial, 2 = etapas paquete, 3 = confirmación
+  // Para días: step 1 → step 3 directamente
+  // Para paquete: step 1 → step 2 → step 3
+  const stepLabels = accessType === 'package'
+    ? [{ n: 1, label: 'Acceso' }, { n: 2, label: 'Etapa' }, { n: 3, label: 'Confirmar' }]
+    : [{ n: 1, label: 'Acceso' }, { n: 3, label: 'Confirmar' }];
 
-  const handleSelectDay = (dayId: string) => {
-    setSelectedDayId(dayId);
-    setIsVip(false);
-    const day = DAYS.find(d => d.id === dayId);
-    setStep(day?.vipPrice ? 2 : 3);
+  // Selección de un día: ir directo al step 3
+  const handleSelectDay = (type: AccessType) => {
+    setAccessType(type);
+    setSelectedStageId(null);
+    setStep(3);
   };
 
-  const handleSelectPackage = () => { setAccessType('package'); setStep(2); };
+  // Selección del paquete: ir al step 2 (etapas)
+  const handleSelectPackage = () => {
+    setAccessType('package');
+    setSelectedStageId(null);
+    setStep(2);
+  };
 
   // ── CHECKOUT ──────────────────────────────────────────────────────────────
   const handleCheckout = async () => {
@@ -359,30 +362,25 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          // Datos del comprador
           name:         buyerName.trim(),
           email:        buyerEmail.trim(),
           phone:        buyerPhone.trim(),
-          // Evento
           eventId:      selectedEvent?.id,
-          // Selección (payload simplificado + items[] para compatibilidad)
           accessType,
           ticketLabel,
           stageLabel,
-          isVip,
           qty,
           basePrice,
           addPassVip,
+          passVipPrice,
           addTransport,
           total,
           paymentMode,
           abonoPlan:    paymentMode === 'abono' ? abonoPlanId : null,
           primerPago,
-          // items[] explícito para el backend
           items: [{
             ticketTypeId: 0,
             quantity:     qty,
-            isVip:        !!isVip,
             _unitPrice:   basePrice > 0 ? Math.round(basePrice / qty) : Math.round(total / qty),
             _label:       ticketLabel ?? stageLabel ?? accessType ?? 'Entrada',
           }],
@@ -391,7 +389,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al crear la orden');
       if (!data.paymentUrl) {
-        // Mostrar error detallado de Bold si está disponible
         const boldMsg = data.boldError
           ? `Error Bold: ${data.boldError.substring(0, 120)}`
           : 'No se pudo generar el link de pago. Intenta de nuevo.';
@@ -406,6 +403,13 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
   };
 
   if (!isOpen || !selectedEvent) return null;
+
+  // Pill visual de steps — solo muestra los pasos del flujo activo
+  const visibleSteps = step === 1
+    ? [{ n: 1, label: 'Acceso' }, { n: 2, label: accessType === 'package' ? 'Etapa' : 'Zona' }, { n: 3, label: 'Confirmar' }]
+    : accessType === 'package'
+      ? [{ n: 1, label: 'Acceso' }, { n: 2, label: 'Etapa' }, { n: 3, label: 'Confirmar' }]
+      : [{ n: 1, label: 'Acceso' }, { n: 3, label: 'Confirmar' }];
 
   return (
     <div
@@ -439,13 +443,14 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
 
         {/* STEP PILLS */}
         <div className="relative z-10 flex-none px-5 md:px-8 pt-4 pb-3 flex flex-wrap gap-2 border-b border-white/[0.06]">
-          {stepLabels.map(item => {
+          {visibleSteps.map((item, idx) => {
+            const visualN   = idx + 1;
             const active    = step === item.n;
             const completed = step > item.n;
             return (
               <div key={item.n} className={'flex items-center gap-2 px-3 py-1.5 rounded-full border ' + (active ? 'border-aira-lime/40 bg-aira-lime/10' : 'border-white/10 bg-white/[0.03]')}>
                 <div className={'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-mono-custom ' + (completed ? 'bg-aira-lime text-aira-darkBlue' : active ? 'bg-aira-blue text-white' : 'bg-white/10 text-white/50')}>
-                  {completed ? <Check className="w-3.5 h-3.5" /> : item.n}
+                  {completed ? <Check className="w-3.5 h-3.5" /> : visualN}
                 </div>
                 <span className={'font-mono-custom text-[10px] uppercase tracking-[0.22em] ' + (active ? 'text-white' : 'text-white/45')}>{item.label}</span>
               </div>
@@ -460,38 +465,33 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
             {/* MAIN PANEL */}
             <div className="p-5 md:p-8 lg:border-r border-white/10">
 
-              {/* STEP 1 */}
+              {/* ── STEP 1: Selección inicial ── */}
               {step === 1 && (
                 <div>
                   <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-2">Paso 1</p>
                   <h4 className="font-display text-3xl md:text-4xl text-white mb-1">¿Cómo quieres vivir AIRA?</h4>
                   <p className="text-sm text-white/50 mb-6">Elige entre boletería por día o el paquete completo con alojamiento.</p>
 
+                  {/* Días */}
                   <p className="font-mono-custom text-[9px] uppercase tracking-[0.3em] text-aira-lime/60 mb-3">🎟 Boletería por día</p>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
                     {DAYS.map(day => (
                       <button key={day.id}
                         className="text-left rounded-2xl border border-white/10 bg-white/[0.03] p-4 hover:border-white/30 active:scale-[0.98] transition-all duration-200"
-                        onClick={() => { setAccessType('day'); handleSelectDay(day.id); }}
+                        onClick={() => handleSelectDay(day.id)}
                       >
                         <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: `${day.accentColor}20`, color: day.accentColor }}>{day.icon}</div>
                         <p className="font-mono-custom text-[9px] uppercase tracking-[0.25em] mb-1" style={{ color: day.accentColor }}>{day.label}</p>
                         <h5 className="font-display text-base text-white leading-snug mb-2">{day.title}</h5>
                         <p className="font-display text-lg" style={{ color: day.accentColor }}>{fmt(day.price)}</p>
-                        {day.vipPrice && <p className="font-mono-custom text-[9px] text-white/40 mt-0.5">VIP {fmt(day.vipPrice)}</p>}
-                        <div className="mt-3 flex flex-wrap gap-1">
-                          {day.includes.map(inc => (
-                            <span key={inc} className="px-2 py-0.5 rounded-full text-[8px] font-mono-custom uppercase tracking-[0.15em] border"
-                              style={{ borderColor: `${day.accentColor}30`, color: `${day.accentColor}aa`, background: `${day.accentColor}0d` }}>{inc}</span>
-                          ))}
-                        </div>
                       </button>
                     ))}
                   </div>
 
+                  {/* Paquete */}
                   <p className="font-mono-custom text-[9px] uppercase tracking-[0.3em] text-aira-lime/60 mb-3">🏠 Paquete completo · 3D / 2N</p>
                   <button
-                    className="w-full text-left rounded-2xl border border-aira-lime/20 bg-aira-lime/5 p-5 hover:border-aira-lime/50 hover:bg-aira-lime/10 active:scale-[0.99] transition-all duration-200 mb-6"
+                    className="w-full text-left rounded-2xl border border-aira-lime/20 bg-aira-lime/5 p-5 hover:border-aira-lime/50 hover:bg-aira-lime/10 active:scale-[0.99] transition-all duration-200"
                     onClick={handleSelectPackage}
                   >
                     <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -511,41 +511,10 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       </div>
                     </div>
                   </button>
-
-                  <p className="font-mono-custom text-[9px] uppercase tracking-[0.3em] text-yellow-300/60 mb-3">✦ Upgrade exclusivo</p>
-                  <PassVipBanner addPassVip={addPassVip} setAddPassVip={setAddPassVip} qty={qty} />
                 </div>
               )}
 
-              {/* STEP 2A: Zona VIP */}
-              {step === 2 && accessType === 'day' && selectedDay?.vipPrice && (
-                <div>
-                  <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-2">Paso 2</p>
-                  <h4 className="font-display text-3xl md:text-4xl text-white mb-1">Elige tu zona</h4>
-                  <p className="text-sm text-white/50 mb-6">Fiesta Majestic & Stage Joinn · {selectedEvent.city}</p>
-                  <div className="space-y-3">
-                    <button className={'w-full text-left rounded-2xl border p-5 transition-all duration-200 active:scale-[0.99] ' + (isVip ? 'border-aira-lime/60 bg-aira-lime/10' : 'border-white/10 bg-white/[0.03] hover:border-white/25')} onClick={() => setIsVip(true)}>
-                      <div className="flex items-center justify-between gap-4">
-                        <div><div className="flex items-center gap-2 mb-1"><Crown className="w-4 h-4 text-aira-lime" /><span className="font-display text-lg text-white">VIP</span>{isVip && <Check className="w-4 h-4 text-aira-lime" />}</div><p className="text-xs text-white/50">Zona VIP Majestic · Open bar · Área exclusiva · Fila preferencial</p></div>
-                        <p className="font-display text-xl text-aira-lime shrink-0">{fmt(selectedDay.vipPrice!)}</p>
-                      </div>
-                    </button>
-                    <button className={'w-full text-left rounded-2xl border p-5 transition-all duration-200 active:scale-[0.99] ' + (!isVip ? 'border-white/30 bg-white/[0.05]' : 'border-white/10 bg-white/[0.03] hover:border-white/25')} onClick={() => setIsVip(false)}>
-                      <div className="flex items-center justify-between gap-4">
-                        <div><div className="flex items-center gap-2 mb-1"><Users className="w-4 h-4 text-white/60" /><span className="font-display text-lg text-white">General</span>{!isVip && <Check className="w-4 h-4 text-white/60" />}</div><p className="text-xs text-white/50">Acceso estándar · Yacht party · Majestic · Noche de fiesta</p></div>
-                        <p className="font-display text-xl text-white shrink-0">{fmt(selectedDay.price)}</p>
-                      </div>
-                    </button>
-                  </div>
-                  <div className="mt-5"><PassVipBanner addPassVip={addPassVip} setAddPassVip={setAddPassVip} qty={qty} /></div>
-                  <div className="mt-5 flex items-center justify-between gap-3">
-                    <button className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 transition-colors" onClick={() => setStep(1)}>Volver</button>
-                    <button className="px-6 py-2.5 rounded-full bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] hover:bg-white active:scale-[0.97] transition-all" onClick={() => setStep(3)}>Continuar</button>
-                  </div>
-                </div>
-              )}
-
-              {/* STEP 2B: Etapa paquete */}
+              {/* ── STEP 2: Etapas (solo paquete) ── */}
               {step === 2 && accessType === 'package' && (
                 <div>
                   <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-2">Paso 2</p>
@@ -575,23 +544,31 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       </button>
                     ))}
                   </div>
-                  <div className="mt-5"><PassVipBanner addPassVip={addPassVip} setAddPassVip={setAddPassVip} qty={qty} /></div>
+
+                  {/* Pass VIP en paquete */}
+                  <div className="mt-5">
+                    <PassVipBanner addPassVip={addPassVip} setAddPassVip={setAddPassVip} qty={qty} passVipPrice={passVipPrice} />
+                  </div>
+
                   <div className="mt-5 flex items-center justify-between gap-3">
-                    <button className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 transition-colors" onClick={() => setStep(1)}>Volver</button>
+                    <button className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 transition-colors" onClick={() => { setAccessType(null); setStep(1); }}>Volver</button>
                     <button disabled={!selectedStageId} className="px-6 py-2.5 rounded-full bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] hover:bg-white active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed" onClick={() => selectedStageId && setStep(3)}>Continuar</button>
                   </div>
                 </div>
               )}
 
-              {/* STEP 3 */}
+              {/* ── STEP 3: Confirmación ── */}
               {step === 3 && (
                 <div>
-                  <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-2">Paso 3</p>
+                  <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-2">
+                    {accessType === 'package' ? 'Paso 3' : 'Paso 2'}
+                  </p>
                   <h4 className="font-display text-3xl md:text-4xl text-white mb-1">Confirmar y pagar</h4>
                   <p className="text-sm text-white/50 mb-5">Revisa tu pedido, elige cómo pagar y completa tus datos.</p>
 
                   <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-5">
 
+                    {/* Info evento */}
                     <div className="grid grid-cols-2 gap-3">
                       {(([['Evento', selectedEvent.venue], ['Ciudad', selectedEvent.city], ['Fecha', selectedEvent.date], ['Hora', selectedEvent.time]]) as [string,string][]).map(([label, value]) => (
                         <div key={label} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
@@ -601,26 +578,31 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       ))}
                     </div>
 
+                    {/* Selección */}
                     <div className="border-t border-white/10 pt-4">
                       <p className="font-mono-custom text-[9px] uppercase tracking-[0.22em] text-white/35 mb-2">Tu selección</p>
                       <div className="flex flex-wrap gap-2">
-                        {accessType === 'day' && selectedDay && (
-                          <span className="px-3 py-1.5 rounded-full border border-white/20 text-white/80 bg-white/[0.04] text-sm">{selectedDay.label} · {selectedDay.title}</span>
-                        )}
-                        {accessType === 'day' && selectedDay?.vipPrice && (
-                          <span className="px-3 py-1.5 rounded-full text-sm" style={{ border: isVip ? '1px solid rgba(225,254,82,0.4)' : '1px solid rgba(255,255,255,0.15)', color: isVip ? '#e1fe52' : 'rgba(255,255,255,0.6)', background: isVip ? 'rgba(225,254,82,0.08)' : 'rgba(255,255,255,0.03)' }}>
-                            {isVip ? 'VIP' : 'General'}
+                        {/* Días */}
+                        {(accessType === 'day1' || accessType === 'day2' || accessType === 'day3') && selectedDay && (
+                          <span className="px-3 py-1.5 rounded-full border border-white/20 text-white/80 bg-white/[0.04] text-sm">
+                            {selectedDay.label} · {selectedDay.title} · {fmt(selectedDay.price)}
                           </span>
                         )}
+                        {/* Paquete */}
                         {accessType === 'package' && selectedStage && (
-                          <span className="px-3 py-1.5 rounded-full border border-aira-lime/30 text-aira-lime bg-aira-lime/8 text-sm">Cabaña AIRA · {selectedStage.label}</span>
+                          <span className="px-3 py-1.5 rounded-full border border-aira-lime/30 text-aira-lime bg-aira-lime/8 text-sm">
+                            Cabaña AIRA · {selectedStage.label} · {fmt(selectedStage.price)}/persona
+                          </span>
                         )}
                         {addPassVip && (
-                          <span className="px-3 py-1.5 rounded-full border border-yellow-400/40 text-yellow-300 bg-yellow-400/10 text-sm flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> Pass VIP</span>
+                          <span className="px-3 py-1.5 rounded-full border border-yellow-400/40 text-yellow-300 bg-yellow-400/10 text-sm flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5" /> Pass VIP · {fmt(passVipPrice)}
+                          </span>
                         )}
                       </div>
                     </div>
 
+                    {/* Cantidad */}
                     <div className="flex items-center justify-between border-t border-white/10 pt-4">
                       <p className="font-mono-custom text-[9px] uppercase tracking-[0.22em] text-white/35">{accessType === 'package' ? 'Personas' : 'Boletas'}</p>
                       <div className="flex items-center gap-1 rounded-full border border-white/10 p-1">
@@ -630,16 +612,18 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       </div>
                     </div>
 
+                    {/* Pass VIP en confirmación */}
                     <div className="border-t border-white/10 pt-4">
-                      <PassVipBanner addPassVip={addPassVip} setAddPassVip={setAddPassVip} qty={qty} compact />
+                      <PassVipBanner addPassVip={addPassVip} setAddPassVip={setAddPassVip} qty={qty} passVipPrice={passVipPrice} compact />
                     </div>
 
+                    {/* Transporte */}
                     <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
                         <Bus className="w-4 h-4 text-white/40" />
                         <div>
                           <p className="text-sm text-white">Transporte Bogotá – Guatapé</p>
-                          <p className="font-mono-custom text-[9px] text-white/40">Ida y regreso</p>
+                          <p className="font-mono-custom text-[9px] text-white/40">Ida y regreso · {fmt(TRANSPORT_PRICE)}/persona</p>
                         </div>
                       </div>
                       <label className="flex items-center gap-2 cursor-pointer shrink-0">
@@ -648,6 +632,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       </label>
                     </div>
 
+                    {/* Totales */}
                     <div className="space-y-2 border-t border-white/10 pt-4">
                       <div className="flex justify-between font-mono-custom text-sm text-white/55"><span>Subtotal</span><span className="text-white">{fmt(basePrice)}</span></div>
                       <div className="flex justify-between font-mono-custom text-sm text-white/55"><span>Cargo de servicio (5%)</span><span className="text-white">{fmt(serviceFee)}</span></div>
@@ -659,6 +644,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       </div>
                     </div>
 
+                    {/* Pago */}
                     <div className="border-t border-white/10 pt-5">
                       <AbonoSelector
                         paymentMode={paymentMode}
@@ -669,6 +655,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       />
                     </div>
 
+                    {/* Datos comprador */}
                     <div className="border-t border-white/10 pt-5">
                       <BuyerForm
                         name={buyerName} email={buyerEmail} phone={buyerPhone}
@@ -689,7 +676,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                     <div className="flex flex-wrap gap-3 pt-1 items-center">
                       <button
                         className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 transition-colors"
-                        onClick={() => setStep(accessType === 'day' && selectedDay?.vipPrice ? 2 : accessType === 'package' ? 2 : 1)}
+                        onClick={() => accessType === 'package' ? setStep(2) : (setAccessType(null), setStep(1))}
                         disabled={isSubmitting}
                       >Volver</button>
                       <button
@@ -742,9 +729,13 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
               </div>
 
               <div className="mt-4 rounded-2xl border border-yellow-400/20 bg-yellow-400/5 p-4">
-                <div className="flex items-center gap-2 mb-3"><Sparkles className="w-4 h-4 text-yellow-300" /><p className="font-mono-custom text-[9px] uppercase tracking-[0.24em] text-yellow-300">Pass VIP · {fmt(PASS_VIP_PRICE)}</p></div>
+                <div className="flex items-center gap-2 mb-3"><Sparkles className="w-4 h-4 text-yellow-300" /><p className="font-mono-custom text-[9px] uppercase tracking-[0.24em] text-yellow-300">Pass VIP</p></div>
                 <div className="space-y-2">
-                  {[{icon:'🛥',label:'Yate VIP',desc:'Acceso exclusivo al yate'},{icon:'👑',label:'Zona VIP Majestic',desc:'Área premium en el yate Majestic'},{icon:'🎵',label:'Zona VIP Stage Joinn',desc:'Acceso VIP al Stage Joinn'}].map(item => (
+                  {[
+                    { icon: '🛥',  label: 'Yate VIP',          desc: 'Acceso exclusivo al yate' },
+                    { icon: '👑',  label: 'Zona VIP Majestic',  desc: 'Área premium en el yate Majestic' },
+                    { icon: '🎵',  label: 'Zona VIP Stage Joinn', desc: 'Acceso VIP al Stage Joinn' },
+                  ].map(item => (
                     <div key={item.label} className="flex items-start gap-2.5 rounded-xl bg-yellow-400/8 border border-yellow-400/15 p-2.5">
                       <span className="text-base shrink-0 mt-0.5">{item.icon}</span>
                       <div>
@@ -754,12 +745,25 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                     </div>
                   ))}
                 </div>
+                {/* Precio dinámico según selección */}
+                {accessType && (
+                  <p className="font-mono-custom text-[9px] text-yellow-300/60 mt-3">
+                    {accessType === 'day1' && `Día 1 · ${fmt(PASS_VIP_PRICES.day1)}/persona`}
+                    {accessType === 'day2' && `Día 2 · ${fmt(PASS_VIP_PRICES.day2)}/persona`}
+                    {accessType === 'day3' && `Día 3 · ${fmt(PASS_VIP_PRICES.day3)}/persona`}
+                    {accessType === 'package' && `Paquete · ${fmt(PASS_VIP_PRICES.package)}/persona`}
+                  </p>
+                )}
               </div>
 
               <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                 <p className="font-mono-custom text-[9px] uppercase tracking-[0.24em] text-white/35 mb-3">Programa</p>
                 <div className="space-y-3">
-                  {[{day:'Día 1',items:['Recorridos turísticos','Yacht party','Noche de fiesta','Wellness']},{day:'Día 2',items:['Yacht party','Yate Majestic','Noche de fiesta','Wellness']},{day:'Día 3',items:['Yacht party open deck','Wellness']}].map(({day,items}) => (
+                  {[
+                    { day: 'Día 1', items: ['After Fiesta de Yates', 'Noche de fiesta', 'Wellness'] },
+                    { day: 'Día 2', items: ['Yacht party', 'Yate Majestic · Stage Joinn', 'Noche de fiesta'] },
+                    { day: 'Día 3', items: ['Yacht party open deck', 'Wellness'] },
+                  ].map(({ day, items }) => (
                     <div key={day}>
                       <p className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-aira-lime/70 mb-1">{day}</p>
                       <ul className="space-y-0.5">{items.map(i => <li key={i} className="text-xs text-white/45 flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-white/20 shrink-0" />{i}</li>)}</ul>
