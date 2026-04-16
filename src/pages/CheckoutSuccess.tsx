@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Loader2, XCircle, Ticket, Download } from 'lucide-react';
 
 const fmt = (n: number) =>
@@ -20,8 +19,8 @@ interface OrderData {
 }
 
 export default function CheckoutSuccess() {
-  const [params] = useSearchParams();
-  const orderId  = params.get('order_id');
+  // ✅ Native URLSearchParams — no react-router-dom needed
+  const orderId = new URLSearchParams(window.location.search).get('order_id');
 
   const [status, setStatus] = useState<OrderStatus>('loading');
   const [order,  setOrder]  = useState<OrderData | null>(null);
@@ -36,25 +35,29 @@ export default function CheckoutSuccess() {
         const res  = await fetch(`${API}/api/orders/${orderId}`);
         const data = await res.json();
         setOrder(data);
-        if (data.status === 'paid')      setStatus('paid');
+        if (data.status === 'paid')           setStatus('paid');
         else if (data.status === 'cancelled') setStatus('cancelled');
-        else setStatus('pending');
+        else                                  setStatus('pending');
       } catch { setStatus('error'); }
     };
 
     check();
-    // Si está pending, reintentar cada 3s (MP puede demorar el webhook)
+
+    // Polling cada 3s mientras el pago está pendiente (Bold puede demorar el webhook)
     const interval = setInterval(async () => {
-      const res  = await fetch(`${API}/api/payments/status/${orderId}`);
-      const data = await res.json();
-      if (data.status === 'paid') { setStatus('paid'); clearInterval(interval); }
+      try {
+        const res  = await fetch(`${API}/api/payments/status/${orderId}`);
+        const data = await res.json();
+        if (data.status === 'paid') { setStatus('paid'); clearInterval(interval); }
+      } catch { /* ignorar errores de polling */ }
     }, 3000);
+
     return () => clearInterval(interval);
   }, [orderId]);
 
   return (
     <div className="min-h-screen bg-[#030612] flex items-center justify-center p-6">
-      <div className="w-full max-w-lg">
+      <div className="w-full max-w-lg relative">
         {/* Glow */}
         <div className="absolute inset-0 pointer-events-none" style={{
           background: 'radial-gradient(ellipse at center top, rgba(225,254,82,0.08) 0%, transparent 60%)'
@@ -73,7 +76,7 @@ export default function CheckoutSuccess() {
             {/* Header */}
             <div className="text-center">
               <CheckCircle2 className="w-16 h-16 text-aira-lime mx-auto mb-4" />
-              <p className="font-mono text-[10px] uppercase tracking-[.3em] text-aira-lime/70 mb-2">Pago confirmado</p>
+              <p className="font-mono text-[10px] uppercase tracking-[.3em] text-aira-lime/70 mb-2">Pago confirmado · Bold</p>
               <h1 className="font-display text-4xl text-white mb-1">¡Listo, {order.name.split(' ')[0]}! 🎉</h1>
               <p className="text-white/50 text-sm">Revisa tu email — enviamos tus boletas con código QR</p>
             </div>
@@ -138,7 +141,7 @@ export default function CheckoutSuccess() {
           <div className="text-center rounded-3xl border border-yellow-400/20 bg-[#08101f] p-8">
             <Loader2 className="w-12 h-12 text-yellow-400 animate-spin mx-auto mb-4" />
             <h1 className="font-display text-3xl text-white mb-2">Pago en proceso</h1>
-            <p className="text-white/50 text-sm">Tu pago está siendo procesado. Te notificaremos por email cuando se confirme.</p>
+            <p className="text-white/50 text-sm">Tu pago está siendo procesado por Bold. Te notificaremos por email cuando se confirme.</p>
           </div>
         )}
 
