@@ -43,8 +43,16 @@ async function validateAbonoEligibility(conn: any, items: any[]): Promise<void> 
 }
 
 /**
- * Intenta crear un link de pago Bold probando múltiples endpoints y esquemas
- * de autenticación hasta que uno funcione.
+ * Crea un link de pago Bold usando la API oficial documentada.
+ *
+ * Docs: https://developers.bold.co/pagos-en-linea/api-integration
+ * URL base: https://integrations.api.bold.co
+ * Auth: Authorization: x-api-key <KEY>
+ * Endpoint: POST /online/link/v1
+ *
+ * Fallback (API de Pagos BETA):
+ * URL base: https://api.online.payments.bold.co
+ * Endpoint: POST /v1/payment-intent
  */
 async function createBoldPaymentLink(params: {
   orderId: number; orderRef: string; amount: number;
@@ -55,92 +63,93 @@ async function createBoldPaymentLink(params: {
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : 'https://v0-aira-event.vercel.app';
 
-  const redirectionUrl = `${BASE_URL}/checkout/success?order_id=${params.orderId}`;
-  const amountInt      = Math.round(params.amount);
+  const callbackUrl = `${BASE_URL}/checkout/success?order_id=${params.orderId}`;
+  const amountInt   = Math.round(params.amount);
 
-  // Candidatos: [endpoint, authHeader, body]
-  const candidates: Array<{ label: string; url: string; auth: string; body: object }> = [
+  // Fecha de expiración = 10 minutos en nanosegundos desde epoch
+  const expirationNs = (Date.now() + 10 * 60 * 1000) * 1_000_000;
+
+  const authHeader = `x-api-key ${BOLD_API_KEY}`;
+
+  const candidates: Array<{ label: string; url: string; body: object; extractUrl: (d: any) => string | undefined }> = [
+    // ── Opción 1: Link de Pago API (integrations.api.bold.co) ──────────────────
     {
-      label: 'payment-vouchers Bearer',
-      url:   'https://integrations.bold.co/payment/v2/payment-vouchers',
-      auth:  `Bearer ${BOLD_API_KEY}`,
+      label: 'link-de-pago CLOSE',
+      url:   'https://integrations.api.bold.co/online/link/v1',
       body: {
-        orderId:        params.orderRef,
-        amount:         amountInt,
-        currency:       'COP',
-        description:    params.description,
-        redirectionUrl,
-        customer: {
-          name:  params.customerName,
-          email: params.customerEmail,
-          phone: params.customerPhone,
+        amount_type:     'CLOSE',
+        description:     params.description,
+        expiration_date: expirationNs,
+        callback_url:    callbackUrl,
+        payer_email:     params.customerEmail,
+        amount: {
+          currency:     'COP',
+          total_amount: amountInt,
         },
       },
+      extractUrl: (d) => d?.payload?.url ?? d?.payload?.link,
     },
+    // ── Opción 2: Link de Pago API — OPEN (sin monto, por si CLOSE falla) ──────
     {
-      label: 'payment-vouchers x-api-key',
-      url:   'https://integrations.bold.co/payment/v2/payment-vouchers',
-      auth:  `x-api-key ${BOLD_API_KEY}`,
+      label: 'link-de-pago OPEN',
+      url:   'https://integrations.api.bold.co/online/link/v1',
       body: {
-        orderId:        params.orderRef,
-        amount:         amountInt,
-        currency:       'COP',
-        description:    params.description,
-        redirectionUrl,
+        amount_type:  'OPEN',
+        description:  params.description,
+        callback_url: callbackUrl,
+        payer_email:  params.customerEmail,
+      },
+      extractUrl: (d) => d?.payload?.url ?? d?.payload?.link,
+    },
+    // ── Opción 3: API de Pagos BETA (payment-intent) ────────────────────────────
+    {
+      label: 'payment-intent BETA',
+      url:   'https://api.online.payments.bold.co/v1/payment-intent',
+      body: {
+        reference_id: params.orderRef,
+        description:  params.description,
+        callback_url: callbackUrl,
+        amount: {
+          currency:     'COP',
+          total_amount: amountInt,
+        },
         customer: {
           name:  params.customerName,
-          email: params.customerEmail,
           phone: params.customerPhone,
+          email: params.customerEmail,
         },
       },
-    },
-    {
-      label: 'checkout link-de-pago Bearer',
-      url:   'https://api.bold.co/online/link/v1/payment-links',
-      auth:  `Bearer ${BOLD_API_KEY}`,
-      body: {
-        reference:      params.orderRef,
-        amount_in_cents: amountInt * 100,
-        currency:       'COP',
-        customer_email: params.customerEmail,
-        redirect_url:   redirectionUrl,
-        description:    params.description,
-      },
-    },
-    {
-      label: 'checkout link-de-pago ApiKey header',
-      url:   'https://api.bold.co/online/link/v1/payment-links',
-      auth:  BOLD_API_KEY,
-      body: {
-        reference:      params.orderRef,
-        amount_in_cents: amountInt * 100,
-        currency:       'COP',
-        customer_email: params.customerEmail,
-        redirect_url:   redirectionUrl,
-        description:    params.description,
-      },
+      // La API de intención devuelve referencia, no URL directa.
+      // Construimos la URL de checkout de Bold con el reference_id.
+      extractUrl: (d) =>
+        d?.payload?.url ??
+        d?.url ??
+        (d?.payload?.reference_id
+          ? `https://checkout.bold.co/${d.payload.reference_id}`
+          : undefined),
     },
   ];
 
   const errors: string[] = [];
 
   for (const c of candidates) {
-    console.log(`[Bold] trying ${c.label}`);
+    console.log(`[Bold] trying ${c.label} → ${c.url}`);
     try {
       const resp = await fetch(c.url, {
         method:  'POST',
         headers: {
           'Content-Type':  'application/json',
-          'Authorization': c.auth,
+          'Authorization': authHeader,
         },
         body: JSON.stringify(c.body),
       });
+
       const text = await resp.text();
-      console.log(`[Bold] ${c.label} → status ${resp.status}`);
-      console.log(`[Bold] ${c.label} → body:`, text.substring(0, 400));
+      console.log(`[Bold] ${c.label} → HTTP ${resp.status}`);
+      console.log(`[Bold] ${c.label} → body: ${text.substring(0, 500)}`);
 
       if (!resp.ok) {
-        errors.push(`${c.label}: ${resp.status} ${text.substring(0, 200)}`);
+        errors.push(`${c.label}: HTTP ${resp.status} — ${text.substring(0, 300)}`);
         continue;
       }
 
@@ -150,28 +159,16 @@ async function createBoldPaymentLink(params: {
         continue;
       }
 
-      const url =
-        data?.payload?.url        ??
-        data?.payload?.link       ??
-        data?.payload?.checkoutUrl??
-        data?.url                 ??
-        data?.link                ??
-        data?.payment_url         ??
-        data?.checkoutUrl         ??
-        data?.redirectUrl         ??
-        data?.checkout_url        ??
-        data?.data?.url           ??
-        data?.data?.link          ??
-        data?.data?.checkout_url;
-
+      const url = c.extractUrl(data);
       if (url) {
         console.log(`[Bold] SUCCESS via ${c.label} → ${url}`);
         return url;
       }
 
-      errors.push(`${c.label}: OK pero sin URL. body=${text.substring(0, 200)}`);
+      errors.push(`${c.label}: OK pero sin URL. body=${text.substring(0, 300)}`);
     } catch (err: any) {
-      errors.push(`${c.label}: fetch error ${err?.message}`);
+      errors.push(`${c.label}: fetch error — ${err?.message}`);
+      console.error(`[Bold] ${c.label} fetch error:`, err);
     }
   }
 
@@ -180,24 +177,20 @@ async function createBoldPaymentLink(params: {
 
 // ─── Construye items[] desde el payload simplificado del frontend ──────────────
 function resolveItems(body: any): any[] {
-  // Si el frontend ya manda items[], úsalo directamente
   if (Array.isArray(body.items) && body.items.length > 0) return body.items;
 
-  // Payload simplificado desde TicketReserve.tsx
   const {
     accessType, ticketLabel, stageLabel,
     isVip = false, qty = 1,
     total, basePrice,
   } = body;
 
-  // Construimos un item sintético con ticketTypeId = 0 (fallback para no-DB)
-  // El precio real ya viene calculado en el frontend
   const unitPrice = basePrice
     ? Math.round(basePrice / qty)
     : Math.round((total || 0) / qty);
 
   return [{
-    ticketTypeId: 0,            // sin mapeo DB — se usa solo para el monto
+    ticketTypeId: 0,
     quantity:     qty,
     isVip:        !!isVip,
     _unitPrice:   unitPrice,
@@ -216,7 +209,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     addPassVip    = false,
     addTransport  = false,
     transportPassengers = 0,
-    // campos del frontend simplificado
     total:        frontendTotal,
     primerPago:   frontendPrimerPago,
     abonoPlan:    abonoPlanId,
@@ -228,7 +220,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     await conn.beginTransaction();
 
-    // ── Upsert usuario ──
     await conn.query(
       `INSERT INTO users (name, email, phone, doc_type, doc_number)
        VALUES (?, ?, ?, ?, ?)
@@ -237,11 +228,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
     const [[user]]: any = await conn.query('SELECT id FROM users WHERE email = ?', [email]);
 
-    // ── Calcular totales ──
     let subtotal = 0;
     for (const item of items) {
       if (item.ticketTypeId && item.ticketTypeId !== 0) {
-        // Validar contra DB solo si tenemos ID real
         const [[tt]]: any = await conn.query(
           'SELECT price, vip_price, available_qty, sold_qty, reserved_qty FROM ticket_types WHERE id = ?',
           [item.ticketTypeId]
@@ -253,12 +242,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         subtotal        += unitPrice * item.quantity;
         item._unitPrice  = unitPrice;
       } else {
-        // Precio ya calculado en frontend
         subtotal += (item._unitPrice ?? 0) * item.quantity;
       }
     }
 
-    // Si el frontend envió el total directamente, usarlo (más confiable)
     const resolvedTotal = frontendTotal ?? (
       subtotal +
       Math.round(subtotal * 0.05) +
@@ -285,7 +272,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
     const orderId = orderResult.insertId;
 
-    // ── Items (solo si hay ticketTypeId real) ──
     for (const item of items) {
       if (!item.ticketTypeId || item.ticketTypeId === 0) continue;
       await conn.query(
@@ -306,7 +292,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
     }
 
-    // ── Abonos ──
     const planKey = abonoPlanKey ?? abonoPlanId;
     if (paymentMode === 'abono' && planKey) {
       const [[plan]]: any = await conn.query(
@@ -331,14 +316,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     await conn.commit();
 
-    // ── Descripción del evento ──
     let eventName = 'Evento';
     try {
       const [[eventRow]]: any = await pool.query('SELECT name FROM events WHERE id = ?', [eventId]);
       if (eventRow?.name) eventName = eventRow.name;
     } catch { /* ignore */ }
 
-    // ── Bold payment link ──
     let paymentUrl: string | null = null;
     try {
       paymentUrl = await createBoldPaymentLink({
