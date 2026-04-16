@@ -51,25 +51,27 @@ async function createBoldPaymentLink(params: {
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : 'https://v0-aira-event.vercel.app';
 
-  // Endpoint correcto de Bold Colombia
-  const BOLD_ENDPOINT = 'https://checkout.bold.co/online/link/v1';
+  // Endpoint oficial Bold Colombia — Payment Vouchers API
+  const BOLD_ENDPOINT = 'https://integrations.bold.co/payment/v2/payment-vouchers';
 
   console.log('[Bold] endpoint:', BOLD_ENDPOINT);
   console.log('[Bold] BOLD_API_KEY presente:', !!BOLD_API_KEY);
+  console.log('[Bold] BOLD_API_KEY prefijo:', BOLD_API_KEY?.substring(0, 8));
   console.log('[Bold] amount:', Math.round(params.amount));
   console.log('[Bold] orderRef:', params.orderRef);
 
   const bodyPayload = {
-    amount:       { currency: 'COP', total_amount: Math.round(params.amount) },
-    description:  params.description,
-    order_id:     params.orderRef,
-    redirect_url: `${BASE_URL}/checkout/success?order_id=${params.orderId}`,
+    orderId:     params.orderRef,
+    amount:      Math.round(params.amount),
+    currency:    'COP',
+    description: params.description,
+    redirectionUrl: `${BASE_URL}/checkout/success?order_id=${params.orderId}`,
+    imageUrl:    `${BASE_URL}/logo.png`,
     customer: {
-      full_name: params.customerName,
-      email:     params.customerEmail,
-      phone:     params.customerPhone,
+      name:  params.customerName,
+      email: params.customerEmail,
+      phone: params.customerPhone,
     },
-    metadata: { internal_order_id: String(params.orderId) },
   };
 
   console.log('[Bold] body:', JSON.stringify(bodyPayload));
@@ -104,7 +106,16 @@ async function createBoldPaymentLink(params: {
     throw new Error(`Bold respuesta no es JSON: ${rawText}`);
   }
 
-  const url = data?.payload?.url ?? data?.url ?? data?.payment_url ?? data?.link;
+  // Bold puede retornar el link en distintos campos según versión
+  const url =
+    data?.payload?.url      ??
+    data?.payload?.link     ??
+    data?.url               ??
+    data?.link              ??
+    data?.payment_url       ??
+    data?.checkoutUrl       ??
+    data?.redirectUrl;
+
   if (!url) throw new Error(`Bold no retornó URL de pago. Respuesta: ${rawText}`);
   return url;
 }
