@@ -29,33 +29,66 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    const apiKey  = process.env.BOLD_API_KEY;
 
-    // Bold Checkout
+    // Bold Payment Links API — endpoint correcto
     const boldPayload = {
-      amount: { currency: 'COP', total_amount: Math.round(amountToPay) },
-      description: `${order.event_name} — ${orderRef}`,
-      metadata: { order_ref: orderRef, order_id: order.id },
-      customer: { name: order.name, email: order.email, phone: order.phone },
-      redirect_url: `${siteUrl}/checkout/success?ref=${orderRef}`,
-      cancel_url:   `${siteUrl}/checkout/cancelled?ref=${orderRef}`,
+      orderId:        orderRef,
+      amount:         Math.round(amountToPay),
+      currency:       'COP',
+      description:    `${order.event_name} — ${orderRef}`,
+      redirectionUrl: `${siteUrl}/checkout/success?ref=${orderRef}`,
+      customer: {
+        name:  order.name,
+        email: order.email,
+        phone: order.phone ?? undefined,
+      },
+      metadata: {
+        order_ref: orderRef,
+        order_id:  String(order.id),
+      },
     };
 
-    const boldRes = await fetch('https://checkout.bold.co/api/v1/checkout', {
+    const boldRes = await fetch('https://integrations.bold.co/payment/v2/payment-vouchers', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `x-api-key ${process.env.BOLD_API_KEY}`
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${apiKey}`,
       },
-      body: JSON.stringify(boldPayload)
+      body: JSON.stringify(boldPayload),
     });
 
-    const boldData = await boldRes.json();
-    if (!boldRes.ok) throw new Error(boldData.message || 'Error Bold');
+    const rawText = await boldRes.text();
+    let boldData: any;
+    try {
+      boldData = JSON.parse(rawText);
+    } catch {
+      throw new Error(`Bold API ${boldRes.status}: ${rawText.slice(0, 300)}`);
+    }
+
+    if (!boldRes.ok) {
+      throw new Error(`Bold API ${boldRes.status}: ${JSON.stringify(boldData)}`);
+    }
+
+    // La URL puede venir en distintos campos según versión de la API
+    const paymentUrl =
+      boldData.checkoutUrl ??
+      boldData.checkout_url ??
+      boldData.redirectUrl ??
+      boldData.redirect_url ??
+      boldData.link ??
+      boldData.paymentLink ??
+      boldData.url ??
+      null;
+
+    if (!paymentUrl) {
+      throw new Error(`Bold no devolvió URL de pago. Respuesta: ${JSON.stringify(boldData)}`);
+    }
 
     res.status(200).json({
-      checkoutUrl: boldData.checkout_url,
-      paymentId:   boldData.id,
-      amountToPay
+      checkoutUrl: paymentUrl,
+      paymentId:   boldData.id ?? boldData.paymentId ?? orderRef,
+      amountToPay,
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
