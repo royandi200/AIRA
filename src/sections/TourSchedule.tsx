@@ -62,6 +62,13 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite }: TourScheduleProps) => 
     return 'festival';
   };
 
+  // Mapeo de índice de tour a día AIRA
+  const DAY_MAP: Record<number, 'day1' | 'day2' | 'day3'> = {
+    0: 'day1',
+    1: 'day2',
+    2: 'day3',
+  };
+
   const TOUR_DATES = tourScheduleConfig.tourDates;
 
   return (
@@ -106,6 +113,7 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite }: TourScheduleProps) => 
           <div className="space-y-4">
             {TOUR_DATES.map((tour, index) => {
               const status = getStatusLabel(tour.status);
+              const accessType = DAY_MAP[index];
               return (
                 <div
                   key={tour.id}
@@ -150,6 +158,7 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite }: TourScheduleProps) => 
                             time: tour.time,
                             image: tour.image,
                             venueType: getVenueType(tour.venue),
+                            initialAccessType: accessType,
                           })}
                         >
                           <Ticket className="w-4 h-4" />
@@ -170,12 +179,9 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite }: TourScheduleProps) => 
 
             {/* ── Suite AIRA premium CTA ── */}
             <div className="tour-item relative rounded-xl overflow-hidden border border-amber-400/25 bg-[#0a0806] p-6">
-              {/* gold glow */}
               <div
                 className="absolute inset-0 opacity-40 pointer-events-none"
-                style={{
-                  background: 'radial-gradient(ellipse at top right, rgba(251,191,36,0.15), transparent 60%)',
-                }}
+                style={{ background: 'radial-gradient(ellipse at top right, rgba(251,191,36,0.15), transparent 60%)' }}
               />
               <div className="relative z-10 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
                 <div>

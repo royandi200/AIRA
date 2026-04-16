@@ -9,6 +9,7 @@ export interface ReservationEvent {
   time: string;
   image?: string;
   venueType: 'festival' | 'yacht' | 'club';
+  initialAccessType?: 'day1' | 'day2' | 'day3' | 'package';
 }
 
 interface TicketReserveProps {
@@ -21,31 +22,30 @@ type AccessType = 'day1' | 'day2' | 'day3' | 'package';
 type PaymentMode = 'full' | 'abono';
 
 const ABONO_PLANS = [
-  { id: 'a50',  label: '2 cuotas',  pct: 0.50, desc: '50% ahora · 50% antes del evento', badge: 'Popular' },
-  { id: 'a33',  label: '3 cuotas',  pct: 0.33, desc: '33% ahora · 33% · 33% antes del evento', badge: null },
-  { id: 'a25',  label: '4 cuotas',  pct: 0.25, desc: '25% ahora · resto en 3 cuotas', badge: null },
+  { id: 'a50', label: '2 cuotas', pct: 0.50, desc: '50% ahora · 50% antes del evento', badge: 'Popular' },
+  { id: 'a33', label: '3 cuotas', pct: 0.33, desc: '33% ahora · 33% · 33% antes del evento', badge: null },
+  { id: 'a25', label: '4 cuotas', pct: 0.25, desc: '25% ahora · resto en 3 cuotas', badge: null },
 ];
 
-// Precios Pass VIP por día
 const PASS_VIP_PRICES: Record<AccessType, number> = {
-  day1:    50_000,
-  day2:   100_000,
-  day3:    40_000,
+  day1: 50_000,
+  day2: 100_000,
+  day3: 40_000,
   package: 500_000,
 };
 
 const DAYS = [
-  { id: 'day1' as AccessType, label: 'DÍA 1', title: 'After Fiesta de Yates',       price: 80_000,  accentColor: '#004fff', icon: <Zap   className="w-5 h-5" /> },
+  { id: 'day1' as AccessType, label: 'DÍA 1', title: 'After Fiesta de Yates',        price: 80_000,  accentColor: '#004fff', icon: <Zap   className="w-5 h-5" /> },
   { id: 'day2' as AccessType, label: 'DÍA 2', title: 'Fiesta Majestic & Stage Joinn', price: 150_000, accentColor: '#e1fe52', icon: <Crown className="w-5 h-5" /> },
-  { id: 'day3' as AccessType, label: 'DÍA 3', title: 'Open Deck',                    price: 50_000,  accentColor: '#ffffff', icon: <Star  className="w-5 h-5" /> },
+  { id: 'day3' as AccessType, label: 'DÍA 3', title: 'Open Deck',                     price: 50_000,  accentColor: '#ffffff', icon: <Star  className="w-5 h-5" /> },
 ];
 
 const STAGES = [
-  { id: 'creyentes', label: 'Creyentes',  price: 590_000,   slots: 35, dates: '15 ABR – 5 MAY', locked: true,  lockNote: 'Exclusivo asistentes Melomania' },
-  { id: 'referidos', label: 'Referidos',  price: 690_000,   slots: 35, dates: '15 ABR – 5 MAY', locked: false },
-  { id: 'primera',   label: '1ª Etapa',   price: 790_000,   slots: 28, dates: '5 MAY – 5 JUN',  locked: false },
-  { id: 'segunda',   label: '2ª Etapa',   price: 890_000,   slots: 28, dates: '5 JUN – 5 JUL',  locked: false },
-  { id: 'tercera',   label: '3ª Etapa',   price: 1_000_000, slots: 7,  dates: '5 JUL – 15 AGO', locked: false, urgent: true },
+  { id: 'creyentes', label: 'Creyentes', price: 590_000,   slots: 35, dates: '15 ABR – 5 MAY', locked: true  },
+  { id: 'referidos', label: 'Referidos', price: 690_000,   slots: 35, dates: '15 ABR – 5 MAY', locked: false },
+  { id: 'primera',   label: '1ª Etapa',  price: 790_000,   slots: 28, dates: '5 MAY – 5 JUN',  locked: false },
+  { id: 'segunda',   label: '2ª Etapa',  price: 890_000,   slots: 28, dates: '5 JUN – 5 JUL',  locked: false },
+  { id: 'tercera',   label: '3ª Etapa',  price: 1_000_000, slots: 7,  dates: '5 JUL – 15 AGO', locked: false, urgent: true },
 ];
 
 const TRANSPORT_PRICE = 150_000;
@@ -123,14 +123,10 @@ function AbonoSelector({ paymentMode, setPaymentMode, abonoPlanId, setAbonoPlanI
       <button
         onClick={() => setPaymentMode('full')}
         className={`w-full text-left rounded-2xl border p-4 transition-all duration-200 flex items-center gap-4 ${
-          paymentMode === 'full'
-            ? 'border-aira-lime/50 bg-aira-lime/8'
-            : 'border-white/10 bg-white/[0.03] hover:border-white/25'
+          paymentMode === 'full' ? 'border-aira-lime/50 bg-aira-lime/8' : 'border-white/10 bg-white/[0.03] hover:border-white/25'
         }`}
       >
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-          paymentMode === 'full' ? 'bg-aira-lime/20' : 'bg-white/5'
-        }`}>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${paymentMode === 'full' ? 'bg-aira-lime/20' : 'bg-white/5'}`}>
           <CreditCard className={`w-5 h-5 ${paymentMode === 'full' ? 'text-aira-lime' : 'text-white/40'}`} />
         </div>
         <div className="flex-1 min-w-0">
@@ -146,15 +142,11 @@ function AbonoSelector({ paymentMode, setPaymentMode, abonoPlanId, setAbonoPlanI
       <button
         onClick={() => setPaymentMode('abono')}
         className={`w-full text-left rounded-2xl border p-4 transition-all duration-200 ${
-          paymentMode === 'abono'
-            ? 'border-aira-lime/50 bg-aira-lime/8'
-            : 'border-white/10 bg-white/[0.03] hover:border-white/25'
+          paymentMode === 'abono' ? 'border-aira-lime/50 bg-aira-lime/8' : 'border-white/10 bg-white/[0.03] hover:border-white/25'
         }`}
       >
         <div className="flex items-center gap-4">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-            paymentMode === 'abono' ? 'bg-aira-lime/20' : 'bg-white/5'
-          }`}>
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${paymentMode === 'abono' ? 'bg-aira-lime/20' : 'bg-white/5'}`}>
             <CalendarClock className={`w-5 h-5 ${paymentMode === 'abono' ? 'text-aira-lime' : 'text-white/40'}`} />
           </div>
           <div className="flex-1 min-w-0">
@@ -175,9 +167,7 @@ function AbonoSelector({ paymentMode, setPaymentMode, abonoPlanId, setAbonoPlanI
                 key={plan.id}
                 onClick={() => setAbonoPlanId(plan.id)}
                 className={`w-full text-left rounded-xl border px-4 py-3 transition-all duration-150 flex items-center justify-between gap-3 ${
-                  abonoPlanId === plan.id
-                    ? 'border-aira-lime/40 bg-aira-lime/10'
-                    : 'border-white/8 bg-white/[0.02] hover:border-white/20'
+                  abonoPlanId === plan.id ? 'border-aira-lime/40 bg-aira-lime/10' : 'border-white/8 bg-white/[0.02] hover:border-white/20'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -201,7 +191,6 @@ function AbonoSelector({ paymentMode, setPaymentMode, abonoPlanId, setAbonoPlanI
                 </div>
               </button>
             ))}
-
             <div className="flex items-start gap-2.5 rounded-xl border border-amber-400/20 bg-amber-400/5 px-3 py-2.5 mt-1">
               <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
               <p className="font-mono-custom text-[9px] text-amber-300/70 leading-relaxed">
@@ -253,22 +242,22 @@ function BuyerForm({ name, email, phone, onChange }: {
 }
 
 const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) => {
-  const [step, setStep]               = useState(1);
-  const [accessType, setAccessType]   = useState<AccessType | null>(null);
-  const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
-  const [addPassVip, setAddPassVip]   = useState(false);
-  const [addTransport, setAddTransport] = useState(false);
-  const [qty, setQty]                 = useState(1);
+  const initAccess = selectedEvent?.initialAccessType ?? null;
+  const initStep   = initAccess === 'package' ? 2 : initAccess ? 3 : 1;
 
-  const [paymentMode, setPaymentMode] = useState<PaymentMode>('full');
-  const [abonoPlanId, setAbonoPlanId] = useState(ABONO_PLANS[0].id);
-
-  const [buyerName,  setBuyerName]  = useState('');
-  const [buyerEmail, setBuyerEmail] = useState('');
-  const [buyerPhone, setBuyerPhone] = useState('');
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [step,            setStep]           = useState(initStep);
+  const [accessType,      setAccessType]     = useState<AccessType | null>(initAccess);
+  const [selectedStageId, setSelectedStageId]= useState<string | null>(null);
+  const [addPassVip,      setAddPassVip]     = useState(false);
+  const [addTransport,    setAddTransport]   = useState(false);
+  const [qty,             setQty]            = useState(1);
+  const [paymentMode,     setPaymentMode]    = useState<PaymentMode>('full');
+  const [abonoPlanId,     setAbonoPlanId]    = useState(ABONO_PLANS[0].id);
+  const [buyerName,       setBuyerName]      = useState('');
+  const [buyerEmail,      setBuyerEmail]     = useState('');
+  const [buyerPhone,      setBuyerPhone]     = useState('');
+  const [isSubmitting,    setIsSubmitting]   = useState(false);
+  const [paymentError,    setPaymentError]   = useState<string | null>(null);
 
   useLockBodyScroll(isOpen);
 
@@ -287,14 +276,24 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
     el.addEventListener('wheel', handler, { passive: false });
   }, []);
 
+  // Reset cada vez que se abre (o cambia el evento)
   useEffect(() => {
     if (!isOpen) return;
-    setStep(1); setAccessType(null); setSelectedStageId(null);
-    setAddPassVip(false); setAddTransport(false); setQty(1);
-    setPaymentMode('full'); setAbonoPlanId(ABONO_PLANS[0].id);
-    setBuyerName(''); setBuyerEmail(''); setBuyerPhone('');
+    const ia = selectedEvent?.initialAccessType ?? null;
+    const is = ia === 'package' ? 2 : ia ? 3 : 1;
+    setStep(is);
+    setAccessType(ia);
+    setSelectedStageId(null);
+    setAddPassVip(false);
+    setAddTransport(false);
+    setQty(1);
+    setPaymentMode('full');
+    setAbonoPlanId(ABONO_PLANS[0].id);
+    setBuyerName('');
+    setBuyerEmail('');
+    setBuyerPhone('');
     setPaymentError(null);
-  }, [isOpen, selectedEvent?.id]);
+  }, [isOpen, selectedEvent?.id, selectedEvent?.initialAccessType]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape' && isOpen) onClose(); };
@@ -304,9 +303,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
 
   const selectedStage = useMemo(() => STAGES.find(s => s.id === selectedStageId) ?? null, [selectedStageId]);
   const selectedDay   = useMemo(() => DAYS.find(d => d.id === accessType) ?? null, [accessType]);
-
-  // Precio Pass VIP según el accessType activo
-  const passVipPrice = accessType ? PASS_VIP_PRICES[accessType] : 500_000;
+  const passVipPrice  = accessType ? PASS_VIP_PRICES[accessType] : 500_000;
 
   const basePrice = useMemo(() => {
     if (accessType === 'day1') return 80_000  * qty;
@@ -324,25 +321,21 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
   const selectedPlan = ABONO_PLANS.find(p => p.id === abonoPlanId) ?? ABONO_PLANS[0];
   const primerPago   = paymentMode === 'full' ? total : Math.ceil(total * selectedPlan.pct);
 
-  // Labels para resumen y checkout
   const ticketLabel = selectedDay ? `${selectedDay.label} · ${selectedDay.title}` : null;
   const stageLabel  = accessType === 'package' && selectedStage ? selectedStage.label : null;
 
-  // Selección de un día: ir directo al step 3
   const handleSelectDay = (type: AccessType) => {
     setAccessType(type);
     setSelectedStageId(null);
     setStep(3);
   };
 
-  // Selección del paquete: ir al step 2 (etapas)
   const handleSelectPackage = () => {
     setAccessType('package');
     setSelectedStageId(null);
     setStep(2);
   };
 
-  // ── CHECKOUT ──────────────────────────────────────────────────────────────
   const handleCheckout = async () => {
     if (!buyerName.trim() || !buyerEmail.trim() || !buyerPhone.trim()) {
       setPaymentError('Por favor completa nombre, correo y celular.');
@@ -355,37 +348,23 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name:         buyerName.trim(),
-          email:        buyerEmail.trim(),
-          phone:        buyerPhone.trim(),
-          eventId:      selectedEvent?.id,
-          accessType,
-          ticketLabel,
-          stageLabel,
-          qty,
-          basePrice,
-          addPassVip,
-          passVipPrice,
-          addTransport,
-          total,
-          paymentMode,
-          abonoPlan:    paymentMode === 'abono' ? abonoPlanId : null,
-          primerPago,
+          name: buyerName.trim(), email: buyerEmail.trim(), phone: buyerPhone.trim(),
+          eventId: selectedEvent?.id, accessType, ticketLabel, stageLabel,
+          qty, basePrice, addPassVip, passVipPrice, addTransport, total,
+          paymentMode, abonoPlan: paymentMode === 'abono' ? abonoPlanId : null, primerPago,
           items: [{
-            ticketTypeId: 0,
-            quantity:     qty,
-            _unitPrice:   basePrice > 0 ? Math.round(basePrice / qty) : Math.round(total / qty),
-            _label:       ticketLabel ?? stageLabel ?? accessType ?? 'Entrada',
+            ticketTypeId: 0, quantity: qty,
+            _unitPrice: basePrice > 0 ? Math.round(basePrice / qty) : Math.round(total / qty),
+            _label: ticketLabel ?? stageLabel ?? accessType ?? 'Entrada',
           }],
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al crear la orden');
       if (!data.paymentUrl) {
-        const boldMsg = data.boldError
+        throw new Error(data.boldError
           ? `Error Bold: ${data.boldError.substring(0, 120)}`
-          : 'No se pudo generar el link de pago. Intenta de nuevo.';
-        throw new Error(boldMsg);
+          : 'No se pudo generar el link de pago. Intenta de nuevo.');
       }
       window.location.href = data.paymentUrl;
     } catch (err: any) {
@@ -397,12 +376,19 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
 
   if (!isOpen || !selectedEvent) return null;
 
-  // Pill visual de steps — solo muestra los pasos del flujo activo
+  // Pills: si ya hay accessType definido (flujo directo), no mostrar step 1
   const visibleSteps = step === 1
-    ? [{ n: 1, label: 'Acceso' }, { n: 2, label: accessType === 'package' ? 'Etapa' : 'Zona' }, { n: 3, label: 'Confirmar' }]
+    ? [{ n: 1, label: 'Acceso' }, { n: 2, label: 'Zona' }, { n: 3, label: 'Confirmar' }]
     : accessType === 'package'
       ? [{ n: 1, label: 'Acceso' }, { n: 2, label: 'Etapa' }, { n: 3, label: 'Confirmar' }]
-      : [{ n: 1, label: 'Acceso' }, { n: 3, label: 'Confirmar' }];
+      : [{ n: 3, label: 'Confirmar' }];
+
+  // Título dinámico del modal según el día
+  const modalTitle = accessType === 'day1' ? 'DÍA 1 · After Fiesta de Yates'
+    : accessType === 'day2' ? 'DÍA 2 · Fiesta Majestic & Stage Joinn'
+    : accessType === 'day3' ? 'DÍA 3 · Open Deck'
+    : accessType === 'package' ? 'Paquete 3D / 2N · Cabaña AIRA'
+    : selectedEvent.venue;
 
   return (
     <div
@@ -425,7 +411,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
         <div className="relative z-10 flex-none border-b border-white/10 px-5 py-4 md:px-8 md:py-5 flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="font-mono-custom text-[10px] uppercase tracking-[0.35em] text-aira-lime/70 mb-1">Guatapé · AIRA</p>
-            <h3 className="font-display text-2xl md:text-4xl text-white leading-none truncate">{selectedEvent.venue}</h3>
+            <h3 className="font-display text-2xl md:text-4xl text-white leading-none truncate">{modalTitle}</h3>
             <p className="font-mono-custom text-xs md:text-sm text-white/45 mt-1.5">{selectedEvent.city} · {selectedEvent.date} · {selectedEvent.time}</p>
           </div>
           <button
@@ -435,21 +421,23 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
         </div>
 
         {/* STEP PILLS */}
-        <div className="relative z-10 flex-none px-5 md:px-8 pt-4 pb-3 flex flex-wrap gap-2 border-b border-white/[0.06]">
-          {visibleSteps.map((item, idx) => {
-            const visualN   = idx + 1;
-            const active    = step === item.n;
-            const completed = step > item.n;
-            return (
-              <div key={item.n} className={'flex items-center gap-2 px-3 py-1.5 rounded-full border ' + (active ? 'border-aira-lime/40 bg-aira-lime/10' : 'border-white/10 bg-white/[0.03]')}>
-                <div className={'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-mono-custom ' + (completed ? 'bg-aira-lime text-aira-darkBlue' : active ? 'bg-aira-blue text-white' : 'bg-white/10 text-white/50')}>
-                  {completed ? <Check className="w-3.5 h-3.5" /> : visualN}
+        {visibleSteps.length > 1 && (
+          <div className="relative z-10 flex-none px-5 md:px-8 pt-4 pb-3 flex flex-wrap gap-2 border-b border-white/[0.06]">
+            {visibleSteps.map((item, idx) => {
+              const visualN   = idx + 1;
+              const active    = step === item.n;
+              const completed = step > item.n;
+              return (
+                <div key={item.n} className={'flex items-center gap-2 px-3 py-1.5 rounded-full border ' + (active ? 'border-aira-lime/40 bg-aira-lime/10' : 'border-white/10 bg-white/[0.03]')}>
+                  <div className={'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-mono-custom ' + (completed ? 'bg-aira-lime text-aira-darkBlue' : active ? 'bg-aira-blue text-white' : 'bg-white/10 text-white/50')}>
+                    {completed ? <Check className="w-3.5 h-3.5" /> : visualN}
+                  </div>
+                  <span className={'font-mono-custom text-[10px] uppercase tracking-[0.22em] ' + (active ? 'text-white' : 'text-white/45')}>{item.label}</span>
                 </div>
-                <span className={'font-mono-custom text-[10px] uppercase tracking-[0.22em] ' + (active ? 'text-white' : 'text-white/45')}>{item.label}</span>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* SCROLLABLE BODY */}
         <div ref={scrollRef} className="relative z-10 flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -458,14 +446,13 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
             {/* MAIN PANEL */}
             <div className="p-5 md:p-8 lg:border-r border-white/10">
 
-              {/* ── STEP 1: Selección inicial ── */}
+              {/* ── STEP 1: Selección general (sin initialAccessType) ── */}
               {step === 1 && (
                 <div>
                   <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-2">Paso 1</p>
                   <h4 className="font-display text-3xl md:text-4xl text-white mb-1">¿Cómo quieres vivir AIRA?</h4>
                   <p className="text-sm text-white/50 mb-6">Elige entre boletería por día o el paquete completo con alojamiento.</p>
 
-                  {/* Días */}
                   <p className="font-mono-custom text-[9px] uppercase tracking-[0.3em] text-aira-lime/60 mb-3">🎟 Boletería por día</p>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
                     {DAYS.map(day => (
@@ -481,7 +468,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                     ))}
                   </div>
 
-                  {/* Paquete */}
                   <p className="font-mono-custom text-[9px] uppercase tracking-[0.3em] text-aira-lime/60 mb-3">🏠 Paquete completo · 3D / 2N</p>
                   <button
                     className="w-full text-left rounded-2xl border border-aira-lime/20 bg-aira-lime/5 p-5 hover:border-aira-lime/50 hover:bg-aira-lime/10 active:scale-[0.99] transition-all duration-200"
@@ -492,7 +478,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                         <div className="flex items-center gap-2 mb-2"><Users className="w-5 h-5 text-aira-lime" /><h5 className="font-display text-xl text-white">Cabaña AIRA</h5></div>
                         <p className="text-sm text-white/50 mb-3 max-w-sm">2 habitaciones · 2 baños · terraza · cocina · jacuzzi · capacidad 7 personas</p>
                         <div className="flex flex-wrap gap-1.5">
-                          {['Recorrido Peñol', 'Yacht party', 'Yate Majestic', 'Noches de música', 'Open decks', 'Meditación'].map(p => (
+                          {['Recorrido Peñol','Yacht party','Yate Majestic','Noches de música','Open decks','Meditación'].map(p => (
                             <span key={p} className="px-2.5 py-1 rounded-full text-[8px] font-mono-custom uppercase tracking-[0.15em] border border-aira-lime/20 text-aira-lime/60 bg-aira-lime/5">{p}</span>
                           ))}
                         </div>
@@ -507,7 +493,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                 </div>
               )}
 
-              {/* ── STEP 2: Etapas (solo paquete) ── */}
+              {/* ── STEP 2: Etapas (paquete) ── */}
               {step === 2 && accessType === 'package' && (
                 <div>
                   <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-2">Paso 2</p>
@@ -537,12 +523,9 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       </button>
                     ))}
                   </div>
-
-                  {/* Pass VIP en paquete */}
                   <div className="mt-5">
                     <PassVipBanner addPassVip={addPassVip} setAddPassVip={setAddPassVip} qty={qty} passVipPrice={passVipPrice} />
                   </div>
-
                   <div className="mt-5 flex items-center justify-between gap-3">
                     <button className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 transition-colors" onClick={() => { setAccessType(null); setStep(1); }}>Volver</button>
                     <button disabled={!selectedStageId} className="px-6 py-2.5 rounded-full bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] hover:bg-white active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed" onClick={() => selectedStageId && setStep(3)}>Continuar</button>
@@ -550,11 +533,11 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                 </div>
               )}
 
-              {/* ── STEP 3: Confirmación ── */}
+              {/* ── STEP 3: Confirmar y pagar ── */}
               {step === 3 && (
                 <div>
                   <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-2">
-                    {accessType === 'package' ? 'Paso 3' : 'Paso 2'}
+                    {accessType === 'package' ? 'Paso 3' : 'Confirmar'}
                   </p>
                   <h4 className="font-display text-3xl md:text-4xl text-white mb-1">Confirmar y pagar</h4>
                   <p className="text-sm text-white/50 mb-5">Revisa tu pedido, elige cómo pagar y completa tus datos.</p>
@@ -575,13 +558,11 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                     <div className="border-t border-white/10 pt-4">
                       <p className="font-mono-custom text-[9px] uppercase tracking-[0.22em] text-white/35 mb-2">Tu selección</p>
                       <div className="flex flex-wrap gap-2">
-                        {/* Días */}
-                        {(accessType === 'day1' || accessType === 'day2' || accessType === 'day3') && selectedDay && (
+                        {selectedDay && (
                           <span className="px-3 py-1.5 rounded-full border border-white/20 text-white/80 bg-white/[0.04] text-sm">
                             {selectedDay.label} · {selectedDay.title} · {fmt(selectedDay.price)}
                           </span>
                         )}
-                        {/* Paquete */}
                         {accessType === 'package' && selectedStage && (
                           <span className="px-3 py-1.5 rounded-full border border-aira-lime/30 text-aira-lime bg-aira-lime/8 text-sm">
                             Cabaña AIRA · {selectedStage.label} · {fmt(selectedStage.price)}/persona
@@ -605,7 +586,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       </div>
                     </div>
 
-                    {/* Pass VIP en confirmación */}
+                    {/* Pass VIP */}
                     <div className="border-t border-white/10 pt-4">
                       <PassVipBanner addPassVip={addPassVip} setAddPassVip={setAddPassVip} qty={qty} passVipPrice={passVipPrice} compact />
                     </div>
@@ -639,13 +620,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
 
                     {/* Pago */}
                     <div className="border-t border-white/10 pt-5">
-                      <AbonoSelector
-                        paymentMode={paymentMode}
-                        setPaymentMode={setPaymentMode}
-                        abonoPlanId={abonoPlanId}
-                        setAbonoPlanId={setAbonoPlanId}
-                        total={total}
-                      />
+                      <AbonoSelector paymentMode={paymentMode} setPaymentMode={setPaymentMode} abonoPlanId={abonoPlanId} setAbonoPlanId={setAbonoPlanId} total={total} />
                     </div>
 
                     {/* Datos comprador */}
@@ -667,11 +642,14 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                     )}
 
                     <div className="flex flex-wrap gap-3 pt-1 items-center">
-                      <button
-                        className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 transition-colors"
-                        onClick={() => accessType === 'package' ? setStep(2) : (setAccessType(null), setStep(1))}
-                        disabled={isSubmitting}
-                      >Volver</button>
+                      {/* Volver: si vino de un botón directo (initialAccessType), cerrar en vez de ir al step 1 */}
+                      {!selectedEvent.initialAccessType || accessType === 'package' ? (
+                        <button
+                          className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 transition-colors"
+                          onClick={() => accessType === 'package' ? setStep(2) : (setAccessType(null), setStep(1))}
+                          disabled={isSubmitting}
+                        >Volver</button>
+                      ) : null}
                       <button
                         className="flex-1 min-w-[160px] px-6 py-3 rounded-full bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] hover:bg-white active:scale-[0.97] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={handleCheckout}
@@ -705,6 +683,15 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                 </div>
               </div>
 
+              {/* Precio destacado del día seleccionado */}
+              {selectedDay && (
+                <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <p className="font-mono-custom text-[9px] uppercase tracking-[0.24em] text-white/35 mb-2">{selectedDay.label} · Precio</p>
+                  <p className="font-display text-3xl" style={{ color: selectedDay.accentColor }}>{fmt(selectedDay.price)}</p>
+                  <p className="font-mono-custom text-[9px] text-white/35 mt-1">por persona · cargo de servicio incluido</p>
+                </div>
+              )}
+
               <div className="mt-4 rounded-2xl border border-aira-lime/15 bg-aira-lime/5 p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <CalendarClock className="w-4 h-4 text-aira-lime" />
@@ -725,9 +712,9 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                 <div className="flex items-center gap-2 mb-3"><Sparkles className="w-4 h-4 text-yellow-300" /><p className="font-mono-custom text-[9px] uppercase tracking-[0.24em] text-yellow-300">Pass VIP</p></div>
                 <div className="space-y-2">
                   {[
-                    { icon: '🛥',  label: 'Yate VIP',          desc: 'Acceso exclusivo al yate' },
-                    { icon: '👑',  label: 'Zona VIP Majestic',  desc: 'Área premium en el yate Majestic' },
-                    { icon: '🎵',  label: 'Zona VIP Stage Joinn', desc: 'Acceso VIP al Stage Joinn' },
+                    { icon: '🛥', label: 'Yate VIP',            desc: 'Acceso exclusivo al yate' },
+                    { icon: '👑', label: 'Zona VIP Majestic',   desc: 'Área premium en el yate Majestic' },
+                    { icon: '🎵', label: 'Zona VIP Stage Joinn',desc: 'Acceso VIP al Stage Joinn' },
                   ].map(item => (
                     <div key={item.label} className="flex items-start gap-2.5 rounded-xl bg-yellow-400/8 border border-yellow-400/15 p-2.5">
                       <span className="text-base shrink-0 mt-0.5">{item.icon}</span>
@@ -738,7 +725,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                     </div>
                   ))}
                 </div>
-                {/* Precio dinámico según selección */}
                 {accessType && (
                   <p className="font-mono-custom text-[9px] text-yellow-300/60 mt-3">
                     {accessType === 'day1' && `Día 1 · ${fmt(PASS_VIP_PRICES.day1)}/persona`}
