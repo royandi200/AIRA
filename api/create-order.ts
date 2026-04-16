@@ -29,8 +29,6 @@ function calcDueDate(cuotaNumber: number, cuotas: number, eventDate: string): st
   return final.toISOString().split('T')[0];
 }
 
-// Siempre resuelve al event_id=1 (único evento AIRA en DB).
-// El eventId del frontend puede ser '1','2','3','day1','day2','day3','package', etc.
 function resolveEventId(_eventId: any): number {
   return 1;
 }
@@ -139,14 +137,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     name, email, phone, docType, docNumber, eventId,
     paymentMode = 'full', abonoPlanKey,
     addPassVip = false, addTransport = false, transportPassengers = 0,
-    total: frontendTotal, abonoPlan: abonoPlanId,
+    total: frontendTotal,
+    abonoPlan: abonoPlanId,
+    // ✅ FIX: recibir amountToCharge del frontend (cuota en modo abono, total en modo full)
+    amountToCharge: frontendAmountToCharge,
+    primerPago: frontendPrimerPago,
   } = body;
 
-  // Siempre usar event_id=1 (único evento en DB)
   const dbEventId = resolveEventId(eventId);
-
   const items = resolveItems(body);
   const conn  = await pool.getConnection();
+
   try {
     await conn.beginTransaction();
 
@@ -179,6 +180,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const transportTotal = addTransport ? 150_000 * transportPassengers : 0;
     const serviceFee     = frontendTotal ? 0 : Math.round(subtotal * 0.05);
     const total          = frontendTotal ?? (subtotal + serviceFee + passVipTotal + transportTotal);
+
+    // ✅ FIX: el monto que Bold cobra es la cuota (primerPago), no el total completo
+    const amountToCharge: number =
+      frontendAmountToCharge ??
+      frontendPrimerPago ??
+      total;
 
     const orderRef      = await generateOrderRef(conn);
     const reservedUntil = new Date(Date.now() + 10 * 60 * 1000);
@@ -243,17 +250,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (ev?.name) eventName = ev.name;
     } catch { /* ignore */ }
 
+    const boldDescription = paymentMode === 'abono'
+      ? `AIRA ${eventName} · ${orderRef} · 1ª cuota`
+      : `AIRA ${eventName} · ${orderRef}`;
+
     let paymentUrl: string | null = null;
     try {
+      // ✅ FIX: Bold recibe amountToCharge (cuota) no el total completo
       paymentUrl = await createBoldPaymentLink({
-        orderId, orderRef, amount: total,
+        orderId, orderRef,
+        amount: amountToCharge,
         customerName: name, customerEmail: email, customerPhone: phone,
-        description: `AIRA ${eventName} · ${orderRef}`,
+        description: boldDescription,
       });
       try {
         await pool.query('UPDATE orders SET bold_link = ? WHERE id = ?', [paymentUrl, orderId]);
       } catch (dbErr: any) {
-        console.warn('[Bold] No se pudo guardar bold_link en DB (ejecuta /api/migrate):', dbErr.message);
+        console.warn('[Bold] No se pudo guardar bold_link en DB:', dbErr.message);
       }
     } catch (boldErr: any) {
       console.error('[Bold] Error creando link de pago:', boldErr.message);
@@ -264,7 +277,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    return res.status(201).json({ orderId, orderRef, total, reservedUntil, paymentMode, paymentUrl });
+    return res.status(201).json({
+      orderId, orderRef, total, amountCharged: amountToCharge,
+      reservedUntil, paymentMode, paymentUrl,
+    });
 
   } catch (err: any) {
     await conn.rollback();
