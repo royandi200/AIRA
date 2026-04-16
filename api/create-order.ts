@@ -2,21 +2,39 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import pool from './db';
 import { v4 as uuidv4 } from 'uuid';
 
-// Genera referencia AIRA-00001
 async function generateOrderRef(conn: any): Promise<string> {
   const [rows]: any = await conn.query('SELECT COUNT(*) as total FROM orders');
   const next = String(rows[0].total + 1).padStart(5, '0');
   return `AIRA-${next}`;
 }
 
-// Calcula fecha de vencimiento por cuota
 function calcDueDate(cuotaNumber: number, cuotas: number, eventDate: string): string {
   const event = new Date(eventDate);
-  const msPerCuota = event.getTime() / cuotas;
-  const due = new Date(Date.now() + msPerCuota * cuotaNumber);
-  // No puede pasar la fecha del evento
+  const now = Date.now();
+  const msRange = event.getTime() - now;
+  const msPerCuota = msRange / cuotas;
+  const due = new Date(now + msPerCuota * cuotaNumber);
   const final = due < event ? due : event;
   return final.toISOString().split('T')[0];
+}
+
+// Valida que el pago en cuotas solo aplique al Paquete VIP 3 Días
+async function validateAbonoEligibility(conn: any, items: any[]): Promise<void> {
+  for (const item of items) {
+    const [[tt]]: any = await conn.query(
+      `SELECT name, access_type FROM ticket_types WHERE id = ?`,
+      [item.ticketTypeId]
+    );
+    if (!tt) throw new Error(`Tipo de boleta ${item.ticketTypeId} no encontrado`);
+    const isVipPackage =
+      tt.access_type === 'package' &&
+      tt.name.toLowerCase().includes('vip');
+    if (!isVipPackage) {
+      throw new Error(
+        `El pago en cuotas solo está disponible para el Paquete VIP 3 Días. "${tt.name}" requiere pago completo.`
+      );
+    }
+  }
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -33,6 +51,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
+
+    // Validar elegibilidad de abono ANTES de crear nada
+    if (paymentMode === 'abono') {
+      await validateAbonoEligibility(conn, items);
+    }
 
     // 1. Upsert usuario
     await conn.query(
@@ -52,18 +75,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
       const unitPrice = item.isVip && tt.vip_price ? tt.vip_price : tt.price;
       const remaining = tt.available_qty - tt.sold_qty - tt.reserved_qty;
-      if (remaining < item.quantity) throw new Error(`Sin cupos para ticket ${item.ticketTypeId}`);
+      if (remaining < item.quantity) throw new Error(`Sin cupos para la boleta seleccionada`);
       subtotal += unitPrice * item.quantity;
       item._unitPrice = unitPrice;
     }
-    const serviceFee    = Math.round(subtotal * 0.05 * 100) / 100; // 5%
-    const passVipTotal  = addPassVip ? 50000 : 0;
+
+    const serviceFee     = Math.round(subtotal * 0.05 * 100) / 100;
+    const passVipTotal   = addPassVip ? 50000 : 0;
     const transportTotal = addTransport ? (35000 * transportPassengers) : 0;
-    const total = subtotal + serviceFee + passVipTotal + transportTotal;
+    const total          = subtotal + serviceFee + passVipTotal + transportTotal;
 
     // 3. Crear orden
-    const orderRef = await generateOrderRef(conn);
-    const reservedUntil = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+    const orderRef     = await generateOrderRef(conn);
+    const reservedUntil = new Date(Date.now() + 10 * 60 * 1000);
+
     const [orderResult]: any = await conn.query(
       `INSERT INTO orders
          (order_ref, user_id, event_id, subtotal, service_fee, pass_vip_total,
@@ -91,13 +116,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 5. Transporte
     if (addTransport) {
       await conn.query(
-        `INSERT INTO transport_bookings (order_id, passengers, price)
-         VALUES (?,?,?)`,
+        `INSERT INTO transport_bookings (order_id, passengers, price) VALUES (?,?,?)`,
         [orderId, transportPassengers, transportTotal]
       );
     }
 
-    // 6. Plan de abonos
+    // 6. Generar cuotas de abono (solo Paquete VIP 3 Días)
     if (paymentMode === 'abono' && abonoPlanKey) {
       const [[plan]]: any = await conn.query(
         'SELECT * FROM abono_plans WHERE plan_key = ? AND is_active = 1',
@@ -105,7 +129,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
       if (!plan) throw new Error('Plan de abono no válido');
 
-      const [[event]]: any = await conn.query('SELECT event_date FROM events WHERE id = ?', [eventId]);
+      const [[event]]: any = await conn.query(
+        'SELECT event_date FROM events WHERE id = ?', [eventId]
+      );
+
       const cuotaAmount = Math.round((total / plan.cuotas) * 100) / 100;
 
       for (let i = 1; i <= plan.cuotas; i++) {
@@ -119,7 +146,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     await conn.commit();
-    res.status(201).json({ orderId, orderRef, total, reservedUntil });
+    res.status(201).json({ orderId, orderRef, total, reservedUntil, paymentMode });
 
   } catch (err: any) {
     await conn.rollback();
