@@ -9,6 +9,7 @@ import TourSchedule from './sections/TourSchedule';
 import TicketReserve, { type ReservationEvent } from './sections/TicketReserve';
 import SuiteReserve from './sections/SuiteReserve';
 import Footer from './sections/Footer';
+import AdminDashboard from './sections/AdminDashboard';
 
 function App() {
   useLenis();
@@ -16,6 +17,9 @@ function App() {
   const [selectedEvent, setSelectedEvent]   = useState<ReservationEvent | null>(null);
   const [isReserveOpen, setIsReserveOpen]   = useState(false);
   const [isSuiteOpen,   setIsSuiteOpen]     = useState(false);
+  const [isAdminOpen,   setIsAdminOpen]     = useState(
+    () => window.location.hash === '#admin'
+  );
 
   useEffect(() => {
     if (siteConfig.title) document.title = siteConfig.title;
@@ -26,6 +30,18 @@ function App() {
         'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no',
       );
     }
+  }, []);
+
+  // Escuchar cambios de hash para abrir/cerrar admin
+  useEffect(() => {
+    const onHash = () => setIsAdminOpen(window.location.hash === '#admin');
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  const handleCloseAdmin = useCallback(() => {
+    window.location.hash = '';
+    setIsAdminOpen(false);
   }, []);
 
   const reservationEvent = useMemo(() => selectedEvent, [selectedEvent]);
@@ -42,7 +58,6 @@ function App() {
   const handleOpenSuite  = useCallback(() => setIsSuiteOpen(true),  []);
   const handleCloseSuite = useCallback(() => setIsSuiteOpen(false), []);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => { document.body.style.overflow = ''; };
   }, []);
@@ -68,6 +83,10 @@ function App() {
         isOpen={isSuiteOpen}
         onClose={handleCloseSuite}
       />
+
+      {isAdminOpen && (
+        <AdminDashboard onClose={handleCloseAdmin} />
+      )}
     </main>
   );
 }
