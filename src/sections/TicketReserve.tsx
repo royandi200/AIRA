@@ -328,13 +328,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
   const ticketLabel = selectedDay ? `${selectedDay.label} · ${selectedDay.title}` : null;
   const stageLabel  = accessType === 'package' && selectedStage ? selectedStage.label : null;
 
-  // Steps: 1 = selección inicial, 2 = etapas paquete, 3 = confirmación
-  // Para días: step 1 → step 3 directamente
-  // Para paquete: step 1 → step 2 → step 3
-  const stepLabels = accessType === 'package'
-    ? [{ n: 1, label: 'Acceso' }, { n: 2, label: 'Etapa' }, { n: 3, label: 'Confirmar' }]
-    : [{ n: 1, label: 'Acceso' }, { n: 3, label: 'Confirmar' }];
-
   // Selección de un día: ir directo al step 3
   const handleSelectDay = (type: AccessType) => {
     setAccessType(type);
