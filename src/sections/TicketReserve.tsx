@@ -261,7 +261,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
 
   useLockBodyScroll(isOpen);
 
-  // true cuando el flujo es día 1, 2 o 3 (no paquete)
   const isDayTicket = accessType === 'day1' || accessType === 'day2' || accessType === 'day3';
 
   const scrollRef = useCallback((el: HTMLDivElement | null) => {
@@ -317,13 +316,12 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
 
   const serviceFee = Math.round(basePrice * 0.05);
   const passTotal  = addPassVip   ? passVipPrice    * qty : 0;
-  // Transporte solo disponible para paquete
   const transTotal = (!isDayTicket && addTransport) ? TRANSPORT_PRICE * qty : 0;
   const total      = basePrice + serviceFee + passTotal + transTotal;
 
   const selectedPlan = ABONO_PLANS.find(p => p.id === abonoPlanId) ?? ABONO_PLANS[0];
-  // Cuotas solo disponibles para paquete; días siempre pago completo
   const effectivePaymentMode: PaymentMode = isDayTicket ? 'full' : paymentMode;
+  // ✅ FIX: primerPago es lo que realmente se cobra a Bold
   const primerPago = effectivePaymentMode === 'full' ? total : Math.ceil(total * selectedPlan.pct);
 
   const ticketLabel = selectedDay ? `${selectedDay.label} · ${selectedDay.title}` : null;
@@ -361,6 +359,8 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
           paymentMode: effectivePaymentMode,
           abonoPlan: effectivePaymentMode === 'abono' ? abonoPlanId : null,
           primerPago,
+          // ✅ FIX: se envía primerPago como amountToCharge para que Bold cobre la cuota correcta
+          amountToCharge: primerPago,
           items: [{
             ticketTypeId: 0, quantity: qty,
             _unitPrice: basePrice > 0 ? Math.round(basePrice / qty) : Math.round(total / qty),
@@ -660,6 +660,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                           disabled={isSubmitting}
                         >Volver</button>
                       ) : null}
+                      {/* ✅ FIX: botón muestra primerPago (cuota) no total completo */}
                       <button
                         className="flex-1 min-w-[160px] px-6 py-3 rounded-full bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] hover:bg-white active:scale-[0.97] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={handleCheckout}
@@ -667,7 +668,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       >
                         {isSubmitting
                           ? <><Loader2 className="w-4 h-4 animate-spin" /> Procesando...</>
-                          : <><Ticket className="w-4 h-4" /> Pagar {fmt(total)}</>
+                          : <><Ticket className="w-4 h-4" /> Pagar {fmt(primerPago)}{effectivePaymentMode === 'abono' ? ' · 1ª cuota' : ''}</>
                         }
                       </button>
                     </div>
