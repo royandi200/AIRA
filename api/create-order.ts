@@ -51,32 +51,59 @@ async function createBoldPaymentLink(params: {
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : 'https://v0-aira-event.vercel.app';
 
-  const response = await fetch('https://api.bold.co/online/link/v1', {
-    method:  'POST',
-    headers: {
-      'Content-Type':  'application/json',
-      'Authorization': `x-api-key ${BOLD_API_KEY}`,
+  console.log('[Bold] BOLD_API_KEY presente:', !!BOLD_API_KEY);
+  console.log('[Bold] BASE_URL:', BASE_URL);
+  console.log('[Bold] amount:', Math.round(params.amount));
+  console.log('[Bold] orderRef:', params.orderRef);
+
+  const bodyPayload = {
+    amount:       { currency: 'COP', total_amount: Math.round(params.amount) },
+    description:  params.description,
+    order_id:     params.orderRef,
+    redirect_url: `${BASE_URL}/checkout/success?order_id=${params.orderId}`,
+    customer: {
+      full_name: params.customerName,
+      email:     params.customerEmail,
+      phone:     params.customerPhone,
     },
-    body: JSON.stringify({
-      amount:       { currency: 'COP', total_amount: Math.round(params.amount) },
-      description:  params.description,
-      order_id:     params.orderRef,
-      redirect_url: `${BASE_URL}/checkout/success?order_id=${params.orderId}`,
-      customer: {
-        full_name: params.customerName,
-        email:     params.customerEmail,
-        phone:     params.customerPhone,
+    metadata: { internal_order_id: String(params.orderId) },
+  };
+
+  console.log('[Bold] body:', JSON.stringify(bodyPayload));
+
+  let response: Response;
+  try {
+    response = await fetch('https://api.bold.co/online/link/v1', {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `x-api-key ${BOLD_API_KEY}`,
       },
-      metadata: { internal_order_id: String(params.orderId) },
-    }),
-  });
+      body: JSON.stringify(bodyPayload),
+    });
+  } catch (fetchErr: any) {
+    console.error('[Bold] fetch() lanzó excepción:', fetchErr?.message, fetchErr?.cause);
+    throw new Error(`Bold fetch error: ${fetchErr?.message} | cause: ${JSON.stringify(fetchErr?.cause)}`);
+  }
+
+  console.log('[Bold] HTTP status:', response.status);
+  const rawText = await response.text();
+  console.log('[Bold] raw response:', rawText);
 
   if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Bold API ${response.status}: ${err}`);
+    throw new Error(`Bold API ${response.status}: ${rawText}`);
   }
-  const data = await response.json();
-  return data?.payload?.url ?? data?.url;
+
+  let data: any;
+  try {
+    data = JSON.parse(rawText);
+  } catch {
+    throw new Error(`Bold respuesta no es JSON: ${rawText}`);
+  }
+
+  const url = data?.payload?.url ?? data?.url;
+  if (!url) throw new Error(`Bold no retornó URL de pago. Respuesta: ${rawText}`);
+  return url;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -176,15 +203,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await conn.commit();
 
     const [[eventRow]]: any = await pool.query('SELECT name FROM events WHERE id = ?', [eventId]);
-    const paymentUrl = await createBoldPaymentLink({
-      orderId, orderRef, amount: total,
-      customerName:  name,
-      customerEmail: email,
-      customerPhone: phone,
-      description:   `AIRA ${eventRow?.name ?? 'Evento'} · ${orderRef}`,
-    });
 
-    await pool.query('UPDATE orders SET bold_link = ? WHERE id = ?', [paymentUrl, orderId]);
+    let paymentUrl: string | null = null;
+    try {
+      paymentUrl = await createBoldPaymentLink({
+        orderId, orderRef, amount: total,
+        customerName:  name,
+        customerEmail: email,
+        customerPhone: phone,
+        description:   `AIRA ${eventRow?.name ?? 'Evento'} · ${orderRef}`,
+      });
+      await pool.query('UPDATE orders SET bold_link = ? WHERE id = ?', [paymentUrl, orderId]);
+    } catch (boldErr: any) {
+      console.error('[Bold] Error creando link de pago:', boldErr.message);
+      // No revertimos la orden — retornamos sin paymentUrl para debugging
+      return res.status(201).json({
+        orderId, orderRef, total, reservedUntil, paymentMode,
+        paymentUrl: null,
+        boldError: boldErr.message,
+      });
+    }
 
     return res.status(201).json({ orderId, orderRef, total, reservedUntil, paymentMode, paymentUrl });
 
