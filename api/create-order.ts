@@ -51,8 +51,11 @@ async function createBoldPaymentLink(params: {
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : 'https://v0-aira-event.vercel.app';
 
+  // Endpoint correcto de Bold Colombia
+  const BOLD_ENDPOINT = 'https://checkout.bold.co/online/link/v1';
+
+  console.log('[Bold] endpoint:', BOLD_ENDPOINT);
   console.log('[Bold] BOLD_API_KEY presente:', !!BOLD_API_KEY);
-  console.log('[Bold] BASE_URL:', BASE_URL);
   console.log('[Bold] amount:', Math.round(params.amount));
   console.log('[Bold] orderRef:', params.orderRef);
 
@@ -73,7 +76,7 @@ async function createBoldPaymentLink(params: {
 
   let response: Response;
   try {
-    response = await fetch('https://api.bold.co/online/link/v1', {
+    response = await fetch(BOLD_ENDPOINT, {
       method:  'POST',
       headers: {
         'Content-Type':  'application/json',
@@ -101,7 +104,7 @@ async function createBoldPaymentLink(params: {
     throw new Error(`Bold respuesta no es JSON: ${rawText}`);
   }
 
-  const url = data?.payload?.url ?? data?.url;
+  const url = data?.payload?.url ?? data?.url ?? data?.payment_url ?? data?.link;
   if (!url) throw new Error(`Bold no retornó URL de pago. Respuesta: ${rawText}`);
   return url;
 }
@@ -216,7 +219,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await pool.query('UPDATE orders SET bold_link = ? WHERE id = ?', [paymentUrl, orderId]);
     } catch (boldErr: any) {
       console.error('[Bold] Error creando link de pago:', boldErr.message);
-      // No revertimos la orden — retornamos sin paymentUrl para debugging
       return res.status(201).json({
         orderId, orderRef, total, reservedUntil, paymentMode,
         paymentUrl: null,
