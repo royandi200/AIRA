@@ -1,10 +1,9 @@
 // ── BuilderBot Config ────────────────────────────────────────────────────────
-const BB_URL    = 'https://app.builderbot.cloud/api/v2/db9e5f53-cc03-4262-ad69-4097ee2d15f0/messages';
-const BB_APIKEY = process.env.BUILDERBOT_APIKEY || '';
+const BB_URL    = 'https://app.builderbot.cloud/api/v2/5fe41915-a5e6-423c-9bd4-b4e63dbe0d3d/messages';
+const BB_APIKEY = process.env.BUILDERBOT_APIKEY || 'bb-78e67fdf-098a-499a-805d-68bb23e897bb';
 
 // ── OTP Utils ────────────────────────────────────────────────────────────────
 export function generateOTP(): string {
-  // Usar globalThis.crypto (Web Crypto API) — disponible en Node 19+ y Vercel ESM sin imports
   const array = new Uint32Array(1);
   globalThis.crypto.getRandomValues(array);
   const num = 100000 + (array[0] % 900000);
@@ -31,48 +30,31 @@ export async function sendOTPWhatsApp(phone: string, otp: string): Promise<void>
     `*${otp}*\n\n` +
     `Vence en 10 minutos. No lo compartas con nadie.`;
 
-  if (!BB_APIKEY) {
-    console.log(`[OTP-CONSOLE] 📱 ${normalized} → ${otp}`);
-    return;
-  }
+  console.log(`[BuilderBot] Enviando OTP a ${normalized}...`);
 
-  const res = await fetch(BB_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-builderbot': BB_APIKEY,
-    },
-    body: JSON.stringify({
-      messages: [{ content: mensaje, type: 'text' }],
-      number: normalized,
-      checkIfExists: false,
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    console.error('[BuilderBot OTP error]', res.status, err);
-    // Intentar formato alternativo
-    const res2 = await fetch(BB_URL, {
+  try {
+    const res = await fetch(BB_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-builderbot': BB_APIKEY,
       },
       body: JSON.stringify({
-        message: mensaje,
+        messages: { content: mensaje },
         number: normalized,
         checkIfExists: false,
       }),
     });
-    if (!res2.ok) {
-      const err2 = await res2.text();
-      console.error('[BuilderBot OTP error v2]', res2.status, err2);
-      console.log(`[OTP-FALLBACK] 📱 ${normalized} → ${otp}`);
-    } else {
-      console.log(`[BuilderBot] ✅ enviado con formato alternativo a ${normalized}`);
+
+    const responseText = await res.text();
+    if (!res.ok) {
+      console.error(`[BuilderBot] ERROR ${res.status}:`, responseText);
+      throw new Error(`BuilderBot ${res.status}: ${responseText}`);
     }
-  } else {
-    console.log(`[BuilderBot] ✅ OTP enviado a ${normalized}`);
+
+    console.log(`[BuilderBot] OK OTP enviado a ${normalized}:`, responseText);
+  } catch (err: any) {
+    console.error(`[BuilderBot] fetch fallo:`, err.message);
+    console.log(`[OTP-FALLBACK] ${normalized} -> ${otp}`);
   }
 }
