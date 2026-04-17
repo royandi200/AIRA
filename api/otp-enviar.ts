@@ -28,16 +28,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (phoneClean.length < 7) return res.status(400).json({ error: 'Número de teléfono inválido' });
 
   try {
-    // Verificar que la orden existe
     const [orders]: any = await pool.query(
-      `SELECT id, order_ref, phone FROM orders WHERE ${orderId ? 'id = ?' : 'order_ref = ?'} LIMIT 1`,
+      `SELECT id, order_ref FROM orders WHERE ${orderId ? 'id = ?' : 'order_ref = ?'} LIMIT 1`,
       [orderId ?? orderRef]
     );
     if (!orders.length) return res.status(404).json({ error: 'Orden no encontrada' });
 
     const order = orders[0];
 
-    // Rate limit: máx 5 envíos en 24h por teléfono+orden
     const [rateRows]: any = await pool.query(
       `SELECT COUNT(*) as total FROM otp_tokens
        WHERE phone = ? AND order_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)`,
@@ -47,15 +45,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(429).json({ error: 'Límite de envíos alcanzado. Intenta en 24 horas.' });
     }
 
-    // Invalidar OTPs anteriores de la misma orden
     await pool.query(
       'UPDATE otp_tokens SET usado = 1 WHERE order_id = ? AND usado = 0',
       [order.id]
     );
 
-    // Generar nuevo OTP
     const otp      = generateOTP();
-    const otpHash  = hashOTP(otp);
+    const otpHash  = await hashOTP(otp);
     const expireAt = otpExpiresAt();
 
     await pool.query(
@@ -64,7 +60,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       [order.id, phoneClean, otpHash, expireAt]
     );
 
-    // Enviar por WhatsApp
     await sendOTPWhatsApp(phoneClean, otp);
 
     return res.status(200).json({

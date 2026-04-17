@@ -27,16 +27,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const phoneClean = String(phone).replace(/\D/g, '');
 
   try {
-    // Buscar orden
     const [orders]: any = await pool.query(
-      `SELECT id, order_ref, total, payment_mode, phone FROM orders
+      `SELECT id, order_ref, total, payment_mode FROM orders
        WHERE ${orderId ? 'id = ?' : 'order_ref = ?'} LIMIT 1`,
       [orderId ?? orderRef]
     );
     if (!orders.length) return res.status(404).json({ error: 'Orden no encontrada' });
     const order = orders[0];
 
-    // Buscar token OTP activo
     const [tokens]: any = await pool.query(
       `SELECT id, otp_hash, intentos, bloqueado, expires_at
        FROM otp_tokens
@@ -59,8 +57,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(410).json({ error: 'El código expiró. Solicita uno nuevo.' });
     }
 
-    // Verificar hash
-    const otpHash = hashOTP(String(otp));
+    // hashOTP ahora es async
+    const otpHash = await hashOTP(String(otp));
     if (token.otp_hash !== otpHash) {
       const newIntentos = token.intentos + 1;
       const bloquear   = newIntentos >= MAX_INTENTOS ? 1 : 0;
@@ -76,7 +74,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // ✅ OTP correcto — marcar como usado + marcar orden como phone_verified
     await pool.query('UPDATE otp_tokens SET usado = 1 WHERE id = ?', [token.id]);
 
     try {
@@ -85,7 +82,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         [order.id]
       );
     } catch {
-      // Columna puede no existir aún — ejecutar /api/migrate
       console.warn('[otp-verificar] columna phone_verified no existe, ejecuta /api/migrate');
     }
 
