@@ -460,18 +460,38 @@ interface CreyentesOtpStepProps {
   onCancel: () => void;
 }
 
+const COUNTRY_CODES = [
+  { code: '57',  flag: '🇨🇴', name: 'Colombia',     digits: 10 },
+  { code: '1',   flag: '🇺🇸', name: 'USA / Canadá', digits: 10 },
+  { code: '34',  flag: '🇪🇸', name: 'España',       digits: 9  },
+  { code: '52',  flag: '🇲🇽', name: 'México',       digits: 10 },
+  { code: '54',  flag: '🇦🇷', name: 'Argentina',    digits: 10 },
+  { code: '56',  flag: '🇨🇱', name: 'Chile',        digits: 9  },
+  { code: '51',  flag: '🇵🇪', name: 'Perú',         digits: 9  },
+  { code: '593', flag: '🇪🇨', name: 'Ecuador',      digits: 9  },
+  { code: '58',  flag: '🇻🇪', name: 'Venezuela',    digits: 10 },
+  { code: '55',  flag: '🇧🇷', name: 'Brasil',       digits: 11 },
+  { code: '44',  flag: '🇬🇧', name: 'Reino Unido',  digits: 10 },
+];
+
 function CreyentesOtpStep({ onVerified, onCancel }: CreyentesOtpStepProps) {
-  const [subStep,    setSubStep]    = useState<'phone' | 'otp'>('phone');
-  const [phone,      setPhone]      = useState('');
-  const [digits,     setDigits]     = useState(['', '', '', '', '', '']);
-  const [sending,    setSending]    = useState(false);
-  const [verifying,  setVerifying]  = useState(false);
-  const [resending,  setResending]  = useState(false);
-  const [error,      setError]      = useState<string | null>(null);
-  const [success,    setSuccess]    = useState(false);
-  const [countdown,  setCountdown]  = useState(60);
-  const [canResend,  setCanResend]  = useState(false);
+  const [subStep,      setSubStep]      = useState<'phone' | 'otp'>('phone');
+  const [countryCode,  setCountryCode]  = useState('57');
+  const [localPhone,   setLocalPhone]   = useState('');
+  const [digits,       setDigits]       = useState(['', '', '', '', '', '']);
+  const [sending,      setSending]      = useState(false);
+  const [verifying,    setVerifying]    = useState(false);
+  const [resending,    setResending]    = useState(false);
+  const [error,        setError]        = useState<string | null>(null);
+  const [success,      setSuccess]      = useState(false);
+  const [countdown,    setCountdown]    = useState(60);
+  const [canResend,    setCanResend]    = useState(false);
   const inputRefs = Array.from({ length: 6 }, () => null as HTMLInputElement | null);
+
+  const selectedCountry = COUNTRY_CODES.find(c => c.code === countryCode) ?? COUNTRY_CODES[0];
+  const digitsOnly = localPhone.replace(/\D/g, '');
+  const fullPhone = `${countryCode}${digitsOnly}`;
+  const isPhoneValid = digitsOnly.length === selectedCountry.digits;
 
   useEffect(() => {
     if (subStep !== 'otp') return;
@@ -481,15 +501,17 @@ function CreyentesOtpStep({ onVerified, onCancel }: CreyentesOtpStepProps) {
   }, [subStep, countdown]);
 
   const handleSendOtp = async () => {
-    const cleaned = phone.trim();
-    if (!cleaned) { setError('Ingresa tu número de WhatsApp.'); return; }
+    if (!isPhoneValid) {
+      setError(`Ingresa exactamente ${selectedCountry.digits} dígitos del celular.`);
+      return;
+    }
     setSending(true);
     setError(null);
     try {
       const res = await fetch('/api/otp-creyentes-enviar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: cleaned }),
+        body: JSON.stringify({ phone: fullPhone }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'No se pudo enviar el código.');
@@ -536,7 +558,7 @@ function CreyentesOtpStep({ onVerified, onCancel }: CreyentesOtpStepProps) {
       const res = await fetch('/api/otp-creyentes-verificar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phone.trim(), otp: code }),
+        body: JSON.stringify({ phone: fullPhone, otp: code }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Código incorrecto.'); return; }
@@ -557,7 +579,7 @@ function CreyentesOtpStep({ onVerified, onCancel }: CreyentesOtpStepProps) {
       const res = await fetch('/api/otp-creyentes-enviar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phone.trim() }),
+        body: JSON.stringify({ phone: fullPhone }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'No se pudo reenviar.'); return; }
@@ -600,15 +622,42 @@ function CreyentesOtpStep({ onVerified, onCancel }: CreyentesOtpStepProps) {
           </p>
           <div>
             <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Celular WhatsApp *</label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={e => { setPhone(e.target.value); setError(null); }}
-              onKeyDown={e => e.key === 'Enter' && handleSendOtp()}
-              placeholder="+57 300 000 0000"
-              className={inputClass}
-              autoFocus
-            />
+            <div className="flex gap-2">
+              <select
+                value={countryCode}
+                onChange={e => { setCountryCode(e.target.value); setLocalPhone(''); setError(null); }}
+                className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm text-white focus:outline-none focus:border-aira-lime/50 transition-all cursor-pointer shrink-0"
+                style={{ minWidth: '90px' }}
+              >
+                {COUNTRY_CODES.map(c => (
+                  <option key={c.code} value={c.code} style={{ background: '#08101f' }}>
+                    {c.flag} +{c.code}
+                  </option>
+                ))}
+              </select>
+              <div className="relative flex-1">
+                <input
+                  type="tel"
+                  value={localPhone}
+                  onChange={e => {
+                    const v = e.target.value.replace(/\D/g, '').slice(0, selectedCountry.digits);
+                    setLocalPhone(v);
+                    setError(null);
+                  }}
+                  onKeyDown={e => e.key === 'Enter' && handleSendOtp()}
+                  placeholder={`${'0'.repeat(selectedCountry.digits)}`}
+                  maxLength={selectedCountry.digits}
+                  className={`${inputClass} pr-12`}
+                  autoFocus
+                  inputMode="tel"
+                />
+                <span className={`absolute right-3 top-1/2 -translate-y-1/2 font-mono-custom text-[10px] transition-colors ${
+                  digitsOnly.length === selectedCountry.digits ? 'text-aira-lime' : 'text-white/25'
+                }`}>
+                  {digitsOnly.length}/{selectedCountry.digits}
+                </span>
+              </div>
+            </div>
           </div>
           {error && (
             <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5">
@@ -624,7 +673,7 @@ function CreyentesOtpStep({ onVerified, onCancel }: CreyentesOtpStepProps) {
             <button
               className="flex-1 px-5 py-2.5 rounded-full bg-aira-blue text-white font-display text-sm uppercase tracking-[0.2em] hover:bg-aira-blue/80 active:scale-[0.97] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={handleSendOtp}
-              disabled={sending || !phone.trim()}
+              disabled={sending || !isPhoneValid}
             >
               {sending
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Enviando…</>
@@ -636,7 +685,7 @@ function CreyentesOtpStep({ onVerified, onCancel }: CreyentesOtpStepProps) {
       ) : (
         <>
           <p className="text-xs text-white/50">
-            Enviamos un código al WhatsApp <span className="text-white/70 font-mono-custom">{phone.trim().slice(-4).padStart(phone.trim().length, '*')}</span>
+            Enviamos un código al WhatsApp <span className="text-white/70 font-mono-custom">+{countryCode} {localPhone.slice(0,-4).replace(/./g,'*')}{localPhone.slice(-4)}</span>
           </p>
           <div className="flex gap-2 justify-center" onPaste={handlePaste}>
             {digits.map((d, i) => (
@@ -675,7 +724,7 @@ function CreyentesOtpStep({ onVerified, onCancel }: CreyentesOtpStepProps) {
           <div className="flex justify-between items-center">
             <button
               className="text-xs text-white/40 hover:text-white/60 transition-colors"
-              onClick={() => { setSubStep('phone'); setError(null); setDigits(['', '', '', '', '', '']); }}
+              onClick={() => { setSubStep('phone'); setError(null); setDigits(['', '', '', '', '', '']); setLocalPhone(''); }}
             >← Cambiar número</button>
             {canResend ? (
               <button
