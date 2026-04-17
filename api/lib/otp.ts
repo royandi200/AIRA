@@ -43,7 +43,7 @@ export async function sendOTPWhatsApp(phone: string, otp: string): Promise<void>
       'x-api-builderbot': BB_APIKEY,
     },
     body: JSON.stringify({
-      messages: { content: mensaje },
+      messages: [{ content: mensaje, type: 'text' }],
       number: normalized,
       checkIfExists: false,
     }),
@@ -51,7 +51,28 @@ export async function sendOTPWhatsApp(phone: string, otp: string): Promise<void>
 
   if (!res.ok) {
     const err = await res.text();
-    console.error('[BuilderBot OTP error]', err);
-    console.log(`[OTP-FALLBACK] 📱 ${normalized} → ${otp}`);
+    console.error('[BuilderBot OTP error]', res.status, err);
+    // Intentar formato alternativo
+    const res2 = await fetch(BB_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-builderbot': BB_APIKEY,
+      },
+      body: JSON.stringify({
+        message: mensaje,
+        number: normalized,
+        checkIfExists: false,
+      }),
+    });
+    if (!res2.ok) {
+      const err2 = await res2.text();
+      console.error('[BuilderBot OTP error v2]', res2.status, err2);
+      console.log(`[OTP-FALLBACK] 📱 ${normalized} → ${otp}`);
+    } else {
+      console.log(`[BuilderBot] ✅ enviado con formato alternativo a ${normalized}`);
+    }
+  } else {
+    console.log(`[BuilderBot] ✅ OTP enviado a ${normalized}`);
   }
 }

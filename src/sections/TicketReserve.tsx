@@ -486,7 +486,7 @@ function CreyentesOtpStep({ onVerified, onCancel }: CreyentesOtpStepProps) {
     setSending(true);
     setError(null);
     try {
-      const res = await fetch('/api/otp-enviar', {
+      const res = await fetch('/api/otp-creyentes-enviar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: cleaned }),
@@ -533,7 +533,7 @@ function CreyentesOtpStep({ onVerified, onCancel }: CreyentesOtpStepProps) {
     setVerifying(true);
     setError(null);
     try {
-      const res = await fetch('/api/otp-verificar', {
+      const res = await fetch('/api/otp-creyentes-verificar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: phone.trim(), otp: code }),
@@ -554,7 +554,7 @@ function CreyentesOtpStep({ onVerified, onCancel }: CreyentesOtpStepProps) {
     setResending(true);
     setError(null);
     try {
-      const res = await fetch('/api/otp-reenviar', {
+      const res = await fetch('/api/otp-creyentes-enviar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: phone.trim() }),
