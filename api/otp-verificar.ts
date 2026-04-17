@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import mysql from 'mysql2/promise';
-import { hashOTP } from './lib/otp';
+import { hashOTP } from './lib/otp.js';
 
 const pool = mysql.createPool({
   host:               process.env.DB_HOST,
@@ -57,7 +57,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(410).json({ error: 'El código expiró. Solicita uno nuevo.' });
     }
 
-    // hashOTP ahora es async
     const otpHash = await hashOTP(String(otp));
     if (token.otp_hash !== otpHash) {
       const newIntentos = token.intentos + 1;

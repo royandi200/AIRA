@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import mysql from 'mysql2/promise';
-import { generateOTP, hashOTP, otpExpiresAt, sendOTPWhatsApp } from './lib/otp';
+import { generateOTP, hashOTP, otpExpiresAt, sendOTPWhatsApp } from './lib/otp.js';
 
 const pool = mysql.createPool({
   host:               process.env.DB_HOST,
