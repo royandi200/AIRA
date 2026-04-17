@@ -1,6 +1,6 @@
 // ── BuilderBot Config ────────────────────────────────────────────────────────
-const BB_URL    = 'https://app.builderbot.cloud/api/v2/5fe41915-a5e6-423c-9bd4-b4e63dbe0d3d/messages';
-const BB_APIKEY = process.env.BUILDERBOT_APIKEY || 'bb-78e67fdf-098a-499a-805d-68bb23e897bb';
+const BB_URL    = 'https://app.builderbot.cloud/api/v2/f19bc71c-a140-4caf-af9a-714ae61c23a5/messages';
+const BB_APIKEY = process.env.BUILDERBOT_APIKEY || 'bb-5d2c154a-2668-4076-a65a-8c6247ae97ea';
 
 // ── OTP Utils ────────────────────────────────────────────────────────────────
 export function generateOTP(): string {
