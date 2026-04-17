@@ -514,7 +514,14 @@ function CreyentesOtpStep({ onVerified, onCancel }: CreyentesOtpStepProps) {
         body: JSON.stringify({ phone: fullPhone }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'No se pudo enviar el código.');
+      if (!res.ok) {
+        if (data.code === 'NOT_IN_WHITELIST') {
+          setError(data.error);
+        } else {
+          throw new Error(data.error || 'No se pudo enviar el código.');
+        }
+        return;
+      }
       setSubStep('otp');
       setCountdown(60);
       setCanResend(false);
