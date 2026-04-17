@@ -1008,7 +1008,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                         return (
                           <button
                             key={stage.id}
-                            disabled={!isUnlocked}
+                            disabled={!isUnlocked && !isCreyentes}
                             className={'w-full text-left rounded-2xl border p-4 transition-all duration-200 ' + (
                               isCreyentes && !creyentesVerified
                                 ? 'border-amber-400/20 bg-amber-400/5 hover:border-amber-400/40 cursor-pointer opacity-90'
