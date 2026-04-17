@@ -1,16 +1,21 @@
-import crypto from 'crypto';
-
 // ── BuilderBot Config ────────────────────────────────────────────────────────
 const BB_URL    = 'https://app.builderbot.cloud/api/v2/db9e5f53-cc03-4262-ad69-4097ee2d15f0/messages';
 const BB_APIKEY = process.env.BUILDERBOT_APIKEY || '';
 
 // ── OTP Utils ────────────────────────────────────────────────────────────────
 export function generateOTP(): string {
-  return crypto.randomInt(100000, 999999).toString();
+  // Usar globalThis.crypto (Web Crypto API) — disponible en Node 19+ y Vercel ESM sin imports
+  const array = new Uint32Array(1);
+  globalThis.crypto.getRandomValues(array);
+  const num = 100000 + (array[0] % 900000);
+  return String(num);
 }
 
-export function hashOTP(otp: string): string {
-  return crypto.createHash('sha256').update(String(otp)).digest('hex');
+export async function hashOTP(otp: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data    = encoder.encode(String(otp));
+  const hashBuf = await globalThis.crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 export function otpExpiresAt(): Date {
@@ -47,7 +52,6 @@ export async function sendOTPWhatsApp(phone: string, otp: string): Promise<void>
   if (!res.ok) {
     const err = await res.text();
     console.error('[BuilderBot OTP error]', err);
-    // No lanzar error — OTP ya guardado en BD, usuario puede reenviar
     console.log(`[OTP-FALLBACK] 📱 ${normalized} → ${otp}`);
   }
 }
