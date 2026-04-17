@@ -454,6 +454,246 @@ function OtpModal({ isOpen, phone, orderId, orderRef, paymentUrl, onClose }: Otp
     </div>
   );
 }
+// ─── CREYENTES OTP STEP (inline en Step 2) ───────────────────────────────────
+interface CreyentesOtpStepProps {
+  onVerified: () => void;
+  onCancel: () => void;
+}
+
+function CreyentesOtpStep({ onVerified, onCancel }: CreyentesOtpStepProps) {
+  const [subStep,    setSubStep]    = useState<'phone' | 'otp'>('phone');
+  const [phone,      setPhone]      = useState('');
+  const [digits,     setDigits]     = useState(['', '', '', '', '', '']);
+  const [sending,    setSending]    = useState(false);
+  const [verifying,  setVerifying]  = useState(false);
+  const [resending,  setResending]  = useState(false);
+  const [error,      setError]      = useState<string | null>(null);
+  const [success,    setSuccess]    = useState(false);
+  const [countdown,  setCountdown]  = useState(60);
+  const [canResend,  setCanResend]  = useState(false);
+  const inputRefs = Array.from({ length: 6 }, () => null as HTMLInputElement | null);
+
+  useEffect(() => {
+    if (subStep !== 'otp') return;
+    if (countdown <= 0) { setCanResend(true); return; }
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [subStep, countdown]);
+
+  const handleSendOtp = async () => {
+    const cleaned = phone.trim();
+    if (!cleaned) { setError('Ingresa tu número de WhatsApp.'); return; }
+    setSending(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/otp-enviar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: cleaned }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'No se pudo enviar el código.');
+      setSubStep('otp');
+      setCountdown(60);
+      setCanResend(false);
+      setDigits(['', '', '', '', '', '']);
+    } catch (err: any) {
+      setError(err.message || 'Error al enviar el código.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleDigit = (idx: number, val: string) => {
+    const v = val.replace(/\D/g, '').slice(-1);
+    const next = [...digits];
+    next[idx] = v;
+    setDigits(next);
+    setError(null);
+    if (v && idx < 5) { const ref = inputRefs[idx + 1]; if (ref) ref.focus(); }
+  };
+
+  const handleKeyDown = (idx: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !digits[idx] && idx > 0) {
+      const ref = inputRefs[idx - 1]; if (ref) ref.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6).split('');
+    const next = [...digits];
+    pasted.forEach((d, i) => { if (i < 6) next[i] = d; });
+    setDigits(next);
+  };
+
+  const handleVerify = async () => {
+    const code = digits.join('');
+    if (code.length < 6) { setError('Ingresa los 6 dígitos del código.'); return; }
+    setVerifying(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/otp-verificar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phone.trim(), otp: code }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Código incorrecto.'); return; }
+      setSuccess(true);
+      setTimeout(() => onVerified(), 700);
+    } catch {
+      setError('Error de conexión. Intenta de nuevo.');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!canResend) return;
+    setResending(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/otp-reenviar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phone.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'No se pudo reenviar.'); return; }
+      setDigits(['', '', '', '', '', '']);
+      setCountdown(60);
+      setCanResend(false);
+    } catch {
+      setError('Error al reenviar. Intenta de nuevo.');
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-aira-lime/50 focus:bg-white/[0.06] transition-all";
+
+  return (
+    <div className="rounded-2xl border border-aira-blue/30 bg-aira-blue/5 p-5 space-y-4">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="w-9 h-9 rounded-xl bg-aira-blue/20 border border-aira-blue/30 flex items-center justify-center shrink-0">
+          {success ? <ShieldCheck className="w-5 h-5 text-aira-lime" /> : <MessageCircle className="w-5 h-5 text-aira-blue" />}
+        </div>
+        <div>
+          <p className="font-mono-custom text-[9px] uppercase tracking-[0.28em] text-aira-blue/80">Etapa Creyentes · Verificación</p>
+          <p className="font-display text-base text-white leading-tight">
+            {subStep === 'phone' ? 'Ingresa tu WhatsApp' : 'Código de verificación'}
+          </p>
+        </div>
+      </div>
+
+      {success ? (
+        <div className="flex flex-col items-center gap-2 py-3">
+          <ShieldCheck className="w-8 h-8 text-aira-lime" />
+          <p className="font-display text-lg text-white">¡Verificado! ✅</p>
+          <p className="text-xs text-white/50">Desbloqueando etapa Creyentes…</p>
+        </div>
+      ) : subStep === 'phone' ? (
+        <>
+          <p className="text-xs text-white/50 leading-relaxed">
+            La etapa <span className="text-amber-400">Creyentes</span> está reservada para asistentes verificados de Melomania. Ingresa tu número para recibir el código de acceso.
+          </p>
+          <div>
+            <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Celular WhatsApp *</label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={e => { setPhone(e.target.value); setError(null); }}
+              onKeyDown={e => e.key === 'Enter' && handleSendOtp()}
+              placeholder="+57 300 000 0000"
+              className={inputClass}
+              autoFocus
+            />
+          </div>
+          {error && (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5">
+              <p className="text-sm text-red-400">{error}</p>
+            </div>
+          )}
+          <div className="flex gap-2 pt-1">
+            <button
+              className="px-4 py-2.5 rounded-full border border-white/10 text-white/60 text-sm hover:bg-white/5 transition-colors"
+              onClick={onCancel}
+              disabled={sending}
+            >Cancelar</button>
+            <button
+              className="flex-1 px-5 py-2.5 rounded-full bg-aira-blue text-white font-display text-sm uppercase tracking-[0.2em] hover:bg-aira-blue/80 active:scale-[0.97] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleSendOtp}
+              disabled={sending || !phone.trim()}
+            >
+              {sending
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> Enviando…</>
+                : <><MessageCircle className="w-4 h-4" /> Enviar código</>
+              }
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-xs text-white/50">
+            Enviamos un código al WhatsApp <span className="text-white/70 font-mono-custom">{phone.trim().slice(-4).padStart(phone.trim().length, '*')}</span>
+          </p>
+          <div className="flex gap-2 justify-center" onPaste={handlePaste}>
+            {digits.map((d, i) => (
+              <input
+                key={i}
+                ref={el => { inputRefs[i] = el; }}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={d}
+                onChange={e => handleDigit(i, e.target.value)}
+                onKeyDown={e => handleKeyDown(i, e)}
+                className={`w-10 h-13 rounded-xl border text-center text-lg font-mono-custom text-white bg-white/[0.05] focus:outline-none transition-all ${
+                  error ? 'border-red-500/50 bg-red-500/5' : d ? 'border-aira-lime/50 bg-aira-lime/5' : 'border-white/15 focus:border-aira-lime/40 focus:bg-white/[0.07]'
+                }`}
+                style={{ height: '3.25rem' }}
+                aria-label={`Dígito ${i + 1}`}
+              />
+            ))}
+          </div>
+          {error && (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5">
+              <p className="text-sm text-red-400">{error}</p>
+            </div>
+          )}
+          <button
+            className="w-full px-5 py-3 rounded-full bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] hover:bg-white active:scale-[0.97] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleVerify}
+            disabled={verifying || digits.join('').length < 6}
+          >
+            {verifying
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Verificando…</>
+              : <><ShieldCheck className="w-4 h-4" /> Verificar acceso</>
+            }
+          </button>
+          <div className="flex justify-between items-center">
+            <button
+              className="text-xs text-white/40 hover:text-white/60 transition-colors"
+              onClick={() => { setSubStep('phone'); setError(null); setDigits(['', '', '', '', '', '']); }}
+            >← Cambiar número</button>
+            {canResend ? (
+              <button
+                className="flex items-center gap-1 text-xs text-aira-lime/80 hover:text-aira-lime transition-colors disabled:opacity-50"
+                onClick={handleResend}
+                disabled={resending}
+              >
+                {resending ? <><Loader2 className="w-3 h-3 animate-spin" /> Reenviando…</> : <><RefreshCw className="w-3 h-3" /> Reenviar</>}
+              </button>
+            ) : (
+              <p className="font-mono-custom text-[9px] text-white/30">Reenviar en <span className="text-white/50">{countdown}s</span></p>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) => {
@@ -474,11 +714,15 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
   const [isSubmitting,    setIsSubmitting]   = useState(false);
   const [paymentError,    setPaymentError]   = useState<string | null>(null);
 
-  // OTP state — solo usado cuando accessType === 'package'
+  // OTP state — para pago (días sueltos ya no lo usan; solo redirige directo)
   const [otpOpen,       setOtpOpen]       = useState(false);
   const [otpOrderId,    setOtpOrderId]    = useState<number | null>(null);
   const [otpOrderRef,   setOtpOrderRef]   = useState<string | null>(null);
   const [otpPaymentUrl, setOtpPaymentUrl] = useState<string | null>(null);
+
+  // Creyentes OTP — verificación antes de desbloquear la etapa
+  const [creyentesOtpOpen,    setCreyentesOtpOpen]    = useState(false);
+  const [creyentesVerified,   setCreyentesVerified]   = useState(false);
 
   useLockBodyScroll(isOpen && !otpOpen);
 
@@ -519,6 +763,8 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
     setOtpOrderId(null);
     setOtpOrderRef(null);
     setOtpPaymentUrl(null);
+    setCreyentesOtpOpen(false);
+    setCreyentesVerified(false);
   }, [isOpen, selectedEvent?.id, selectedEvent?.initialAccessType]);
 
   useEffect(() => {
@@ -604,34 +850,8 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
           : 'No se pudo generar el link de pago. Intenta de nuevo.');
       }
 
-      // ── Días sueltos: ir directo al pago ──────────────────────────────────
-      if (isDayTicket) {
-        window.location.href = data.paymentUrl;
-        return;
-      }
-
-      // ── Paquete: verificar celular con OTP antes de pagar ─────────────────
-      const otpRes = await fetch('/api/otp-enviar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: buyerPhone.trim(),
-          orderId: data.orderId ?? null,
-          orderRef: data.orderRef ?? null,
-        }),
-      });
-      const otpData = await otpRes.json();
-      if (!otpRes.ok) {
-        // Si falla OTP igual dejamos pasar al pago
-        console.warn('[OTP] No se pudo enviar:', otpData.error);
-        window.location.href = data.paymentUrl;
-        return;
-      }
-
-      setOtpOrderId(data.orderId ?? null);
-      setOtpOrderRef(data.orderRef ?? null);
-      setOtpPaymentUrl(data.paymentUrl);
-      setOtpOpen(true);
+      // ── Días sueltos y paquete: ir directo al pago ────────────────────────
+      window.location.href = data.paymentUrl;
 
     } catch (err: any) {
       setPaymentError(err.message || 'Ocurrió un error. Intenta de nuevo.');
@@ -765,28 +985,77 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                     <h4 className="font-display text-3xl md:text-4xl text-white mb-1">Selecciona tu etapa</h4>
                     <p className="text-sm text-white/50 mb-6">El precio varía según la etapa de compra. Cabaña para 7 personas.</p>
                     <div className="space-y-2">
-                      {STAGES.map(stage => (
-                        <button key={stage.id} disabled={stage.locked}
-                          className={'w-full text-left rounded-2xl border p-4 transition-all duration-200 ' + (stage.locked ? 'border-white/5 bg-white/[0.02] opacity-50 cursor-not-allowed' : selectedStageId === stage.id ? 'border-aira-lime/50 bg-aira-lime/10 active:scale-[0.99]' : 'border-white/10 bg-white/[0.03] hover:border-white/25 active:scale-[0.99]')}
-                          onClick={() => !stage.locked && setSelectedStageId(stage.id)}
-                        >
-                          <div className="flex items-center justify-between gap-3 flex-wrap">
-                            <div className="flex items-center gap-3">
-                              {selectedStageId === stage.id && !stage.locked && <div className="w-5 h-5 rounded-full bg-aira-lime flex items-center justify-center shrink-0"><Check className="w-3 h-3 text-aira-darkBlue" /></div>}
-                              <div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-display text-base text-white">{stage.label}</span>
-                                  {stage.locked && <span className="px-2 py-0.5 rounded-full text-[8px] font-mono-custom uppercase tracking-[0.15em] bg-amber-400/15 text-amber-400 border border-amber-400/20">🔒 Solo Melomania</span>}
-                                  {(stage as any).urgent && <span className="px-2 py-0.5 rounded-full text-[8px] font-mono-custom uppercase tracking-[0.15em] bg-red-500/15 text-red-400 border border-red-500/20">Últimas {stage.slots}</span>}
-                                </div>
-                                <p className="font-mono-custom text-[9px] text-white/40 mt-0.5">{stage.dates} · {stage.slots} plazas</p>
-                              </div>
+                      {STAGES.map(stage => {
+                        const isCreyentes = stage.id === 'creyentes';
+                        const isUnlocked  = isCreyentes ? creyentesVerified : !stage.locked;
+
+                        // Creyentes con OTP abierto → mostrar componente inline
+                        if (isCreyentes && creyentesOtpOpen) {
+                          return (
+                            <div key={stage.id}>
+                              <CreyentesOtpStep
+                                onVerified={() => {
+                                  setCreyentesVerified(true);
+                                  setCreyentesOtpOpen(false);
+                                  setSelectedStageId('creyentes');
+                                }}
+                                onCancel={() => setCreyentesOtpOpen(false)}
+                              />
                             </div>
-                            <p className="font-display text-xl text-aira-lime shrink-0">{fmt(stage.price)}<span className="font-mono-custom text-[10px] text-white/40 ml-1">/persona</span></p>
-                          </div>
-                          {stage.locked && <p className="text-[10px] text-amber-400/60 mt-2">Disponible para asistentes verificados de Melomania</p>}
-                        </button>
-                      ))}
+                          );
+                        }
+
+                        return (
+                          <button
+                            key={stage.id}
+                            disabled={!isUnlocked}
+                            className={'w-full text-left rounded-2xl border p-4 transition-all duration-200 ' + (
+                              isCreyentes && !creyentesVerified
+                                ? 'border-amber-400/20 bg-amber-400/5 hover:border-amber-400/40 cursor-pointer opacity-90'
+                                : !isUnlocked
+                                  ? 'border-white/5 bg-white/[0.02] opacity-50 cursor-not-allowed'
+                                  : selectedStageId === stage.id
+                                    ? 'border-aira-lime/50 bg-aira-lime/10 active:scale-[0.99]'
+                                    : 'border-white/10 bg-white/[0.03] hover:border-white/25 active:scale-[0.99]'
+                            )}
+                            onClick={() => {
+                              if (isCreyentes && !creyentesVerified) {
+                                setCreyentesOtpOpen(true);
+                              } else if (isUnlocked) {
+                                setSelectedStageId(stage.id);
+                              }
+                            }}
+                          >
+                            <div className="flex items-center justify-between gap-3 flex-wrap">
+                              <div className="flex items-center gap-3">
+                                {selectedStageId === stage.id && isUnlocked && <div className="w-5 h-5 rounded-full bg-aira-lime flex items-center justify-center shrink-0"><Check className="w-3 h-3 text-aira-darkBlue" /></div>}
+                                <div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-display text-base text-white">{stage.label}</span>
+                                    {isCreyentes && !creyentesVerified && (
+                                      <span className="px-2 py-0.5 rounded-full text-[8px] font-mono-custom uppercase tracking-[0.15em] bg-amber-400/15 text-amber-400 border border-amber-400/20">🔒 Verificar acceso</span>
+                                    )}
+                                    {isCreyentes && creyentesVerified && (
+                                      <span className="px-2 py-0.5 rounded-full text-[8px] font-mono-custom uppercase tracking-[0.15em] bg-aira-lime/15 text-aira-lime border border-aira-lime/20">✓ Verificado</span>
+                                    )}
+                                    {!isCreyentes && stage.locked && <span className="px-2 py-0.5 rounded-full text-[8px] font-mono-custom uppercase tracking-[0.15em] bg-amber-400/15 text-amber-400 border border-amber-400/20">🔒 Solo Melomania</span>}
+                                    {(stage as any).urgent && <span className="px-2 py-0.5 rounded-full text-[8px] font-mono-custom uppercase tracking-[0.15em] bg-red-500/15 text-red-400 border border-red-500/20">Últimas {stage.slots}</span>}
+                                  </div>
+                                  <p className="font-mono-custom text-[9px] text-white/40 mt-0.5">{stage.dates} · {stage.slots} plazas</p>
+                                </div>
+                              </div>
+                              <p className="font-display text-xl text-aira-lime shrink-0">{fmt(stage.price)}<span className="font-mono-custom text-[10px] text-white/40 ml-1">/persona</span></p>
+                            </div>
+                            {isCreyentes && !creyentesVerified && (
+                              <p className="text-[10px] text-amber-400/70 mt-2 flex items-center gap-1.5">
+                                <MessageCircle className="w-3 h-3 shrink-0" />
+                                Toca para verificar tu acceso vía WhatsApp
+                              </p>
+                            )}
+                            {!isCreyentes && stage.locked && <p className="text-[10px] text-amber-400/60 mt-2">Disponible para asistentes verificados de Melomania</p>}
+                          </button>
+                        );
+                      })}
                     </div>
                     <div className="mt-5">
                       <PassVipBanner addPassVip={addPassVip} setAddPassVip={setAddPassVip} qty={qty} passVipPrice={passVipPrice} />
@@ -903,16 +1172,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                           }}
                         />
                       </div>
-
-                      {/* Aviso OTP solo para paquete */}
-                      {!isDayTicket && (
-                        <div className="flex items-start gap-2.5 rounded-xl border border-aira-blue/20 bg-aira-blue/5 px-3 py-2.5">
-                          <MessageCircle className="w-4 h-4 text-aira-blue/70 shrink-0 mt-0.5" />
-                          <p className="font-mono-custom text-[9px] text-white/40 leading-relaxed">
-                            Al continuar recibirás un código de verificación por WhatsApp para confirmar tu número antes de pagar.
-                          </p>
-                        </div>
-                      )}
 
                       {paymentError && (
                         <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3">
