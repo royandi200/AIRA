@@ -626,7 +626,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
       });
       const otpData = await otpRes.json();
       if (!otpRes.ok) {
-        // Si OTP falla, avisamos pero dejamos ir al pago directamente
         console.warn('[OTP] No se pudo enviar:', otpData.error);
         window.location.href = data.paymentUrl;
         return;
@@ -951,8 +950,8 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
 
               </div>
 
-              {/* SIDEBAR */}
-              <aside className="p-5 md:p-8 bg-white/[0.02] border-t lg:border-t-0 border-white/10">
+              {/* SIDEBAR — solo visible en desktop (lg+) */}
+              <aside className="hidden lg:block p-8 bg-white/[0.02] border-white/10">
                 <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-3">Evento</p>
                 <div className="rounded-2xl overflow-hidden border border-white/10 bg-white/[0.04]">
                   {selectedEvent.image
