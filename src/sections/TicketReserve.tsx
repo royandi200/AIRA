@@ -252,14 +252,14 @@ interface OtpModalProps {
 }
 
 function OtpModal({ isOpen, phone, orderId, orderRef, paymentUrl, onClose }: OtpModalProps) {
-  const [digits, setDigits]           = useState(['', '', '', '', '', '']);
-  const [verifying, setVerifying]     = useState(false);
-  const [resending, setResending]     = useState(false);
-  const [error, setError]             = useState<string | null>(null);
-  const [success, setSuccess]         = useState(false);
-  const [countdown, setCountdown]     = useState(60);
-  const [canResend, setCanResend]     = useState(false);
-  const inputRefs                     = Array.from({ length: 6 }, () => null as HTMLInputElement | null);
+  const [digits, setDigits]       = useState(['', '', '', '', '', '']);
+  const [verifying, setVerifying] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [error, setError]         = useState<string | null>(null);
+  const [success, setSuccess]     = useState(false);
+  const [countdown, setCountdown] = useState(60);
+  const [canResend, setCanResend] = useState(false);
+  const inputRefs                 = Array.from({ length: 6 }, () => null as HTMLInputElement | null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -363,19 +363,15 @@ function OtpModal({ isOpen, phone, orderId, orderRef, paymentUrl, onClose }: Otp
         className="relative w-full max-w-md rounded-3xl border border-white/10 bg-[#08101f] shadow-2xl p-8"
         onClick={e => e.stopPropagation()}
       >
-        {/* Glow */}
         <div className="absolute inset-0 opacity-20 pointer-events-none rounded-[inherit]" style={{
           background: 'radial-gradient(circle at top center,rgba(0,79,255,0.3),transparent 60%)',
         }} />
-
-        {/* Close */}
         <button
           className="absolute top-4 right-4 w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:bg-white/10 transition-colors"
           onClick={onClose} aria-label="Cerrar"
         ><X className="w-4 h-4" /></button>
 
         <div className="relative z-10 text-center">
-          {/* Icon */}
           <div className="w-16 h-16 rounded-2xl bg-aira-blue/20 border border-aira-blue/30 flex items-center justify-center mx-auto mb-5">
             {success
               ? <ShieldCheck className="w-8 h-8 text-aira-lime" />
@@ -397,8 +393,6 @@ function OtpModal({ isOpen, phone, orderId, orderRef, paymentUrl, onClose }: Otp
                 Enviamos un código de 6 dígitos al WhatsApp<br />
                 <span className="text-white/70 font-mono-custom text-xs">{phoneMask}</span>
               </p>
-
-              {/* Inputs OTP */}
               <div className="flex gap-2 justify-center mb-5" onPaste={handlePaste}>
                 {digits.map((d, i) => (
                   <input
@@ -417,15 +411,11 @@ function OtpModal({ isOpen, phone, orderId, orderRef, paymentUrl, onClose }: Otp
                   />
                 ))}
               </div>
-
-              {/* Error */}
               {error && (
                 <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 mb-4">
                   <p className="text-sm text-red-400">{error}</p>
                 </div>
               )}
-
-              {/* Verificar */}
               <button
                 className="w-full px-6 py-3.5 rounded-2xl bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] hover:bg-white active:scale-[0.97] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
                 onClick={handleVerify}
@@ -436,8 +426,6 @@ function OtpModal({ isOpen, phone, orderId, orderRef, paymentUrl, onClose }: Otp
                   : <><ShieldCheck className="w-4 h-4" /> Verificar y pagar</>
                 }
               </button>
-
-              {/* Reenviar */}
               <div className="flex items-center justify-center gap-2">
                 {canResend ? (
                   <button
@@ -456,7 +444,6 @@ function OtpModal({ isOpen, phone, orderId, orderRef, paymentUrl, onClose }: Otp
                   </p>
                 )}
               </div>
-
               <p className="font-mono-custom text-[8px] uppercase tracking-[0.2em] text-white/20 mt-4">
                 Código válido por 10 minutos · máx. 3 intentos
               </p>
@@ -487,11 +474,11 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
   const [isSubmitting,    setIsSubmitting]   = useState(false);
   const [paymentError,    setPaymentError]   = useState<string | null>(null);
 
-  // OTP state
-  const [otpOpen,       setOtpOpen]      = useState(false);
-  const [otpOrderId,    setOtpOrderId]   = useState<number | null>(null);
-  const [otpOrderRef,   setOtpOrderRef]  = useState<string | null>(null);
-  const [otpPaymentUrl, setOtpPaymentUrl]= useState<string | null>(null);
+  // OTP state — solo usado cuando accessType === 'package'
+  const [otpOpen,       setOtpOpen]       = useState(false);
+  const [otpOrderId,    setOtpOrderId]    = useState<number | null>(null);
+  const [otpOrderRef,   setOtpOrderRef]   = useState<string | null>(null);
+  const [otpPaymentUrl, setOtpPaymentUrl] = useState<string | null>(null);
 
   useLockBodyScroll(isOpen && !otpOpen);
 
@@ -576,7 +563,10 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
     setStep(2);
   };
 
-  // ✅ NUEVO FLUJO: crea orden → envía OTP → abre Modal OTP
+  // ─── CHECKOUT ────────────────────────────────────────────────────────────────
+  // Días sueltos (day1/day2/day3): crear orden → redirigir directo a paymentUrl
+  // Paquete (package):             crear orden → enviar OTP → abrir Modal OTP
+  // ─────────────────────────────────────────────────────────────────────────────
   const handleCheckout = async () => {
     if (!buyerName.trim() || !buyerEmail.trim() || !buyerPhone.trim()) {
       setPaymentError('Por favor completa nombre, correo y celular.');
@@ -614,7 +604,13 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
           : 'No se pudo generar el link de pago. Intenta de nuevo.');
       }
 
-      // Paso 2: enviar OTP al celular del comprador
+      // ── Días sueltos: ir directo al pago ──────────────────────────────────
+      if (isDayTicket) {
+        window.location.href = data.paymentUrl;
+        return;
+      }
+
+      // ── Paquete: verificar celular con OTP antes de pagar ─────────────────
       const otpRes = await fetch('/api/otp-enviar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -626,12 +622,12 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
       });
       const otpData = await otpRes.json();
       if (!otpRes.ok) {
+        // Si falla OTP igual dejamos pasar al pago
         console.warn('[OTP] No se pudo enviar:', otpData.error);
         window.location.href = data.paymentUrl;
         return;
       }
 
-      // Paso 3: abrir Modal OTP (no redirigir aún)
       setOtpOrderId(data.orderId ?? null);
       setOtpOrderRef(data.orderRef ?? null);
       setOtpPaymentUrl(data.paymentUrl);
@@ -889,7 +885,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                         </div>
                       </div>
 
-                      {/* Pago — cuotas solo para paquete */}
+                      {/* Pago en cuotas — solo para paquete */}
                       {!isDayTicket && (
                         <div className="border-t border-white/10 pt-5">
                           <AbonoSelector paymentMode={paymentMode} setPaymentMode={setPaymentMode} abonoPlanId={abonoPlanId} setAbonoPlanId={setAbonoPlanId} total={total} />
@@ -908,13 +904,15 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                         />
                       </div>
 
-                      {/* OTP notice */}
-                      <div className="flex items-start gap-2.5 rounded-xl border border-aira-blue/20 bg-aira-blue/5 px-3 py-2.5">
-                        <MessageCircle className="w-4 h-4 text-aira-blue/70 shrink-0 mt-0.5" />
-                        <p className="font-mono-custom text-[9px] text-white/40 leading-relaxed">
-                          Al continuar recibirás un código de verificación por WhatsApp para confirmar tu número antes de pagar.
-                        </p>
-                      </div>
+                      {/* Aviso OTP solo para paquete */}
+                      {!isDayTicket && (
+                        <div className="flex items-start gap-2.5 rounded-xl border border-aira-blue/20 bg-aira-blue/5 px-3 py-2.5">
+                          <MessageCircle className="w-4 h-4 text-aira-blue/70 shrink-0 mt-0.5" />
+                          <p className="font-mono-custom text-[9px] text-white/40 leading-relaxed">
+                            Al continuar recibirás un código de verificación por WhatsApp para confirmar tu número antes de pagar.
+                          </p>
+                        </div>
+                      )}
 
                       {paymentError && (
                         <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3">
@@ -950,7 +948,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
 
               </div>
 
-              {/* SIDEBAR — solo visible en desktop (lg+) */}
+              {/* SIDEBAR */}
               <aside className="hidden lg:block p-8 bg-white/[0.02] border-white/10">
                 <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-3">Evento</p>
                 <div className="rounded-2xl overflow-hidden border border-white/10 bg-white/[0.04]">
@@ -971,7 +969,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                   </div>
                 )}
 
-                {/* Cuotas en sidebar solo si es paquete */}
                 {!isDayTicket && (
                   <div className="mt-4 rounded-2xl border border-aira-lime/15 bg-aira-lime/5 p-4">
                     <div className="flex items-center gap-2 mb-3">
@@ -994,9 +991,9 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                   <div className="flex items-center gap-2 mb-3"><Sparkles className="w-4 h-4 text-yellow-300" /><p className="font-mono-custom text-[9px] uppercase tracking-[0.24em] text-yellow-300">Pass VIP</p></div>
                   <div className="space-y-2">
                     {[
-                      { icon: '🛥', label: 'Yate VIP',            desc: 'Acceso exclusivo al yate' },
-                      { icon: '👑', label: 'Zona VIP Majestic',   desc: 'Área premium en el yate Majestic' },
-                      { icon: '🎵', label: 'Zona VIP Stage Joinn',desc: 'Acceso VIP al Stage Joinn' },
+                      { icon: '🛥', label: 'Yate VIP',             desc: 'Acceso exclusivo al yate' },
+                      { icon: '👑', label: 'Zona VIP Majestic',    desc: 'Área premium en el yate Majestic' },
+                      { icon: '🎵', label: 'Zona VIP Stage Joinn', desc: 'Acceso VIP al Stage Joinn' },
                     ].map(item => (
                       <div key={item.label} className="flex items-start gap-2.5 rounded-xl bg-yellow-400/8 border border-yellow-400/15 p-2.5">
                         <span className="text-base shrink-0 mt-0.5">{item.icon}</span>
@@ -1039,7 +1036,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
         </div>
       </div>
 
-      {/* ── MODAL OTP (sobre el modal principal) ── */}
+      {/* Modal OTP — solo se activa para paquete */}
       <OtpModal
         isOpen={otpOpen}
         phone={buyerPhone}
