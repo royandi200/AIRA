@@ -31,6 +31,12 @@ const statusColor: Record<string, string> = {
 };
 
 export default function AdminDashboard({ onClose }: { onClose: () => void }) {
+  // Bloquear scroll del body pero permitir scroll interno del modal
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, []);
   const [token,    setToken]    = useState(() => sessionStorage.getItem(ADMIN_TOKEN_KEY) || '');
   const [password, setPassword] = useState('');
   const [authed,   setAuthed]   = useState(() => !!sessionStorage.getItem(ADMIN_TOKEN_KEY));
@@ -107,7 +113,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
     : 1;
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black/95 overflow-y-auto">
+    <div className="fixed inset-0 z-[200] bg-black/95 overflow-y-auto overscroll-contain" style={{WebkitOverflowScrolling:"touch"}}>
       {/* Header */}
       <div className="sticky top-0 z-10 bg-zinc-950/90 backdrop-blur border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
