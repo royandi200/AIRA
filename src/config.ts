@@ -135,9 +135,12 @@ export interface ParallaxImage {
 
 export interface GalleryImage {
   id: number;
-  src: string;
+  src: string;        // thumbnail image
   title: string;
   date: string;
+  videoUrl?: string;  // optional Vimeo/YouTube/Drive URL
+  videoType?: 'vimeo' | 'youtube' | 'external'; // type of video
+  transition?: 'morphing' | 'zoom'; // opening transition effect
 }
 
 export interface ParallaxGalleryConfig {
@@ -185,12 +188,12 @@ export const parallaxGalleryConfig: ParallaxGalleryConfig = {
     { id: 6, src: "/penol.jpg", alt: "Piedra del Peñol" },
   ],
   galleryImages: [
-    { id: 1, src: "/main-stage.jpg", title: "Main Stage", date: "2024" },
-    { id: 2, src: "/dj-1.jpg", title: "Headliners", date: "2024" },
-    { id: 3, src: "/crowd-1.jpg", title: "La Multitud", date: "2024" },
-    { id: 4, src: "/beach-party.jpg", title: "Sunset Session", date: "2024" },
-    { id: 5, src: "/yacht-party.jpg", title: "Yacht Experience", date: "2024" },
-    { id: 6, src: "/vip-area.jpg", title: "VIP Lounge", date: "2024" },
+    { id: 1, src: "/main-stage.jpg",  title: "Main Stage",       date: "2024", videoUrl: "https://vimeo.com/placeholder1", videoType: "vimeo",    transition: "morphing" },
+    { id: 2, src: "/dj-1.jpg",        title: "Headliners",       date: "2024", videoUrl: "https://vimeo.com/placeholder2", videoType: "vimeo",    transition: "zoom"     },
+    { id: 3, src: "/crowd-1.jpg",     title: "La Multitud",      date: "2024", videoUrl: "https://vimeo.com/placeholder3", videoType: "vimeo",    transition: "morphing" },
+    { id: 4, src: "/beach-party.jpg", title: "Sunset Session",   date: "2024", videoUrl: "https://vimeo.com/placeholder4", videoType: "vimeo",    transition: "zoom"     },
+    { id: 5, src: "/yacht-party.jpg", title: "Yacht Experience", date: "2024", videoUrl: "https://vimeo.com/placeholder5", videoType: "vimeo",    transition: "morphing" },
+    { id: 6, src: "/vip-area.jpg",    title: "VIP Lounge",       date: "2024", videoUrl: "https://vimeo.com/placeholder6", videoType: "vimeo",    transition: "zoom"     },
   ],
 };
 
