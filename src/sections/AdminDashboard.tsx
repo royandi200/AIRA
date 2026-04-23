@@ -37,7 +37,10 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
   const [data,     setData]     = useState<Overview | null>(null);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
-  const [tab,      setTab]      = useState<'kpis'|'orders'|'tickets'>('kpis');
+  const [tab,      setTab]      = useState<'kpis'|'orders'|'tickets'|'recordatorios'>('kpis');
+  const [recLog,   setRecLog]   = useState<string[]>([]);
+  const [recSending, setRecSending] = useState(false);
+  const [recResult,  setRecResult]  = useState<any>(null);
 
   const fetchData = useCallback(async (tk: string) => {
     setLoading(true); setError('');
@@ -157,7 +160,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
 
             {/* Tabs */}
             <div className="flex gap-1 mb-6 bg-zinc-900 border border-zinc-800 rounded-xl p-1 w-fit">
-              {(['kpis', 'orders', 'tickets'] as const).map(t => (
+              {(['kpis', 'orders', 'tickets', 'recordatorios'] as const).map(t => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
@@ -167,7 +170,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                       : 'text-zinc-400 hover:text-white'
                   }`}
                 >
-                  {{ kpis: 'Ingresos', orders: 'Órdenes', tickets: 'Cupos' }[t]}
+                  {{ kpis: 'Ingresos', orders: 'Órdenes', tickets: 'Cupos', recordatorios: '📲 Recordatorios' }[t]}
                 </button>
               ))}
             </div>
@@ -287,6 +290,84 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
             )}
           </>
         )}
+
+            {/* Tab: Recordatorios */}
+            {tab === 'recordatorios' && (
+              <div className="space-y-4">
+                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                  <h3 className="text-white font-semibold mb-1">Recordatorios de cuotas</h3>
+                  <p className="text-zinc-400 text-sm mb-6">
+                    Envía mensajes WhatsApp a compradores con cuotas que vencen en 3 días o mañana.
+                    El cron automático lo ejecuta cada día a las 9am hora Colombia.
+                  </p>
+                  <div className="flex flex-wrap gap-3 mb-6">
+                    <button
+                      disabled={recSending}
+                      onClick={async () => {
+                        setRecSending(true); setRecLog([]); setRecResult(null);
+                        try {
+                          const r = await fetch('/api/recordatorios-cuotas?dry=1', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'x-admin-key': token },
+                            body: JSON.stringify({ dry: true }),
+                          });
+                          const d = await r.json();
+                          setRecResult(d); setRecLog(d.log || []);
+                        } catch(e:any) { setRecLog(['Error: ' + e.message]); }
+                        finally { setRecSending(false); }
+                      }}
+                      className="px-4 py-2.5 rounded-xl border border-zinc-700 text-zinc-300 text-sm hover:border-zinc-500 transition-colors disabled:opacity-40 flex items-center gap-2"
+                    >
+                      {recSending ? 'Procesando…' : '🔍 Simular (dry run)'}
+                    </button>
+                    <button
+                      disabled={recSending}
+                      onClick={async () => {
+                        if (!confirm('¿Enviar recordatorios WhatsApp reales ahora?')) return;
+                        setRecSending(true); setRecLog([]); setRecResult(null);
+                        try {
+                          const r = await fetch('/api/recordatorios-cuotas', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'x-admin-key': token },
+                            body: JSON.stringify({}),
+                          });
+                          const d = await r.json();
+                          setRecResult(d); setRecLog(d.log || []);
+                        } catch(e:any) { setRecLog(['Error: ' + e.message]); }
+                        finally { setRecSending(false); }
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-semibold transition-colors disabled:opacity-40 flex items-center gap-2"
+                    >
+                      {recSending ? 'Enviando…' : '📲 Enviar ahora'}
+                    </button>
+                  </div>
+
+                  {recResult && (
+                    <div className={`rounded-xl border p-4 mb-4 text-sm ${
+                      recResult.ok ? 'border-green-500/30 bg-green-500/10' : 'border-red-500/30 bg-red-500/10'
+                    }`}>
+                      <p className={recResult.ok ? 'text-green-400' : 'text-red-400'}>
+                        {recResult.dryRun ? '[DRY RUN] ' : ''}
+                        ✓ {recResult.enviados} enviados · {recResult.errores} errores · {recResult.total} total
+                      </p>
+                    </div>
+                  )}
+
+                  {recLog.length > 0 && (
+                    <div className="bg-black/50 border border-zinc-800 rounded-xl p-4 font-mono text-xs text-zinc-400 max-h-64 overflow-y-auto space-y-1">
+                      {recLog.map((line, i) => (
+                        <p key={i} className={line.startsWith('→') ? 'text-zinc-300' : line.startsWith('⚠') ? 'text-yellow-400' : ''}>  {line}</p>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="mt-6 pt-4 border-t border-zinc-800">
+                    <p className="text-zinc-500 text-xs">⏰ Cron automático: todos los días a las 9:00am (hora Colombia)</p>
+                    <p className="text-zinc-500 text-xs mt-1">🔒 Requiere variable de entorno <code className="text-zinc-400">CRON_SECRET</code> y <code className="text-zinc-400">ADMIN_SECRET_KEY</code> en Vercel</p>
+                  </div>
+                </div>
+              </div>
+            )}
       </div>
     </div>
   );
