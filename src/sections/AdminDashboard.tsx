@@ -31,13 +31,24 @@ const statusColor: Record<string, string> = {
 };
 
 export default function AdminDashboard({ onClose }: { onClose: () => void }) {
-  // Parar Lenis mientras el admin está abierto
+  // Parar Lenis + interceptar wheel manualmente para el modal
   useEffect(() => {
     const lenis = (window as any).__lenis;
     if (lenis) lenis.stop();
+
+    const onWheel = (e: WheelEvent) => {
+      const modal = document.getElementById('admin-modal');
+      if (modal) {
+        modal.scrollTop += e.deltaY;
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('wheel', onWheel, { passive: false });
+
     return () => {
       const l = (window as any).__lenis;
       if (l) l.start();
+      window.removeEventListener('wheel', onWheel);
     };
   }, []);
   const [token,    setToken]    = useState(() => sessionStorage.getItem(ADMIN_TOKEN_KEY) || '');
