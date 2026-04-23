@@ -16,7 +16,7 @@ function PhotoModal({
   onClose: () => void;
 }) {
   const [current, setCurrent]   = useState(startIndex);
-  const [phase, setPhase]       = useState<'entering' | 'open' | 'exiting'>('entering');
+  const [, setPhase]       = useState<'entering' | 'open' | 'exiting'>('entering');
   const overlayRef  = useRef<HTMLDivElement>(null);
   const imgRef      = useRef<HTMLImageElement>(null);
   const gridRef     = useRef<HTMLDivElement>(null);
