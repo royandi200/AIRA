@@ -247,6 +247,12 @@ const Footer = () => {
           <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-xs text-white/30 font-mono-custom">
               {footerConfig.copyrightText}
+          {onOpenMisReservas && (
+            <button onClick={onOpenMisReservas}
+              className="mt-2 text-xs text-aira-lime/70 hover:text-aira-lime transition-colors underline underline-offset-2">
+              Ver mis reservas / Pagar cuotas
+            </button>
+          )}
             </p>
             <div className="flex gap-6">
               {footerConfig.bottomLinks.map((link) => (

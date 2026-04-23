@@ -10,6 +10,7 @@ import TicketReserve, { type ReservationEvent } from './sections/TicketReserve';
 import SuiteReserve from './sections/SuiteReserve';
 import Footer from './sections/Footer';
 import AdminDashboard from './sections/AdminDashboard';
+import MisReservas from './sections/MisReservas';
 
 function App() {
   useLenis();
@@ -17,6 +18,9 @@ function App() {
   const [selectedEvent, setSelectedEvent]   = useState<ReservationEvent | null>(null);
   const [isReserveOpen, setIsReserveOpen]   = useState(false);
   const [isSuiteOpen,   setIsSuiteOpen]     = useState(false);
+  const [isMisReservasOpen, setIsMisReservasOpen] = useState(
+    () => window.location.search.includes('reserva=')
+  );
   const [isAdminOpen,   setIsAdminOpen]     = useState(
     () => window.location.hash === '#admin'
   );
@@ -71,7 +75,7 @@ function App() {
         onOpenReservation={handleOpenReservation}
         onOpenSuite={handleOpenSuite}
       />
-      <Footer />
+      <Footer onOpenMisReservas={() => setIsMisReservasOpen(true)} />
 
       <TicketReserve
         isOpen={isReserveOpen}
@@ -87,6 +91,10 @@ function App() {
       {isAdminOpen && (
         <AdminDashboard onClose={handleCloseAdmin} />
       )}
+      <MisReservas
+        isOpen={isMisReservasOpen}
+        onClose={() => setIsMisReservasOpen(false)}
+      />
     </main>
   );
 }
