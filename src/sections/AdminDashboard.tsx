@@ -33,20 +33,12 @@ const statusColor: Record<string, string> = {
 export default function AdminDashboard({ onClose }: { onClose: () => void }) {
   // Parar Lenis mientras el admin está abierto
   useEffect(() => {
-    // Lenis usa el window como target — al setear overflow hidden en html
-    // y destruir/recrear no es viable. La solución es parar el ticker de gsap.
-    // Lenis respeta data-lenis-prevent en elementos scrollables internos.
-    // También paramos wheel en window para que no intercepte el modal.
-    const onWheel = (e: WheelEvent) => {
-      const modal = document.getElementById('admin-modal');
-      if (modal) {
-        // Dejar que el modal maneje su propio scroll
-        modal.scrollTop += e.deltaY;
-        e.preventDefault();
-      }
+    const lenis = (window as any).__lenis;
+    if (lenis) lenis.stop();
+    return () => {
+      const l = (window as any).__lenis;
+      if (l) l.start();
     };
-    window.addEventListener('wheel', onWheel, { passive: false });
-    return () => window.removeEventListener('wheel', onWheel);
   }, []);
   const [token,    setToken]    = useState(() => sessionStorage.getItem(ADMIN_TOKEN_KEY) || '');
   const [password, setPassword] = useState('');

@@ -21,6 +21,8 @@ export const useLenis = () => {
     });
 
     lenisRef.current = lenis;
+    // Exponer globalmente para que modales puedan pausarlo
+    (window as any).__lenis = lenis;
 
     // Connect Lenis to GSAP ScrollTrigger
     lenis.on('scroll', ScrollTrigger.update);
@@ -33,6 +35,7 @@ export const useLenis = () => {
 
     // Cleanup
     return () => {
+      (window as any).__lenis = null;
       lenis.destroy();
       gsap.ticker.remove((time) => {
         lenis.raf(time * 1000);
