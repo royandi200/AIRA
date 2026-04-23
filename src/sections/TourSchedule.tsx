@@ -10,9 +10,10 @@ gsap.registerPlugin(ScrollTrigger);
 interface TourScheduleProps {
   onOpenReservation: (event: ReservationEvent) => void;
   onOpenSuite: () => void;
+  onOpenMisReservas?: () => void;
 }
 
-const TourSchedule = ({ onOpenReservation, onOpenSuite }: TourScheduleProps) => {
+const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas }: TourScheduleProps) => {
   if (tourScheduleConfig.tourDates.length === 0 && !tourScheduleConfig.sectionTitle) {
     return null;
   }
@@ -219,6 +220,16 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite }: TourScheduleProps) => 
           <button className="px-8 py-4 bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-wider rounded-full hover:bg-white transition-colors">
             {tourScheduleConfig.bottomCtaText}
           </button>
+          {onOpenMisReservas && (
+            <div className="mt-6">
+              <button
+                onClick={onOpenMisReservas}
+                className="inline-flex items-center gap-2 px-6 py-3 border border-white/20 text-white/60 font-mono-custom text-xs uppercase tracking-[0.25em] rounded-full hover:border-aira-lime/50 hover:text-aira-lime transition-all duration-200"
+              >
+                <span>🎫</span> Ver mis reservas · Pagar cuotas
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

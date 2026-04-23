@@ -74,6 +74,7 @@ function App() {
       <TourSchedule
         onOpenReservation={handleOpenReservation}
         onOpenSuite={handleOpenSuite}
+        onOpenMisReservas={() => setIsMisReservasOpen(true)}
       />
       <Footer onOpenMisReservas={() => setIsMisReservasOpen(true)} />
 
