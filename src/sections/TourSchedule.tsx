@@ -94,6 +94,43 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas }: Tou
           </h2>
         </div>
 
+        {/* ── Banner Mis Reservas ── */}
+        {onOpenMisReservas && (
+          <div className="mb-10">
+            <button
+              onClick={onOpenMisReservas}
+              className="w-full group relative flex items-center justify-between gap-4 px-6 py-4 rounded-2xl border border-aira-lime/30 bg-aira-lime/5 hover:bg-aira-lime/10 hover:border-aira-lime/60 transition-all duration-300 overflow-hidden"
+            >
+              {/* Glow animado */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                style={{background:'radial-gradient(ellipse at left center,rgba(225,254,82,0.08),transparent 60%)'}}/>
+
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="w-10 h-10 rounded-xl bg-aira-lime/15 border border-aira-lime/30 flex items-center justify-center shrink-0 group-hover:bg-aira-lime/25 transition-colors">
+                  <span className="text-lg">🎫</span>
+                </div>
+                <div className="text-left">
+                  <p className="font-display text-base text-aira-lime leading-none mb-0.5">
+                    ¿Ya tienes una reserva?
+                  </p>
+                  <p className="font-mono-custom text-[11px] text-white/50 uppercase tracking-[0.2em]">
+                    Ver estado · Pagar cuotas · Descargar QR
+                  </p>
+                </div>
+              </div>
+
+              <div className="relative z-10 flex items-center gap-2 shrink-0">
+                <span className="font-mono-custom text-xs text-aira-lime/70 uppercase tracking-widest hidden sm:block">
+                  Mis reservas
+                </span>
+                <div className="w-8 h-8 rounded-full border border-aira-lime/30 flex items-center justify-center group-hover:border-aira-lime/60 group-hover:bg-aira-lime/10 transition-all">
+                  <span className="text-aira-lime text-sm">→</span>
+                </div>
+              </div>
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {TOUR_DATES.length > 0 && (
             <div className="hidden lg:flex lg:items-center">
@@ -220,16 +257,7 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas }: Tou
           <button className="px-8 py-4 bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-wider rounded-full hover:bg-white transition-colors">
             {tourScheduleConfig.bottomCtaText}
           </button>
-          {onOpenMisReservas && (
-            <div className="mt-6">
-              <button
-                onClick={onOpenMisReservas}
-                className="inline-flex items-center gap-2 px-6 py-3 border border-white/20 text-white/60 font-mono-custom text-xs uppercase tracking-[0.25em] rounded-full hover:border-aira-lime/50 hover:text-aira-lime transition-all duration-200"
-              >
-                <span>🎫</span> Ver mis reservas · Pagar cuotas
-              </button>
-            </div>
-          )}
+
         </div>
       </div>
 
