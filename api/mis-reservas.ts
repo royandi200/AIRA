@@ -10,7 +10,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     let orders: any[] = [];
 
-    // Buscar por teléfono
     if (phone) {
       const phoneClean = String(phone).replace(/\D/g, '');
       if (phoneClean.length >= 7) {
@@ -20,19 +19,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   u.name AS buyer_name, u.email AS buyer_email, u.phone AS buyer_phone,
                   e.name AS event_name, e.event_date, e.venue, e.city
            FROM orders o
-           JOIN users  u ON u.id = o.user_id
+           JOIN users u ON u.id = o.user_id
            JOIN events e ON e.id = o.event_id
            WHERE o.status NOT IN ('cancelled','refunded')
-             AND REPLACE(REPLACE(REPLACE(u.phone,' ',''),'+',''),'-','') LIKE ?
-           ORDER BY o.created_at DESC
-           LIMIT 10`,
+             AND REPLACE(REPLACE(u.phone, ' ', ''), '+', '') LIKE ?
+           ORDER BY o.created_at DESC LIMIT 10`,
           [`%${phoneClean}%`]
         );
-        orders = rows || [];
+        orders = Array.isArray(rows) ? rows : [];
       }
     }
 
-    // Buscar por email si no encontró por teléfono
     if (orders.length === 0 && email) {
       const [rows]: any = await pool.query(
         `SELECT o.id, o.order_ref, o.status, o.payment_mode, o.total,
@@ -40,25 +37,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 u.name AS buyer_name, u.email AS buyer_email, u.phone AS buyer_phone,
                 e.name AS event_name, e.event_date, e.venue, e.city
          FROM orders o
-         JOIN users  u ON u.id = o.user_id
+         JOIN users u ON u.id = o.user_id
          JOIN events e ON e.id = o.event_id
          WHERE o.status NOT IN ('cancelled','refunded')
            AND LOWER(u.email) = LOWER(?)
-         ORDER BY o.created_at DESC
-         LIMIT 10`,
+         ORDER BY o.created_at DESC LIMIT 10`,
         [email.trim()]
       );
-      orders = rows || [];
+      orders = Array.isArray(rows) ? rows : [];
     }
 
     if (!orders.length) {
       return res.status(404).json({ error: 'No encontramos reservas con ese teléfono o email' });
     }
 
-    // Enriquecer con items y abonos
     const enriched = await Promise.all(orders.map(async (order: any) => {
       const [items]: any = await pool.query(
-        `SELECT oi.id, oi.quantity, oi.unit_price, oi.is_vip, oi.qr_code, oi.qr_generated_at,
+        `SELECT oi.id, oi.quantity, oi.unit_price, oi.is_vip, oi.qr_code,
                 tt.name AS ticket_name, tt.stage_label
          FROM order_items oi
          JOIN ticket_types tt ON tt.id = oi.ticket_type_id
@@ -76,13 +71,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         [order.id]
       );
 
-      return { ...order, items: items || [], abonos: abonos || [] };
+      return {
+        ...order,
+        items:  Array.isArray(items)  ? items  : [],
+        abonos: Array.isArray(abonos) ? abonos : [],
+      };
     }));
 
     return res.status(200).json({ ok: true, orders: enriched });
 
   } catch (err: any) {
-    console.error('[mis-reservas]', err.message, err.stack);
-    return res.status(500).json({ error: `Error interno: ${err.message}` });
+    console.error('[mis-reservas] ERROR:', err.message);
+    return res.status(500).json({ error: err.message || 'Error interno' });
   }
 }
