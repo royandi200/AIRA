@@ -157,9 +157,9 @@ export interface ParallaxGalleryConfig {
 
 export const parallaxGalleryConfig: ParallaxGalleryConfig = {
   sectionLabel: "MÚSICA + NATURALEZA",
-  sectionTitle: "LA EXPERIENCIA",
+  sectionTitle: "GALERÍA",
   galleryLabel: "MOMENTOS AIRA",
-  galleryTitle: "GALERÍA",
+  galleryTitle: "LA EXPERIENCIA",
   marqueeTexts: [
     "GUATAPÉ",
     "MÚSICA ELECTRÓNICA",

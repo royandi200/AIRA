@@ -174,36 +174,66 @@ function VideoModal({
 
   useEffect(() => {
     const tl = gsap.timeline();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const targetW = Math.min(vw * 0.88, 1100);
+    const targetH = targetW * 9 / 16;
+    // Centro exacto de la pantalla
+    const cx = vw / 2;
+    const cy = vh / 2;
 
     if (video.transition === 'morphing' && rect && containerRef.current) {
-      // Morphing: anima desde la posición/tamaño del thumbnail
-      const targetW = Math.min(window.innerWidth * 0.9, 1100);
-      const targetH = targetW * 9/16;
-      const targetX = (window.innerWidth - targetW) / 2;
-      const targetY = (window.innerHeight - targetH) / 2;
-
+      // Partir desde rect del thumbnail, llegar al centro
       gsap.set(containerRef.current, {
         position: 'fixed',
-        left: rect.left, top: rect.top,
-        width: rect.width, height: rect.height,
-        borderRadius: '12px', overflow: 'hidden',
+        width:  rect.width,
+        height: rect.height,
+        // Centrar el elemento en la posición del thumb usando xPercent/yPercent=0
+        left: rect.left,
+        top:  rect.top,
+        xPercent: 0,
+        yPercent: 0,
+        borderRadius: '12px',
+        overflow: 'hidden',
+        zIndex: 305,
       });
 
       tl.to(overlayRef.current, { opacity: 1, duration: 0.25, ease: 'power2.out' }, 0)
         .to(containerRef.current, {
-          left: targetX, top: targetY,
-          width: targetW, height: targetH,
+          left:         cx,
+          top:          cy,
+          xPercent:     -50,
+          yPercent:     -50,
+          width:        targetW,
+          height:       targetH,
           borderRadius: '20px',
-          duration: 0.55, ease: 'expo.inOut',
-          onComplete: () => setIframeVisible(true),
+          duration:     0.6,
+          ease:         'expo.inOut',
+          onComplete:   () => setIframeVisible(true),
         }, 0.05);
     } else {
-      // Zoom-in: escala desde el centro
-      gsap.set(containerRef.current, { scale: 0.3, opacity: 0, y: 60, borderRadius: '20px' });
+      // Zoom desde el centro — nunca se mueve, solo escala
+      gsap.set(containerRef.current, {
+        position: 'fixed',
+        width:    targetW,
+        height:   targetH,
+        left:     cx,
+        top:      cy,
+        xPercent: -50,
+        yPercent: -50,
+        scale:    0.25,
+        opacity:  0,
+        borderRadius: '20px',
+        overflow: 'hidden',
+        zIndex:   305,
+      });
+
       tl.to(overlayRef.current, { opacity: 1, duration: 0.2, ease: 'power2.out' }, 0)
         .to(containerRef.current, {
-          scale: 1, opacity: 1, y: 0,
-          duration: 0.6, ease: 'expo.out',
+          scale:   1,
+          opacity: 1,
+          duration: 0.55,
+          ease:    'expo.out',
           onComplete: () => setIframeVisible(true),
         }, 0.05);
     }
@@ -212,12 +242,8 @@ function VideoModal({
   const close = useCallback(() => {
     const tl = gsap.timeline({ onComplete: onClose });
     tl.to(overlayRef.current, { opacity: 0, duration: 0.25 }, 0);
-    if (video.transition === 'zoom') {
-      tl.to(containerRef.current, { scale: 0.85, opacity: 0, y: 30, duration: 0.3, ease: 'power2.in' }, 0);
-    } else {
-      tl.to(containerRef.current, { opacity: 0, scale: 0.9, duration: 0.3, ease: 'power2.in' }, 0);
-    }
-  }, [onClose, video.transition]);
+    tl.to(containerRef.current, { scale: 0.85, opacity: 0, duration: 0.3, ease: 'power2.in' }, 0);
+  }, [onClose]);
 
   // Keyboard
   useEffect(() => {
@@ -262,14 +288,8 @@ function VideoModal({
 
       {/* Video container */}
       <div ref={containerRef}
-        className="fixed z-[305] bg-black overflow-hidden"
-        style={{
-          width: '88vw', maxWidth: '1100px',
-          aspectRatio: '16/9',
-          left: '50%', top: '50%',
-          transform: 'translate(-50%,-50%)',
-          boxShadow: '0 60px 160px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.06)',
-        }}
+        className="fixed bg-black overflow-hidden"
+        style={{ boxShadow: '0 60px 160px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.06)' }}
         onClick={e => e.stopPropagation()}>
 
         {iframeVisible && !isPlaceholder ? (
