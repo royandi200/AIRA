@@ -8,35 +8,54 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!phone && !email) return res.status(400).json({ error: 'Ingresa tu teléfono o email' });
 
   try {
-    const phoneClean = phone ? String(phone).replace(/\D/g, '') : null;
+    let orders: any[] = [];
 
-    const [orders]: any = await pool.query(
-      `SELECT o.id, o.order_ref, o.status, o.payment_mode, o.total,
-              o.subtotal, o.service_fee, o.pass_vip_total, o.transport_total,
-              o.created_at, o.paid_at,
-              u.name AS buyer_name, u.email AS buyer_email, u.phone AS buyer_phone,
-              e.name AS event_name, e.event_date, e.venue, e.city
-       FROM orders o
-       JOIN users  u ON u.id = o.user_id
-       JOIN events e ON e.id = o.event_id
-       WHERE o.status NOT IN ('cancelled','refunded')
-         AND (
-           ${phoneClean ? `REPLACE(REPLACE(u.phone,' ',''),'+','') LIKE ?` : '1=0'}
-           ${email ? `${phoneClean ? 'OR' : ''} u.email = ?` : ''}
-         )
-       ORDER BY o.created_at DESC
-       LIMIT 10`,
-      [
-        ...(phoneClean ? [`%${phoneClean}%`] : []),
-        ...(email      ? [email.trim().toLowerCase()] : []),
-      ]
-    );
+    // Buscar por teléfono
+    if (phone) {
+      const phoneClean = String(phone).replace(/\D/g, '');
+      if (phoneClean.length >= 7) {
+        const [rows]: any = await pool.query(
+          `SELECT o.id, o.order_ref, o.status, o.payment_mode, o.total,
+                  o.created_at, o.paid_at,
+                  u.name AS buyer_name, u.email AS buyer_email, u.phone AS buyer_phone,
+                  e.name AS event_name, e.event_date, e.venue, e.city
+           FROM orders o
+           JOIN users  u ON u.id = o.user_id
+           JOIN events e ON e.id = o.event_id
+           WHERE o.status NOT IN ('cancelled','refunded')
+             AND REPLACE(REPLACE(REPLACE(u.phone,' ',''),'+',''),'-','') LIKE ?
+           ORDER BY o.created_at DESC
+           LIMIT 10`,
+          [`%${phoneClean}%`]
+        );
+        orders = rows || [];
+      }
+    }
+
+    // Buscar por email si no encontró por teléfono
+    if (orders.length === 0 && email) {
+      const [rows]: any = await pool.query(
+        `SELECT o.id, o.order_ref, o.status, o.payment_mode, o.total,
+                o.created_at, o.paid_at,
+                u.name AS buyer_name, u.email AS buyer_email, u.phone AS buyer_phone,
+                e.name AS event_name, e.event_date, e.venue, e.city
+         FROM orders o
+         JOIN users  u ON u.id = o.user_id
+         JOIN events e ON e.id = o.event_id
+         WHERE o.status NOT IN ('cancelled','refunded')
+           AND LOWER(u.email) = LOWER(?)
+         ORDER BY o.created_at DESC
+         LIMIT 10`,
+        [email.trim()]
+      );
+      orders = rows || [];
+    }
 
     if (!orders.length) {
       return res.status(404).json({ error: 'No encontramos reservas con ese teléfono o email' });
     }
 
-    // Para cada orden traer items y abonos
+    // Enriquecer con items y abonos
     const enriched = await Promise.all(orders.map(async (order: any) => {
       const [items]: any = await pool.query(
         `SELECT oi.id, oi.quantity, oi.unit_price, oi.is_vip, oi.qr_code, oi.qr_generated_at,
@@ -57,12 +76,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         [order.id]
       );
 
-      return { ...order, items, abonos };
+      return { ...order, items: items || [], abonos: abonos || [] };
     }));
 
     return res.status(200).json({ ok: true, orders: enriched });
+
   } catch (err: any) {
-    console.error('[mis-reservas]', err.message);
-    return res.status(500).json({ error: 'Error interno' });
+    console.error('[mis-reservas]', err.message, err.stack);
+    return res.status(500).json({ error: `Error interno: ${err.message}` });
   }
 }
