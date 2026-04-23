@@ -31,11 +31,22 @@ const statusColor: Record<string, string> = {
 };
 
 export default function AdminDashboard({ onClose }: { onClose: () => void }) {
-  // Bloquear scroll del body pero permitir scroll interno del modal
+  // Parar Lenis mientras el admin está abierto
   useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
+    // Lenis usa el window como target — al setear overflow hidden en html
+    // y destruir/recrear no es viable. La solución es parar el ticker de gsap.
+    // Lenis respeta data-lenis-prevent en elementos scrollables internos.
+    // También paramos wheel en window para que no intercepte el modal.
+    const onWheel = (e: WheelEvent) => {
+      const modal = document.getElementById('admin-modal');
+      if (modal) {
+        // Dejar que el modal maneje su propio scroll
+        modal.scrollTop += e.deltaY;
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('wheel', onWheel, { passive: false });
+    return () => window.removeEventListener('wheel', onWheel);
   }, []);
   const [token,    setToken]    = useState(() => sessionStorage.getItem(ADMIN_TOKEN_KEY) || '');
   const [password, setPassword] = useState('');
@@ -113,7 +124,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
     : 1;
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black/95 overflow-y-auto overscroll-contain" style={{WebkitOverflowScrolling:"touch"}}>
+    <div id="admin-modal" className="fixed inset-0 z-[200] bg-black/95 overflow-y-auto overscroll-contain" style={{WebkitOverflowScrolling:"touch"}}>
       {/* Header */}
       <div className="sticky top-0 z-10 bg-zinc-950/90 backdrop-blur border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
