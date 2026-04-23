@@ -1,6 +1,6 @@
 // GET /api/debug-reservas?phone=XXXX — solo para debug, eliminar en producción
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import pool from './db';
+import pool from './db.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { phone, email } = req.query;
