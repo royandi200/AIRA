@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import React from 'react';
 import {
   X, Search, Ticket, CreditCard, CheckCircle, Clock,
   AlertCircle, Download, ChevronDown, ChevronUp,
@@ -49,7 +50,7 @@ const fmt = (n: number) =>
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
 
-const STATUS_MAP: Record<string, { label: string; color: string; bg: string; icon: JSX.Element }> = {
+const STATUS_MAP: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   pending:  { label: 'Pendiente',  color: 'text-yellow-400', bg: 'bg-yellow-400/10', icon: <Clock className="w-3.5 h-3.5"/> },
   partial:  { label: 'En abonos', color: 'text-blue-400',   bg: 'bg-blue-400/10',   icon: <CreditCard className="w-3.5 h-3.5"/> },
   paid:     { label: 'Pagado',    color: 'text-emerald-400', bg: 'bg-emerald-400/10', icon: <CheckCircle className="w-3.5 h-3.5"/> },
@@ -63,7 +64,7 @@ const CUOTA_STATUS: Record<string, { color: string; label: string }> = {
 };
 
 // ─── QR Downloader ────────────────────────────────────────────────────────────
-function QRDisplay({ qrCode, ticketName }: { qrCode: string; ticketName: string }) {
+function QRDisplay({ qrCode }: { qrCode: string; ticketName?: string }) {
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCode)}`;
   return (
     <div className="flex flex-col items-center gap-2">

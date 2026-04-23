@@ -13,7 +13,7 @@ const SOCIAL_ICON_MAP = {
   music: Music2,
 };
 
-const Footer = () => {
+const Footer = ({ onOpenMisReservas }: { onOpenMisReservas?: () => void }) => {
   if (!footerConfig.brandName && !footerConfig.heroTitle && footerConfig.socialLinks.length === 0) {
     return null;
   }
