@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   X, Ticket, CreditCard, CheckCircle, Clock,
   AlertCircle, Download, ChevronDown, ChevronUp,
-  Loader2, QrCode, RefreshCw, Calendar, MapPin,
+  Loader2, RefreshCw, Calendar, MapPin,
   MessageCircle, ShieldCheck, ArrowLeft,
 } from 'lucide-react';
 
