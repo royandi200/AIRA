@@ -151,7 +151,14 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas }: Tou
           <div className="space-y-4">
             {TOUR_DATES.map((tour, index) => {
               const status = getStatusLabel(tour.status);
-              const accessType = DAY_MAP[index];
+              const accessType = DAY_MAP[index] ?? (
+                tour.venue.toLowerCase().includes('vip') ||
+                tour.venue.toLowerCase().includes('paquete') ||
+                tour.venue.toLowerCase().includes('3 d') ||
+                tour.venue.toLowerCase().includes('backstage')
+                  ? 'package' as const
+                  : undefined
+              );
               return (
                 <div
                   key={tour.id}
