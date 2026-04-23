@@ -351,7 +351,7 @@ export const footerConfig: FooterConfig = {
   quickLinks: ["Experiencia", "Galería", "Booking", "Contacto"],
   contactTitle: "Contacto",
   emailLabel: "Email",
-  email: "info@airafestival.com",
+  email: "info@viveaira.live",
   phoneLabel: "Teléfono",
   phone: "+57 (604) 123-4567",
   addressLabel: "Ubicación",

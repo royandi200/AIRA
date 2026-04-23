@@ -29,7 +29,7 @@ async function sendEmailOTP(email: string, otp: string) {
         'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'AIRA Festival <noreply@airafestival.co>',
+        from: 'AIRA Festival <noreply@viveaira.live>',
         to: [email],
         subject: `${otp} — Tu código AIRA`,
         html: `<div style="font-family:sans-serif;max-width:400px;margin:auto;padding:32px;background:#08101f;color:#fff;border-radius:16px"><h2 style="color:#e1fe52">AIRA Festival</h2><p style="color:#ffffff80">Tu código de verificación:</p><div style="background:#ffffff10;border:1px solid #e1fe5230;border-radius:12px;padding:24px;text-align:center"><span style="font-size:36px;font-weight:900;letter-spacing:8px;color:#e1fe52">${otp}</span></div><p style="color:#ffffff40;font-size:12px">Válido por 10 minutos.</p></div>`,

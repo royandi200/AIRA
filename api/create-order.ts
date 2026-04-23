@@ -40,7 +40,7 @@ async function createBoldPaymentLink(params: {
   const BOLD_API_KEY = process.env.BOLD_API_KEY ?? '';
   const BASE_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : 'https://v0-aira-event.vercel.app';
+    : 'https://www.viveaira.live';
 
   const callbackUrl  = `${BASE_URL}/checkout/success?order_id=${params.orderId}`;
   const amountInt    = Math.round(params.amount);
