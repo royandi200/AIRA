@@ -37,7 +37,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // POST — crear registro manual
   if (req.method === 'POST') {
     const {
-      nombre, cedula, movil, evento_id,
+      nombre, cedula, movil, evento_id, paquete,
       monto_total, monto_recibido, medio_pago, fecha_pago,
       notas,
     } = req.body as Record<string, any>;
@@ -60,6 +60,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         monto_pendiente DECIMAL(12,2) DEFAULT 0,
         medio_pago      VARCHAR(50),
         fecha_pago      DATE,
+        paquete         VARCHAR(100),
         notas           TEXT,
         created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB
@@ -67,13 +68,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     await pool.query(`
       INSERT INTO manual_registros
-        (order_ref, nombre, cedula, movil, evento_id,
+        (order_ref, nombre, cedula, movil, evento_id, paquete,
          monto_total, monto_recibido, monto_pendiente,
          medio_pago, fecha_pago, notas)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
     `, [
       order_ref, nombre, cedula, movil || null,
-      evento_id || null,
+      evento_id || null, paquete || null,
       monto_total || 0, monto_recibido || 0, monto_pendiente,
       medio_pago || null,
       fecha_pago || null,

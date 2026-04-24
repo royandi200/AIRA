@@ -31,8 +31,18 @@ const statusColor: Record<string, string> = {
 };
 
 // ─── Manual Registration Tab ─────────────────────────────────────────────────
+const PAQUETES = [
+  { label: 'Paquete 3 Días',                 priceLabel: '$280.000',   price: '280000',   cat: 'premium' },
+  { label: 'Pass VIP',                        priceLabel: '$450.000',   price: '450000',   cat: 'premium' },
+  { label: 'Transporte',                      priceLabel: '$180.000',   price: '180000',   cat: 'premium' },
+  { label: 'Suite Privada',                   priceLabel: '$2.200.000', price: '2200000',  cat: 'premium' },
+  { label: 'DÍA 1 — After Fiesta de Yates',  priceLabel: '$80.000',    price: '80000',    cat: 'daily'   },
+  { label: 'DÍA 2 — Fiesta Majestic & Stage Joinn', priceLabel: '$150.000', price: '150000', cat: 'daily' },
+  { label: 'DÍA 3 — Open Deck',              priceLabel: '$50.000',    price: '50000',    cat: 'daily'   },
+];
+
 function ManualTab({ token }: { token: string }) {
-  const [form, setForm] = useState({ nombre:'', cedula:'', movil:'', monto_total:'', monto_recibido:'', medio_pago:'Efectivo', fecha_pago: new Date().toISOString().slice(0,10), notas:'' });
+  const [form, setForm] = useState({ nombre:'', cedula:'', movil:'', paquete:'', monto_total:'', monto_recibido:'', medio_pago:'Efectivo', fecha_pago: new Date().toISOString().slice(0,10), notas:'' });
   const [list,    setList]    = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving,  setSaving]  = useState(false);
@@ -56,12 +66,12 @@ function ManualTab({ token }: { token: string }) {
       const r = await fetch('/api/admin-registro', {
         method: 'POST',
         headers: { 'Content-Type':'application/json', 'x-admin-token': token },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, paquete: form.paquete || undefined }),
       });
       const d = await r.json();
       if (d.ok) {
         setMsg({text:`✓ Registrado: ${d.order_ref}`, ok:true});
-        setForm({ nombre:'', cedula:'', movil:'', monto_total:'', monto_recibido:'', medio_pago:'Efectivo', fecha_pago: new Date().toISOString().slice(0,10), notas:'' });
+        setForm({ nombre:'', cedula:'', movil:'', paquete:'', monto_total:'', monto_recibido:'', medio_pago:'Efectivo', fecha_pago: new Date().toISOString().slice(0,10), notas:'' });
         fetchList();
       } else { setMsg({text: d.error || 'Error', ok:false}); }
     } finally { setSaving(false); }
@@ -85,6 +95,21 @@ function ManualTab({ token }: { token: string }) {
           <div><label className={labelCls}>Nombre completo *</label><input className={inputCls} value={form.nombre} placeholder="Juan García" onChange={e=>setForm(f=>({...f,nombre:e.target.value}))}/></div>
           <div><label className={labelCls}>Cédula *</label><input className={inputCls} value={form.cedula} placeholder="1234567890" onChange={e=>setForm(f=>({...f,cedula:e.target.value}))}/></div>
           <div><label className={labelCls}>Móvil / WhatsApp</label><input className={inputCls} value={form.movil} placeholder="3001234567" onChange={e=>setForm(f=>({...f,movil:e.target.value}))}/></div>
+          <div>
+            <label className={labelCls}>Paquete / Servicio</label>
+            <select className={inputCls} value={form.paquete} onChange={e=>{
+              const opt = PAQUETES.find(p=>p.label===e.target.value);
+              setForm(f=>({...f, paquete:e.target.value, monto_total: opt?.price || f.monto_total}));
+            }}>
+              <option value="" style={{background:'#18181b'}}>— Seleccionar —</option>
+              <optgroup label="Premium" style={{background:'#18181b'}}>
+                {PAQUETES.filter(p=>p.cat==='premium').map(p=><option key={p.label} value={p.label} style={{background:'#18181b'}}>{p.label} · {p.priceLabel}</option>)}
+              </optgroup>
+              <optgroup label="Por día" style={{background:'#18181b'}}>
+                {PAQUETES.filter(p=>p.cat==='daily').map(p=><option key={p.label} value={p.label} style={{background:'#18181b'}}>{p.label} · {p.priceLabel}</option>)}
+              </optgroup>
+            </select>
+          </div>
           <div><label className={labelCls}>Monto Total ($)</label><input type="number" className={inputCls} value={form.monto_total} placeholder="280000" onChange={e=>setForm(f=>({...f,monto_total:e.target.value}))}/></div>
           <div><label className={labelCls}>Monto Recibido ($)</label><input type="number" className={inputCls} value={form.monto_recibido} placeholder="140000" onChange={e=>setForm(f=>({...f,monto_recibido:e.target.value}))}/></div>
           <div><label className={labelCls}>Monto Pendiente</label><div className={`${inputCls} text-yellow-400 font-semibold`}>{form.monto_total ? fmt(Number(form.monto_total)-Number(form.monto_recibido||0)) : '—'}</div></div>
@@ -112,7 +137,7 @@ function ManualTab({ token }: { token: string }) {
         : list.length === 0 ? <div className="py-10 text-center text-zinc-500 text-sm">Sin registros todavía</div>
         : <div className="overflow-x-auto"><table className="w-full text-sm min-w-[900px]">
             <thead><tr className="border-b border-zinc-800 text-left">
-              {['Ref','Nombre','Cédula','Móvil','Total','Recibido','Pendiente','Medio','Fecha','Notas',''].map(h=>(
+              {['Ref','Nombre','Cédula','Móvil','Paquete','Total','Recibido','Pendiente','Medio','Fecha','Notas',''].map(h=>(
                 <th key={h} className="px-4 py-3 text-[10px] uppercase tracking-widest text-zinc-500 font-semibold">{h}</th>
               ))}
             </tr></thead>
@@ -122,6 +147,7 @@ function ManualTab({ token }: { token: string }) {
                 <td className="px-4 py-3 text-white font-medium">{r.nombre}</td>
                 <td className="px-4 py-3 text-zinc-300 font-mono text-xs">{r.cedula}</td>
                 <td className="px-4 py-3 text-zinc-400 text-xs">{r.movil||'—'}</td>
+                <td className="px-4 py-3 text-xs"><span className="text-aira-lime/80 font-medium">{r.paquete||'—'}</span></td>
                 <td className="px-4 py-3 text-white tabular-nums text-xs">{fmt(r.monto_total)}</td>
                 <td className="px-4 py-3 text-green-400 tabular-nums text-xs font-semibold">{fmt(r.monto_recibido)}</td>
                 <td className="px-4 py-3 tabular-nums text-xs font-semibold"><span className={Number(r.monto_pendiente)>0?'text-yellow-400':'text-zinc-500'}>{fmt(r.monto_pendiente)}</span></td>
