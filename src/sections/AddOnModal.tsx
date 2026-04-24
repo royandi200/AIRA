@@ -95,20 +95,37 @@ export default function AddOnModal({ isOpen, onClose, type }: AddOnModalProps) {
     }
     setLoading(true); setError(null);
     try {
+      const totalAmt   = cfg.price * qty;
+      const isAbono    = planId !== 'full';
+      const planObj    = ABONO_PLANS.find(p => p.id === planId) ?? ABONO_PLANS[0];
+      const primerPago = Math.ceil(totalAmt * planObj.pct);
+
       const res = await fetch('/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nombre, email, telefono: phone,
-          eventId:     type === 'vip' ? 'addon-vip' : 'addon-transport',
-          accessType:  type === 'vip' ? 'vip'       : 'transport',
+          // Datos del comprador — mismo formato que TicketReserve
+          name:  nombre.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          docType:   'CC',
+          docNumber: null,
+          // Evento y ticket
+          eventId:     1,
+          accessType:  'package',
           ticketLabel: cfg.title,
           qty,
           basePrice:   cfg.price,
-          addPassVip:  false,
-          addTransport:false,
-          paymentMode: planId === 'full' ? 'full' : 'abono',
-          abonoPlanId: planId === 'full' ? null   : planId,
+          total:       totalAmt,
+          // Add-ons no aplican
+          addPassVip:       false,
+          addTransport:     false,
+          transportPassengers: 0,
+          // Pago
+          paymentMode:        isAbono ? 'abono' : 'full',
+          abonoPlan:          isAbono ? planId  : null,
+          amountToCharge:     isAbono ? primerPago : totalAmt,
+          primerPago:         primerPago,
         }),
       });
       const data = await res.json();
