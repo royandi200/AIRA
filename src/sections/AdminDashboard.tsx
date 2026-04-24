@@ -57,7 +57,12 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
   const [data,     setData]     = useState<Overview | null>(null);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
-  const [tab,      setTab]      = useState<'kpis'|'orders'|'tickets'|'recordatorios'>('kpis');
+  const [tab,      setTab]      = useState<'kpis'|'orders'|'tickets'|'recordatorios'|'manual'>('kpis');
+  const [manualForm, setManualForm] = useState({ nombre:'', cedula:'', movil:'', monto_total:'', monto_recibido:'', medio_pago:'Efectivo', fecha_pago: new Date().toISOString().slice(0,10), notas:'' });
+  const [manualList, setManualList] = useState<any[]>([]);
+  const [manualLoading, setManualLoading] = useState(false);
+  const [manualSaving,  setManualSaving]  = useState(false);
+  const [manualMsg,     setManualMsg]     = useState<{text:string;ok:boolean}|null>(null);
   const [recLog,   setRecLog]   = useState<string[]>([]);
   const [recSending, setRecSending] = useState(false);
   const [recResult,  setRecResult]  = useState<any>(null);
@@ -180,7 +185,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
 
             {/* Tabs */}
             <div className="flex gap-1 mb-6 bg-zinc-900 border border-zinc-800 rounded-xl p-1 w-fit">
-              {(['kpis', 'orders', 'tickets', 'recordatorios'] as const).map(t => (
+              {(['kpis', 'orders', 'tickets', 'recordatorios', 'manual'] as const).map(t => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
@@ -190,7 +195,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                       : 'text-zinc-400 hover:text-white'
                   }`}
                 >
-                  {{ kpis: 'Ingresos', orders: 'Órdenes', tickets: 'Cupos', recordatorios: '📲 Recordatorios' }[t]}
+                  {{ kpis: 'Ingresos', orders: 'Órdenes', tickets: 'Cupos', recordatorios: '📲 Recordatorios', manual: '✍ Registro Manual' }[t]}
                 </button>
               ))}
             </div>
