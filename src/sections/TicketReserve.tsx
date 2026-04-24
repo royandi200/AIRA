@@ -51,18 +51,6 @@ const STAGE_DATES: Record<string, { start: Date; end: Date }> = {
 
 const now = new Date();
 
-function isStageActive(id: string): boolean {
-  const d = STAGE_DATES[id];
-  if (!d) return false;
-  return now >= d.start && now <= d.end;
-}
-
-function isStageUpcoming(id: string): boolean {
-  const d = STAGE_DATES[id];
-  if (!d) return false;
-  return now < d.start;
-}
-
 function isStagePast(id: string): boolean {
   const d = STAGE_DATES[id];
   if (!d) return false;
