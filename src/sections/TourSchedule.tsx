@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MapPin, Clock, Ticket, ExternalLink, ChevronRight, Bus, Star, Calendar, Package } from 'lucide-react';
+import { MapPin, Clock, Ticket, ChevronRight, Bus, Star, Calendar, Package } from 'lucide-react';
 import { tourScheduleConfig, type TourDate } from '../config';
 import type { ReservationEvent } from './TicketReserve';
 
@@ -13,18 +13,18 @@ interface TourScheduleProps {
 const getVenueType = (venue: string): ReservationEvent['venueType'] => {
   const v = venue.toLowerCase();
   if (v.includes('yacht') || v.includes('yate') || v.includes('embalse')) return 'yacht';
-  if (v.includes('suite') || v.includes('hotel'))                          return 'hotel';
+  if (v.includes('suite'))                                                  return 'club';
   if (v.includes('vip'))                                                   return 'club';
   return 'festival';
 };
 
-const getAccessType = (tour: TourDate, index: number) => {
+const getAccessType = (tour: TourDate): 'day1'|'day2'|'day3'|'package'|undefined => {
   const v = tour.venue.toLowerCase();
-  if (v.includes('transporte') || v.includes('bus')) return 'transport' as const;
-  if (v.includes('suite'))                           return 'suite' as const;
-  if (tour.category === 'premium')                   return 'package' as const;
-  const DAY_MAP: Record<number, 'day1'|'day2'|'day3'> = { 0:'day1', 1:'day2', 2:'day3' };
-  // For daily tickets count from daily-only index
+  if (tour.category === 'premium') return 'package';
+  // Daily tickets — detect by day number in venue name
+  if (v.includes('día 1') || v.includes('dia 1')) return 'day1';
+  if (v.includes('día 2') || v.includes('dia 2')) return 'day2';
+  if (v.includes('día 3') || v.includes('dia 3')) return 'day3';
   return undefined;
 };
 
@@ -239,7 +239,7 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas }: Tou
     time:             tour.time,
     image:            tour.image,
     venueType:        getVenueType(tour.venue),
-    initialAccessType: getAccessType(tour, 0),
+    initialAccessType: getAccessType(tour),
   });
 
   const handleClick = (tour: TourDate) => {
@@ -266,7 +266,7 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas }: Tou
             {tourScheduleConfig.sectionTitle}
           </h2>
           <p className="font-mono-custom text-sm text-white/40 max-w-md">
-            {tourScheduleConfig.subtitle || 'Guatapé · Agosto 2025'}
+            {'Guatapé · Agosto 2025'}
           </p>
         </div>
 
