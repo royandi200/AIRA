@@ -260,20 +260,27 @@ export default function AddOnModal({ isOpen, onClose, type }: AddOnModalProps) {
                 </p>
               </div>
 
-              {/* Form */}
+              {/* Form — mismo estilo que TicketReserve */}
               <div className="space-y-3">
-                {[
-                  { label: 'Nombre completo', val: nombre, set: setNombre, type: 'text',  placeholder: 'Tu nombre' },
-                  { label: 'Email',           val: email,  set: setEmail,  type: 'email', placeholder: 'tu@email.com' },
-                  { label: 'WhatsApp',        val: phone,  set: setPhone,  type: 'tel',   placeholder: '3001234567' },
-                ].map(({ label, val, set, type, placeholder }) => (
-                  <div key={label}>
-                    <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/35 block mb-1">{label}</label>
-                    <input type={type} value={val} onChange={e => { set(e.target.value); setError(null); }}
-                      placeholder={placeholder}
-                      className="w-full bg-white/4 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-white/25 transition-colors"/>
-                  </div>
-                ))}
+                <p className="font-mono-custom text-[9px] uppercase tracking-[0.28em] text-white/35 mb-1">Datos del comprador</p>
+                <div>
+                  <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Nombre completo *</label>
+                  <input type="text" value={nombre} onChange={e => { setNombre(e.target.value); setError(null); }}
+                    placeholder="Tu nombre"
+                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-aira-lime/50 focus:bg-white/[0.06] transition-all"/>
+                </div>
+                <div>
+                  <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Correo electrónico *</label>
+                  <input type="email" value={email} onChange={e => { setEmail(e.target.value); setError(null); }}
+                    placeholder="tu@email.com"
+                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-aira-lime/50 focus:bg-white/[0.06] transition-all"/>
+                </div>
+                <div>
+                  <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Celular (WhatsApp) *</label>
+                  <input type="tel" value={phone} onChange={e => { setPhone(e.target.value); setError(null); }}
+                    placeholder="+57 300 000 0000"
+                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-aira-lime/50 focus:bg-white/[0.06] transition-all"/>
+                </div>
               </div>
 
               {error && (
