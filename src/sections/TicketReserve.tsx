@@ -42,11 +42,11 @@ const DAYS = [
 
 // Fechas reales de cada etapa — ajustar según calendario del evento
 const STAGE_DATES: Record<string, { start: Date; end: Date }> = {
-  creyentes: { start: new Date('2025-04-15'), end: new Date('2025-05-05') },
-  referidos:  { start: new Date('2025-04-15'), end: new Date('2025-05-05') },
-  primera:    { start: new Date('2025-05-05'), end: new Date('2025-06-05') },
-  segunda:    { start: new Date('2025-06-05'), end: new Date('2025-07-05') },
-  tercera:    { start: new Date('2025-07-05'), end: new Date('2025-08-15') },
+  creyentes: { start: new Date('2026-04-15'), end: new Date('2026-05-05') },
+  referidos:  { start: new Date('2026-04-15'), end: new Date('2026-05-05') },
+  primera:    { start: new Date('2026-05-05'), end: new Date('2026-06-05') },
+  segunda:    { start: new Date('2026-06-05'), end: new Date('2026-07-05') },
+  tercera:    { start: new Date('2026-07-05'), end: new Date('2026-08-15') },
 };
 
 const now = new Date();
