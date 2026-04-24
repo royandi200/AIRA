@@ -1074,8 +1074,15 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                     <p className="text-sm text-white/50 mb-6">El precio varía según la etapa de compra. Cabaña para 7 personas.</p>
                     <div className="space-y-2">
                       {VISIBLE_STAGES.map(stage => {
-                        const isCreyentes = stage.id === 'creyentes';
-                        const isUnlocked  = isCreyentes ? creyentesVerified : !stage.locked;
+                        const isCreyentes  = stage.id === 'creyentes';
+                        const stageDates   = STAGE_DATES[stage.id];
+                        const nowTs        = new Date();
+                        const isDateActive = stageDates ? nowTs >= stageDates.start && nowTs <= stageDates.end : false;
+                        const isUpcoming   = stageDates ? nowTs < stageDates.start : false;
+                        // Bloqueado si: no es la fecha activa (excepto creyentes que tiene su propio OTP)
+                        const isUnlocked   = isCreyentes
+                          ? creyentesVerified && isDateActive
+                          : !stage.locked && isDateActive;
 
                         // Creyentes con OTP abierto → mostrar componente inline
                         if (isCreyentes && creyentesOtpOpen) {
@@ -1098,15 +1105,18 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                             key={stage.id}
                             disabled={!isUnlocked && !isCreyentes}
                             className={'w-full text-left rounded-2xl border p-4 transition-all duration-200 ' + (
-                              isCreyentes && !creyentesVerified
-                                ? 'border-amber-400/20 bg-amber-400/5 hover:border-amber-400/40 cursor-pointer opacity-90'
-                                : !isUnlocked
-                                  ? 'border-white/5 bg-white/[0.02] opacity-50 cursor-not-allowed'
-                                  : selectedStageId === stage.id
-                                    ? 'border-aira-lime/50 bg-aira-lime/10 active:scale-[0.99]'
-                                    : 'border-white/10 bg-white/[0.03] hover:border-white/25 active:scale-[0.99]'
+                              isUpcoming
+                                ? 'border-white/5 bg-white/[0.02] opacity-35 cursor-not-allowed'
+                                : isCreyentes && !creyentesVerified
+                                  ? 'border-amber-400/20 bg-amber-400/5 hover:border-amber-400/40 cursor-pointer opacity-90'
+                                  : !isUnlocked
+                                    ? 'border-white/5 bg-white/[0.02] opacity-35 cursor-not-allowed'
+                                    : selectedStageId === stage.id
+                                      ? 'border-aira-lime/50 bg-aira-lime/10 active:scale-[0.99]'
+                                      : 'border-white/10 bg-white/[0.03] hover:border-white/25 active:scale-[0.99]'
                             )}
                             onClick={() => {
+                              if (isUpcoming) return;
                               if (isCreyentes && !creyentesVerified) {
                                 setCreyentesOtpOpen(true);
                               } else if (isUnlocked) {
