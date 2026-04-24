@@ -495,6 +495,9 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                 </div>
               </div>
             )}
+
+            {/* Tab: Registro Manual */}
+            {tab === 'manual' && <ManualTab token={token} />}
       </div>
     </div>
   );
