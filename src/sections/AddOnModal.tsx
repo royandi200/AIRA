@@ -64,12 +64,22 @@ export default function AddOnModal({ isOpen, onClose, type }: AddOnModalProps) {
     if (isOpen) { setStep('detail'); setError(null); setQty(1); }
   }, [isOpen, type]);
 
-  // Lenis stop
+  // Lenis stop + interceptar wheel para scroll interno
   useEffect(() => {
     const lenis = (window as any).__lenis;
     if (!isOpen) { lenis?.start(); return; }
     lenis?.stop();
-    return () => lenis?.start();
+
+    const onWheel = (e: WheelEvent) => {
+      const modal = document.getElementById('addon-modal-body');
+      if (modal) { modal.scrollTop += e.deltaY; e.preventDefault(); }
+    };
+    window.addEventListener('wheel', onWheel, { passive: false });
+
+    return () => {
+      lenis?.start();
+      window.removeEventListener('wheel', onWheel);
+    };
   }, [isOpen]);
 
   if (!isOpen || !type) return null;
@@ -147,7 +157,7 @@ export default function AddOnModal({ isOpen, onClose, type }: AddOnModalProps) {
         </div>
 
         {/* Body */}
-        <div className="relative flex-1 overflow-y-auto px-6 py-5 space-y-5">
+        <div id="addon-modal-body" className="relative flex-1 overflow-y-auto px-6 py-5 space-y-5">
 
           {step === 'detail' ? (
             <>
