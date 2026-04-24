@@ -70,7 +70,7 @@ function Navbar() {
         {/* Logo */}
         <a href={WEBSITE_URL} target="_blank" rel="noopener noreferrer"
           className="flex items-center">
-          <img src="/AIRA BLANCO.png" alt="AIRA" className="h-8 w-auto object-contain" />
+          <img src="/AIRA BLANCO.png" alt="AIRA" className="h-24 w-auto object-contain" />
         </a>
 
         {/* Desktop links */}
@@ -150,7 +150,7 @@ function ImageHover({ src, children, href, className = '' }: {
         <div className="pointer-events-none fixed z-[200] rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
           style={{
             left: pos.x + 20, top: pos.y - 60,
-            width: '200px', height: '130px',
+            width: '400px', height: '260px',
             position: 'fixed',
             animation: 'fadeIn .15s ease',
           }}>
@@ -248,14 +248,11 @@ export default function Partners() {
 
       {/* ── HERO ── */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        {/* BG image */}
-        <div className="absolute inset-0 z-0"
-          style={{
-            backgroundImage: "url('https://i.imgur.com/tN3Gr8q.jpeg')",
-            backgroundSize: 'cover', backgroundPosition: 'center',
-            transform: `translateY(${scrollY * 0.35}px)`,
-          }}/>
-        <div className="absolute inset-0 z-0" style={{ background: 'linear-gradient(to bottom, rgba(3,6,18,0.6), rgba(3,6,18,0.3) 50%, rgba(3,6,18,1))' }}/>
+        {/* Clean dark BG with subtle grid */}
+        <div className="absolute inset-0 z-0" style={{ background: BLACK }}/>
+        <div className="absolute inset-0 z-0 opacity-[0.04]"
+          style={{ backgroundImage:'radial-gradient(circle,#e1fe52 1px,transparent 1px)', backgroundSize:'40px 40px' }}/>
+        <div className="absolute inset-0 z-0" style={{ background: 'radial-gradient(ellipse at center, rgba(225,254,82,0.05) 0%, transparent 70%)' }}/>
 
         {/* Content */}
         <div className="relative z-10 text-center px-6 max-w-5xl mx-auto flex flex-col items-center">
@@ -324,14 +321,20 @@ export default function Partners() {
           </div>
 
           <Reveal delay={150}>
-            <div className="relative aspect-[4/5] rounded-3xl overflow-hidden border border-white/8">
-              <img src="https://images.unsplash.com/photo-1621360841013-c76831f1fd0a?q=80&w=2000&auto=format&fit=crop"
-                alt="Guatapé - AIRA" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"/>
-              <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(3,6,18,0.9), transparent)' }}/>
-              <div className="absolute bottom-8 left-8 right-8">
-                <div className="h-px w-8 mb-4" style={{ background: LIME }}/>
-                <h3 className="font-display text-3xl text-white mb-1">VIVE AIRA <span style={{ color: LIME }}>S.A.S.</span></h3>
-                <p className="font-mono-custom text-[10px] uppercase tracking-widest text-white/50">Operador Oficial</p>
+            <div className="relative aspect-[4/5] rounded-3xl overflow-hidden border border-white/8 bg-black">
+              {/* Google Drive video embed */}
+              <iframe
+                src="https://drive.google.com/file/d/1UzkAGQgH_8v79z-rmb1igf0DnOzj3vi0/preview"
+                className="w-full h-full"
+                allow="autoplay"
+                style={{ border: 'none' }}
+              />
+              {/* Label overlay at bottom */}
+              <div className="absolute bottom-0 left-0 right-0 pointer-events-none px-6 py-5"
+                style={{ background: 'linear-gradient(to top, rgba(3,6,18,0.95), transparent)' }}>
+                <div className="h-px w-8 mb-3" style={{ background: LIME }}/>
+                <h3 className="font-display text-2xl text-white mb-0.5">VIVE AIRA <span style={{ color: LIME }}>S.A.S.</span></h3>
+                <p className="font-mono-custom text-[9px] uppercase tracking-widest text-white/40">Operador Oficial</p>
               </div>
             </div>
           </Reveal>
