@@ -235,10 +235,6 @@ export default function Partners() {
     // Stop lenis if active
     const lenis = (window as any).__lenis;
     if (lenis) lenis.start();
-
-
-    window.addEventListener('scroll', fn);
-    return () => window.removeEventListener('scroll', fn);
   }, []);
 
   return (
