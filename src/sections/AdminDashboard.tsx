@@ -30,6 +30,113 @@ const statusColor: Record<string, string> = {
   cancelled: 'bg-red-500/20     text-red-300     border border-red-500/30',
 };
 
+// ─── Manual Registration Tab ─────────────────────────────────────────────────
+function ManualTab({ token }: { token: string }) {
+  const [form, setForm] = useState({ nombre:'', cedula:'', movil:'', monto_total:'', monto_recibido:'', medio_pago:'Efectivo', fecha_pago: new Date().toISOString().slice(0,10), notas:'' });
+  const [list,    setList]    = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving,  setSaving]  = useState(false);
+  const [msg,     setMsg]     = useState<{text:string;ok:boolean}|null>(null);
+
+  const fetchList = async () => {
+    setLoading(true);
+    try {
+      const r = await fetch('/api/admin-registro', { headers: { 'x-admin-token': token } });
+      const d = await r.json();
+      if (d.ok) setList(d.registros || []);
+    } finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchList(); }, []);
+
+  const save = async () => {
+    if (!form.nombre || !form.cedula) { setMsg({text:'Nombre y cédula obligatorios',ok:false}); return; }
+    setSaving(true); setMsg(null);
+    try {
+      const r = await fetch('/api/admin-registro', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'x-admin-token': token },
+        body: JSON.stringify(form),
+      });
+      const d = await r.json();
+      if (d.ok) {
+        setMsg({text:`✓ Registrado: ${d.order_ref}`, ok:true});
+        setForm({ nombre:'', cedula:'', movil:'', monto_total:'', monto_recibido:'', medio_pago:'Efectivo', fecha_pago: new Date().toISOString().slice(0,10), notas:'' });
+        fetchList();
+      } else { setMsg({text: d.error || 'Error', ok:false}); }
+    } finally { setSaving(false); }
+  };
+
+  const del = async (id: number) => {
+    if (!confirm('¿Eliminar este registro?')) return;
+    await fetch(`/api/admin-registro?id=${id}`, { method:'DELETE', headers:{'x-admin-token':token} });
+    fetchList();
+  };
+
+  const inputCls = "w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-zinc-500 transition-colors";
+  const labelCls = "block text-[10px] uppercase tracking-widest text-zinc-500 mb-1 font-semibold";
+  const fmt = (n: any) => n != null ? Number(n).toLocaleString('es-CO', {style:'currency',currency:'COP',maximumFractionDigits:0}) : '—';
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+        <h3 className="text-white font-semibold mb-5">Nuevo Registro Manual</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div><label className={labelCls}>Nombre completo *</label><input className={inputCls} value={form.nombre} placeholder="Juan García" onChange={e=>setForm(f=>({...f,nombre:e.target.value}))}/></div>
+          <div><label className={labelCls}>Cédula *</label><input className={inputCls} value={form.cedula} placeholder="1234567890" onChange={e=>setForm(f=>({...f,cedula:e.target.value}))}/></div>
+          <div><label className={labelCls}>Móvil / WhatsApp</label><input className={inputCls} value={form.movil} placeholder="3001234567" onChange={e=>setForm(f=>({...f,movil:e.target.value}))}/></div>
+          <div><label className={labelCls}>Monto Total ($)</label><input type="number" className={inputCls} value={form.monto_total} placeholder="280000" onChange={e=>setForm(f=>({...f,monto_total:e.target.value}))}/></div>
+          <div><label className={labelCls}>Monto Recibido ($)</label><input type="number" className={inputCls} value={form.monto_recibido} placeholder="140000" onChange={e=>setForm(f=>({...f,monto_recibido:e.target.value}))}/></div>
+          <div><label className={labelCls}>Monto Pendiente</label><div className={`${inputCls} text-yellow-400 font-semibold`}>{form.monto_total ? fmt(Number(form.monto_total)-Number(form.monto_recibido||0)) : '—'}</div></div>
+          <div><label className={labelCls}>Medio de Pago</label>
+            <select className={inputCls} value={form.medio_pago} onChange={e=>setForm(f=>({...f,medio_pago:e.target.value}))}>
+              {['Efectivo','Transferencia','Nequi','Daviplata','Tarjeta','Bold','Otro'].map(m=><option key={m} value={m} style={{background:'#18181b'}}>{m}</option>)}
+            </select>
+          </div>
+          <div><label className={labelCls}>Fecha de Pago</label><input type="date" className={inputCls} value={form.fecha_pago} onChange={e=>setForm(f=>({...f,fecha_pago:e.target.value}))}/></div>
+          <div><label className={labelCls}>Notas</label><input className={inputCls} value={form.notas} placeholder="Observaciones..." onChange={e=>setForm(f=>({...f,notas:e.target.value}))}/></div>
+        </div>
+        {msg && <p className={`mt-4 text-sm font-semibold ${msg.ok?'text-green-400':'text-red-400'}`}>{msg.text}</p>}
+        <button onClick={save} disabled={saving}
+          className="mt-5 px-6 py-3 bg-white text-black text-sm font-bold rounded-xl hover:bg-zinc-200 transition-colors disabled:opacity-50">
+          {saving ? 'Guardando…' : '+ Guardar Registro'}
+        </button>
+      </div>
+
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+          <h3 className="text-white font-semibold">Registros Manuales ({list.length})</h3>
+          <button onClick={fetchList} className="text-xs text-zinc-400 hover:text-white transition-colors">↻ Actualizar</button>
+        </div>
+        {loading ? <div className="py-10 text-center text-zinc-500 text-sm">Cargando…</div>
+        : list.length === 0 ? <div className="py-10 text-center text-zinc-500 text-sm">Sin registros todavía</div>
+        : <div className="overflow-x-auto"><table className="w-full text-sm min-w-[900px]">
+            <thead><tr className="border-b border-zinc-800 text-left">
+              {['Ref','Nombre','Cédula','Móvil','Total','Recibido','Pendiente','Medio','Fecha','Notas',''].map(h=>(
+                <th key={h} className="px-4 py-3 text-[10px] uppercase tracking-widest text-zinc-500 font-semibold">{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>{list.map((r:any)=>(
+              <tr key={r.id} className="border-b border-zinc-800/60 hover:bg-zinc-800/40 transition-colors">
+                <td className="px-4 py-3 text-zinc-400 text-xs font-mono">{r.order_ref}</td>
+                <td className="px-4 py-3 text-white font-medium">{r.nombre}</td>
+                <td className="px-4 py-3 text-zinc-300 font-mono text-xs">{r.cedula}</td>
+                <td className="px-4 py-3 text-zinc-400 text-xs">{r.movil||'—'}</td>
+                <td className="px-4 py-3 text-white tabular-nums text-xs">{fmt(r.monto_total)}</td>
+                <td className="px-4 py-3 text-green-400 tabular-nums text-xs font-semibold">{fmt(r.monto_recibido)}</td>
+                <td className="px-4 py-3 tabular-nums text-xs font-semibold"><span className={Number(r.monto_pendiente)>0?'text-yellow-400':'text-zinc-500'}>{fmt(r.monto_pendiente)}</span></td>
+                <td className="px-4 py-3 text-zinc-400 text-xs">{r.medio_pago||'—'}</td>
+                <td className="px-4 py-3 text-zinc-400 text-xs">{r.fecha_pago?new Date(r.fecha_pago).toLocaleDateString('es-CO'):'—'}</td>
+                <td className="px-4 py-3 text-zinc-500 text-xs max-w-[160px] truncate">{r.notas||'—'}</td>
+                <td className="px-4 py-3"><button onClick={()=>del(r.id)} className="text-zinc-600 hover:text-red-400 transition-colors text-xs">✕</button></td>
+              </tr>
+            ))}</tbody>
+          </table></div>}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboard({ onClose }: { onClose: () => void }) {
   // Parar Lenis + interceptar wheel manualmente para el modal
   useEffect(() => {
@@ -58,11 +165,6 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
   const [tab,      setTab]      = useState<'kpis'|'orders'|'tickets'|'recordatorios'|'manual'>('kpis');
-  const [manualForm, setManualForm] = useState({ nombre:'', cedula:'', movil:'', monto_total:'', monto_recibido:'', medio_pago:'Efectivo', fecha_pago: new Date().toISOString().slice(0,10), notas:'' });
-  const [manualList, setManualList] = useState<any[]>([]);
-  const [manualLoading, setManualLoading] = useState(false);
-  const [manualSaving,  setManualSaving]  = useState(false);
-  const [manualMsg,     setManualMsg]     = useState<{text:string;ok:boolean}|null>(null);
   const [recLog,   setRecLog]   = useState<string[]>([]);
   const [recSending, setRecSending] = useState(false);
   const [recResult,  setRecResult]  = useState<any>(null);
