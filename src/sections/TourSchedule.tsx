@@ -7,6 +7,7 @@ interface TourScheduleProps {
   onOpenReservation: (event: ReservationEvent) => void;
   onOpenSuite: () => void;
   onOpenMisReservas?: () => void;
+  onOpenAddOn?: (type: 'vip' | 'transport') => void;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -226,7 +227,7 @@ function DailyCard({
 }
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas }: TourScheduleProps) => {
+const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas, onOpenAddOn }: TourScheduleProps) => {
   if (tourScheduleConfig.tourDates.length === 0 && !tourScheduleConfig.sectionTitle) return null;
 
   const [activeImage, setActiveImage] = useState<string | null>(null);
@@ -248,7 +249,9 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas }: Tou
 
   const handleClick = (tour: TourDate) => {
     const v = tour.venue.toLowerCase();
-    if (v.includes('suite')) { onOpenSuite(); return; }
+    if (v.includes('suite'))                            { onOpenSuite?.(); return; }
+    if (v.includes('vip') && !v.includes('paquete'))   { onOpenAddOn?.('vip'); return; }
+    if (v.includes('transporte') || v.includes('bus')) { onOpenAddOn?.('transport'); return; }
     onOpenReservation(buildEvent(tour));
   };
 

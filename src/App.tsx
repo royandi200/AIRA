@@ -11,6 +11,7 @@ import SuiteReserve from './sections/SuiteReserve';
 import Footer from './sections/Footer';
 import AdminDashboard from './sections/AdminDashboard';
 import MisReservas from './sections/MisReservas';
+import AddOnModal  from './sections/AddOnModal';
 
 function App() {
   useLenis();
@@ -18,6 +19,7 @@ function App() {
   const [selectedEvent, setSelectedEvent]   = useState<ReservationEvent | null>(null);
   const [isReserveOpen, setIsReserveOpen]   = useState(false);
   const [isSuiteOpen,   setIsSuiteOpen]     = useState(false);
+  const [addOnType, setAddOnType] = useState<'vip'|'transport'|null>(null);
   const [isMisReservasOpen, setIsMisReservasOpen] = useState(
     () => window.location.search.includes('reserva=')
   );
@@ -75,6 +77,7 @@ function App() {
         onOpenReservation={handleOpenReservation}
         onOpenSuite={handleOpenSuite}
         onOpenMisReservas={() => setIsMisReservasOpen(true)}
+        onOpenAddOn={(t) => setAddOnType(t)}
       />
       <Footer onOpenMisReservas={() => setIsMisReservasOpen(true)} />
 
@@ -92,6 +95,11 @@ function App() {
       {isAdminOpen && (
         <AdminDashboard onClose={handleCloseAdmin} />
       )}
+      <AddOnModal
+        isOpen={addOnType !== null}
+        onClose={() => setAddOnType(null)}
+        type={addOnType}
+      />
       <MisReservas
         isOpen={isMisReservasOpen}
         onClose={() => setIsMisReservasOpen(false)}

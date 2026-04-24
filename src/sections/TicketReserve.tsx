@@ -48,7 +48,7 @@ const STAGES = [
   { id: 'tercera',   label: '3ª Etapa',  price: 1_000_000, slots: 7,  dates: '5 JUL – 15 AGO', locked: false, urgent: true },
 ];
 
-const TRANSPORT_PRICE = 150_000;
+const TRANSPORT_PRICE = 180_000;
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);

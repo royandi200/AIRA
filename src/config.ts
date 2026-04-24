@@ -292,7 +292,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
       image: "/yacht-party.jpg",
       category: "premium",
       description: "Alojamiento premium en el embalse. 3 noches.",
-      price: "Consultar",
+      price: "$ 2.200.000",
     },
     // ── POR DÍA ────────────────────────────────────────────────────────────
     {
