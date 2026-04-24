@@ -320,9 +320,10 @@ export default function Partners() {
             <div className="relative aspect-[4/5] rounded-3xl overflow-hidden border border-white/8 bg-black">
               {/* Google Drive video embed */}
               <iframe
-                src="https://drive.google.com/file/d/1UzkAGQgH_8v79z-rmb1igf0DnOzj3vi0/preview"
+                src="https://drive.google.com/file/d/1UzkAGQgH_8v79z-rmb1igf0DnOzj3vi0/preview?autoplay=1&loop=0"
                 className="w-full h-full"
-                allow="autoplay"
+                allow="autoplay; fullscreen"
+                allowFullScreen
                 style={{ border: 'none' }}
               />
               {/* Label overlay at bottom */}
