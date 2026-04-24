@@ -229,14 +229,14 @@ function AllyGroup({ category, items }: { category: string; items: { name: strin
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function Partners() {
-  const [scrollY, setScrollY] = useState(0);
+
 
   useEffect(() => {
     // Stop lenis if active
     const lenis = (window as any).__lenis;
     if (lenis) lenis.start();
 
-    const fn = () => setScrollY(window.scrollY);
+
     window.addEventListener('scroll', fn);
     return () => window.removeEventListener('scroll', fn);
   }, []);
