@@ -40,6 +40,35 @@ const DAYS = [
   { id: 'day3' as AccessType, label: 'DÍA 3', title: 'Open Deck',                     price: 50_000,  accentColor: '#ffffff', icon: <Star  className="w-5 h-5" /> },
 ];
 
+// Fechas reales de cada etapa — ajustar según calendario del evento
+const STAGE_DATES: Record<string, { start: Date; end: Date }> = {
+  creyentes: { start: new Date('2025-04-15'), end: new Date('2025-05-05') },
+  referidos:  { start: new Date('2025-04-15'), end: new Date('2025-05-05') },
+  primera:    { start: new Date('2025-05-05'), end: new Date('2025-06-05') },
+  segunda:    { start: new Date('2025-06-05'), end: new Date('2025-07-05') },
+  tercera:    { start: new Date('2025-07-05'), end: new Date('2025-08-15') },
+};
+
+const now = new Date();
+
+function isStageActive(id: string): boolean {
+  const d = STAGE_DATES[id];
+  if (!d) return false;
+  return now >= d.start && now <= d.end;
+}
+
+function isStageUpcoming(id: string): boolean {
+  const d = STAGE_DATES[id];
+  if (!d) return false;
+  return now < d.start;
+}
+
+function isStagePast(id: string): boolean {
+  const d = STAGE_DATES[id];
+  if (!d) return false;
+  return now > d.end;
+}
+
 const STAGES = [
   { id: 'creyentes', label: 'Creyentes', price: 590_000,   slots: 35, dates: '15 ABR – 5 MAY', locked: true  },
   { id: 'referidos', label: 'Referidos', price: 690_000,   slots: 35, dates: '15 ABR – 5 MAY', locked: false },
@@ -47,6 +76,9 @@ const STAGES = [
   { id: 'segunda',   label: '2ª Etapa',  price: 890_000,   slots: 28, dates: '5 JUN – 5 JUL',  locked: false },
   { id: 'tercera',   label: '3ª Etapa',  price: 1_000_000, slots: 7,  dates: '5 JUL – 15 AGO', locked: false, urgent: true },
 ];
+
+// Solo mostrar etapas vigentes o próximas (no las pasadas)
+const VISIBLE_STAGES = STAGES.filter(s => !isStagePast(s.id));
 
 const TRANSPORT_PRICE = 180_000;
 
@@ -1041,7 +1073,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                     <h4 className="font-display text-3xl md:text-4xl text-white mb-1">Selecciona tu etapa</h4>
                     <p className="text-sm text-white/50 mb-6">El precio varía según la etapa de compra. Cabaña para 7 personas.</p>
                     <div className="space-y-2">
-                      {STAGES.map(stage => {
+                      {VISIBLE_STAGES.map(stage => {
                         const isCreyentes = stage.id === 'creyentes';
                         const isUnlocked  = isCreyentes ? creyentesVerified : !stage.locked;
 
