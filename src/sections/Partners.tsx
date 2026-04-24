@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ArrowRight, Users, Target, MapPin, Anchor,
   Menu, X, Shield, Calendar,
@@ -131,39 +132,43 @@ function ImageHover({ src, children, href, className = '' }: {
 }) {
   const [hov, setHov] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
+  const W = 380, H = 240;
 
-  // Use clientX/Y directly — tooltip is fixed so coords are relative to viewport
   const onMove = (e: React.MouseEvent) => {
     setPos({ x: e.clientX, y: e.clientY });
   };
 
+  // Clamp to viewport
+  const vw = typeof window !== 'undefined' ? window.innerWidth  : 1200;
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+  const left = pos.x + W + 20 > vw ? pos.x - W - 12 : pos.x + 12;
+  const top  = pos.y + H / 2     > vh ? vh - H - 8   : Math.max(8, pos.y - H / 2);
+
   const Tag = href ? 'a' : 'div';
   const tagProps = href ? { href, target: '_blank', rel: 'noopener noreferrer' } : {};
 
-  // Clamp so tooltip doesn't go off screen
-  const W = 400, H = 260;
-  const left = Math.min(pos.x + 16, (typeof window !== 'undefined' ? window.innerWidth : 1200) - W - 8);
-  const top  = pos.y - H - 12 < 0 ? pos.y + 16 : pos.y - H - 12;
+  const tooltip = hov ? createPortal(
+    <div className="pointer-events-none rounded-2xl overflow-hidden shadow-2xl"
+      style={{
+        position: 'fixed', left, top,
+        width: W, height: H,
+        zIndex: 99999,
+        border: '1px solid rgba(225,254,82,0.25)',
+        animation: 'fadeIn .12s ease',
+      }}>
+      <img src={src} alt="" className="w-full h-full object-cover"/>
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(3,6,18,0.5), transparent)' }}/>
+    </div>,
+    document.body
+  ) : null;
 
   return (
-    <Tag {...tagProps as any} className={`relative inline-block cursor-pointer ${className}`}
+    <Tag {...tagProps as any} className={`cursor-pointer ${className}`}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       onMouseMove={onMove}>
       {children}
-      {hov && (
-        <div className="pointer-events-none rounded-2xl overflow-hidden border border-white/15 shadow-2xl"
-          style={{
-            position: 'fixed',
-            left, top,
-            width: W, height: H,
-            zIndex: 9999,
-            animation: 'fadeIn .12s ease',
-          }}>
-          <img src={src} alt="" className="w-full h-full object-cover"/>
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(3,6,18,0.5), transparent)' }}/>
-        </div>
-      )}
+      {tooltip}
     </Tag>
   );
 }
