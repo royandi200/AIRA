@@ -206,6 +206,9 @@ export interface TourDate {
   venue: string;
   status: "on-sale" | "sold-out" | "coming-soon";
   image: string;
+  category: "premium" | "daily";  // premium = destacado, daily = por día
+  description?: string;           // texto corto descriptivo
+  price?: string;                 // precio visible en la card
 }
 
 export interface TourStatusLabels {
@@ -242,59 +245,88 @@ export const tourScheduleConfig: TourScheduleConfig = {
     default: "RESERVAR",
   },
   tourDates: [
+    // ── PREMIUM ────────────────────────────────────────────────────────────
+    {
+      id: 4,
+      date: "2025.08.15",
+      time: "18:00",
+      city: "GUATAPÉ",
+      venue: "PAQUETE 3 DÍAS",
+      status: "on-sale",
+      image: "/vip-area.jpg",
+      category: "premium",
+      description: "Los 3 días completos. Acceso total al festival.",
+      price: "$ 280.000",
+    },
+    {
+      id: 7,
+      date: "2025.08.15",
+      time: "18:00",
+      city: "GUATAPÉ",
+      venue: "PASS VIP",
+      status: "on-sale",
+      image: "/vip-area.jpg",
+      category: "premium",
+      description: "Zona VIP exclusiva en todos los escenarios.",
+      price: "$ 350.000",
+    },
+    {
+      id: 8,
+      date: "2025.08.15",
+      time: "07:00",
+      city: "MEDELLÍN",
+      venue: "TRANSPORTE",
+      status: "on-sale",
+      image: "/bar.jpg",
+      category: "premium",
+      description: "Bus directo ida y vuelta Medellín → Guatapé.",
+      price: "$ 45.000",
+    },
+    {
+      id: 5,
+      date: "2025.08.15",
+      time: "14:00",
+      city: "GUATAPÉ",
+      venue: "SUITE PRIVADA",
+      status: "coming-soon",
+      image: "/yacht-party.jpg",
+      category: "premium",
+      description: "Alojamiento premium en el embalse. 3 noches.",
+      price: "Consultar",
+    },
+    // ── POR DÍA ────────────────────────────────────────────────────────────
     {
       id: 1,
       date: "2025.08.15",
       time: "18:00",
       city: "GUATAPÉ",
-      venue: "ENTRADA GENERAL - DÍA 1",
+      venue: "DÍA 1 — After Fiesta de Yates",
       status: "on-sale",
       image: "/stage-1.jpg",
+      category: "daily",
+      price: "$ 80.000",
     },
     {
       id: 2,
       date: "2025.08.16",
       time: "18:00",
       city: "GUATAPÉ",
-      venue: "ENTRADA GENERAL - DÍA 2",
+      venue: "DÍA 2 — Fiesta Majestic & Stage Joinn",
       status: "on-sale",
       image: "/main-stage.jpg",
+      category: "daily",
+      price: "$ 150.000",
     },
     {
       id: 3,
       date: "2025.08.17",
       time: "18:00",
       city: "GUATAPÉ",
-      venue: "ENTRADA GENERAL - DÍA 3",
+      venue: "DÍA 3 — Open Deck",
       status: "on-sale",
       image: "/beach-party.jpg",
-    },
-    {
-      id: 4,
-      date: "2025.08.15",
-      time: "20:00",
-      city: "GUATAPÉ",
-      venue: "PAQUETE VIP - 3 DÍAS",
-      status: "on-sale",
-      image: "/vip-area.jpg",
-    },
-    {
-      id: 5,
-      date: "2025.08.16",
-      time: "14:00",
-      city: "EMBALSE",
-      venue: "YACHT PARTY EXPERIENCE",
-      status: "coming-soon",
-      image: "/yacht-party.jpg",
-    },
-    {
-      id: 6,
-      date: "2025.08.17",
-      time: "12:00",
-      city: "GUATAPÉ",
-      venue: "BACKSTAGE EXPERIENCE",
-      status: "sold-out",
-      image: "/dj-console.jpg",
+      category: "daily",
+      price: "$ 50.000",
     },
   ],
 };

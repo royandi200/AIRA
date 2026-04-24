@@ -1,11 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { MapPin, Clock, Ticket, ExternalLink, Star } from 'lucide-react';
-import { tourScheduleConfig } from '../config';
+import { useState } from 'react';
+import { MapPin, Clock, Ticket, ExternalLink, ChevronRight, Bus, Star, Calendar, Package } from 'lucide-react';
+import { tourScheduleConfig, type TourDate } from '../config';
 import type { ReservationEvent } from './TicketReserve';
-
-gsap.registerPlugin(ScrollTrigger);
 
 interface TourScheduleProps {
   onOpenReservation: (event: ReservationEvent) => void;
@@ -13,262 +9,345 @@ interface TourScheduleProps {
   onOpenMisReservas?: () => void;
 }
 
-const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas }: TourScheduleProps) => {
-  if (tourScheduleConfig.tourDates.length === 0 && !tourScheduleConfig.sectionTitle) {
-    return null;
-  }
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+const getVenueType = (venue: string): ReservationEvent['venueType'] => {
+  const v = venue.toLowerCase();
+  if (v.includes('yacht') || v.includes('yate') || v.includes('embalse')) return 'yacht';
+  if (v.includes('suite') || v.includes('hotel'))                          return 'hotel';
+  if (v.includes('vip'))                                                   return 'club';
+  return 'festival';
+};
 
-  const sectionRef  = useRef<HTMLDivElement>(null);
-  const contentRef  = useRef<HTMLDivElement>(null);
-  const [activeVenue, setActiveVenue] = useState<number>(0);
-  const [isVisible,   setIsVisible]   = useState(false);
-  const scrollTriggerRef = useRef<ScrollTrigger | null>(null);
+const getAccessType = (tour: TourDate, index: number) => {
+  const v = tour.venue.toLowerCase();
+  if (v.includes('transporte') || v.includes('bus')) return 'transport' as const;
+  if (v.includes('suite'))                           return 'suite' as const;
+  if (tour.category === 'premium')                   return 'package' as const;
+  const DAY_MAP: Record<number, 'day1'|'day2'|'day3'> = { 0:'day1', 1:'day2', 2:'day3' };
+  // For daily tickets count from daily-only index
+  return undefined;
+};
 
-  useEffect(() => {
-    if (!sectionRef.current) return;
-    const st = ScrollTrigger.create({
-      trigger: sectionRef.current,
-      start: 'top 80%',
-      onEnter: () => setIsVisible(true),
-    });
-    scrollTriggerRef.current = st;
-    return () => { st.kill(); };
-  }, []);
+const CATEGORY_ICON: Record<string, React.ReactNode> = {
+  '3 DÍAS':     <Calendar className="w-4 h-4"/>,
+  'VIP':        <Star className="w-4 h-4"/>,
+  'TRANSPORTE': <Bus className="w-4 h-4"/>,
+  'SUITE':      <Package className="w-4 h-4"/>,
+};
 
-  useEffect(() => {
-    if (!isVisible || !contentRef.current) return;
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        contentRef.current?.querySelectorAll('.tour-item') || [],
-        { y: 30, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.6, stagger: 0.1, ease: 'power3.out' }
-      );
-    }, sectionRef);
-    return () => ctx.revert();
-  }, [isVisible]);
+function getCategoryIcon(venue: string): React.ReactNode {
+  const v = venue.toUpperCase();
+  if (v.includes('3 D') || v.includes('PAQUETE')) return CATEGORY_ICON['3 DÍAS'];
+  if (v.includes('VIP'))        return CATEGORY_ICON['VIP'];
+  if (v.includes('TRANSPORT'))  return CATEGORY_ICON['TRANSPORTE'];
+  if (v.includes('SUITE'))      return CATEGORY_ICON['SUITE'];
+  return <Ticket className="w-4 h-4"/>;
+}
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'on-sale':    return { text: tourScheduleConfig.statusLabels.onSale,     color: 'text-emerald-600 bg-emerald-100' };
-      case 'sold-out':   return { text: tourScheduleConfig.statusLabels.soldOut,    color: 'text-rose-600 bg-rose-100' };
-      case 'coming-soon':return { text: tourScheduleConfig.statusLabels.comingSoon, color: 'text-amber-600 bg-amber-100' };
-      default:           return { text: tourScheduleConfig.statusLabels.default,    color: 'text-gray-600 bg-gray-100' };
-    }
+// ─── Status badge ─────────────────────────────────────────────────────────────
+function StatusBadge({ status }: { status: TourDate['status'] }) {
+  const map = {
+    'on-sale':     { text: tourScheduleConfig.statusLabels.onSale,     cls: 'bg-aira-lime/20 text-aira-lime border border-aira-lime/30' },
+    'sold-out':    { text: tourScheduleConfig.statusLabels.soldOut,     cls: 'bg-red-500/15 text-red-400 border border-red-500/20' },
+    'coming-soon': { text: tourScheduleConfig.statusLabels.comingSoon,  cls: 'bg-white/8 text-white/50 border border-white/10' },
   };
+  const { text, cls } = map[status] || { text: status, cls: '' };
+  return (
+    <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider shrink-0 ${cls}`}>
+      {text}
+    </span>
+  );
+}
 
-  const getVenueType = (venue: string): ReservationEvent['venueType'] => {
-    const n = venue.toLowerCase();
-    if (n.includes('yacht') || n.includes('boat') || n.includes('yate')) return 'yacht';
-    if (n.includes('club') || n.includes('hall') || n.includes('arena')) return 'club';
-    return 'festival';
-  };
-
-  // Mapeo de índice de tour a día AIRA
-  const DAY_MAP: Record<number, 'day1' | 'day2' | 'day3'> = {
-    0: 'day1',
-    1: 'day2',
-    2: 'day3',
-  };
-
-  const TOUR_DATES = tourScheduleConfig.tourDates;
+// ─── Premium Card (grande, destacada) ────────────────────────────────────────
+function PremiumCard({
+  tour, onClick,
+}: {
+  tour: TourDate;
+  onClick: () => void;
+}) {
+  const [hov, setHov] = useState(false);
+  const clickable = tour.status === 'on-sale';
 
   return (
-    <section
-      id="booking"
-      ref={sectionRef}
-      className="relative w-full min-h-screen bg-aira-blue py-20 overflow-hidden"
-    >
-      {tourScheduleConfig.vinylImage && (
-        <div className="absolute top-20 right-20 w-64 h-64 md:w-80 md:h-80 z-10 opacity-80">
-          <img src={tourScheduleConfig.vinylImage} alt="Vinyl Disc" className="w-full h-full animate-spin-slow" />
-        </div>
-      )}
+    <div
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onClick={clickable ? onClick : undefined}
+      onKeyDown={e => { if (clickable && (e.key === 'Enter' || e.key === ' ')) onClick(); }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      className={`relative rounded-2xl border overflow-hidden transition-all duration-300 ${
+        clickable ? 'cursor-pointer' : 'cursor-default'
+      } ${
+        hov && clickable
+          ? 'border-aira-lime/60 shadow-[0_0_40px_rgba(225,254,82,0.12)]'
+          : 'border-white/10'
+      }`}
+      style={{
+        background: hov && clickable
+          ? 'linear-gradient(135deg,rgba(225,254,82,0.06),rgba(0,79,255,0.08))'
+          : 'rgba(255,255,255,0.03)',
+      }}>
 
-      <div ref={contentRef} className="relative z-20 max-w-7xl mx-auto px-6 md:px-12">
-        <div className="mb-16">
-          <p className="font-mono-custom text-xs text-white/60 uppercase tracking-wider mb-2">
+      {/* Background image */}
+      <div className="absolute inset-0 overflow-hidden rounded-2xl">
+        <img src={tour.image} alt={tour.venue}
+          className="w-full h-full object-cover opacity-10 transition-opacity duration-500"
+          style={{ opacity: hov && clickable ? 0.18 : 0.08 }}/>
+        <div className="absolute inset-0 bg-gradient-to-r from-[#08101f] via-[#08101f]/90 to-transparent"/>
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 flex items-center gap-5 px-6 py-5">
+        {/* Icon */}
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${
+          hov && clickable ? 'bg-aira-lime/20 text-aira-lime' : 'bg-white/8 text-white/50'
+        }`}>
+          {getCategoryIcon(tour.venue)}
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <h3 className="font-display text-lg text-white leading-none truncate">{tour.venue}</h3>
+            <StatusBadge status={tour.status}/>
+          </div>
+          {tour.description && (
+            <p className="text-white/45 text-xs mt-1 leading-snug">{tour.description}</p>
+          )}
+          <div className="flex items-center gap-3 mt-2 flex-wrap">
+            <span className="font-mono-custom text-[10px] text-white/30 uppercase tracking-wider flex items-center gap-1">
+              <MapPin className="w-3 h-3"/>{tour.city}
+            </span>
+            <span className="font-mono-custom text-[10px] text-white/30 flex items-center gap-1">
+              <Clock className="w-3 h-3"/>{tour.time}
+            </span>
+          </div>
+        </div>
+
+        {/* Price + CTA */}
+        <div className="shrink-0 text-right flex flex-col items-end gap-2">
+          {tour.price && (
+            <p className={`font-display text-xl leading-none transition-colors duration-300 ${
+              hov && clickable ? 'text-aira-lime' : 'text-white/80'
+            }`}>{tour.price}</p>
+          )}
+          {tour.status === 'on-sale' ? (
+            <div className={`flex items-center gap-1.5 font-mono-custom text-xs transition-all duration-300 ${
+              hov ? 'text-aira-lime translate-x-0' : 'text-white/30 -translate-x-1'
+            }`}>
+              {tourScheduleConfig.buyButtonText}
+              <ChevronRight className="w-3.5 h-3.5"/>
+            </div>
+          ) : tour.status === 'coming-soon' ? (
+            <span className="font-mono-custom text-[10px] text-white/30 uppercase tracking-wider">Próximamente</span>
+          ) : (
+            <span className="font-mono-custom text-[10px] text-red-400/70 uppercase tracking-wider">Agotado</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Daily Card (delgada, menos prominente) ────────────────────────────────
+function DailyCard({
+  tour, dayIndex, onClick,
+}: {
+  tour: TourDate;
+  dayIndex: number;
+  onClick: () => void;
+}) {
+  const [hov, setHov] = useState(false);
+  const clickable = tour.status === 'on-sale';
+  const dayLabel = ['DÍA 1', 'DÍA 2', 'DÍA 3'][dayIndex] || `DÍA ${dayIndex + 1}`;
+  const dateShort = tour.date.split('.').slice(1).join('/');
+
+  return (
+    <div
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onClick={clickable ? onClick : undefined}
+      onKeyDown={e => { if (clickable && (e.key === 'Enter' || e.key === ' ')) onClick(); }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      className={`relative flex items-center gap-4 px-5 py-3.5 rounded-xl border transition-all duration-200 ${
+        clickable ? 'cursor-pointer' : 'cursor-default'
+      } ${
+        hov && clickable ? 'border-white/20 bg-white/[0.05]' : 'border-white/[0.07] bg-white/[0.02]'
+      }`}>
+
+      {/* Left accent bar */}
+      <div className={`absolute left-0 top-2 bottom-2 w-0.5 rounded-full transition-all duration-300 ${
+        hov && clickable ? 'bg-white/40' : 'bg-white/15'
+      }`}/>
+
+      {/* Day label */}
+      <div className="shrink-0 w-16 text-center">
+        <p className={`font-mono-custom text-[10px] font-bold uppercase tracking-widest transition-colors duration-200 ${
+          hov && clickable ? 'text-white/70' : 'text-white/30'
+        }`}>{dayLabel}</p>
+        <p className="font-mono-custom text-xs text-white/20 mt-0.5">{dateShort}</p>
+      </div>
+
+      {/* Divider */}
+      <div className="w-px h-8 bg-white/10 shrink-0"/>
+
+      {/* Venue */}
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm font-medium truncate transition-colors duration-200 ${
+          hov && clickable ? 'text-white/80' : 'text-white/45'
+        }`}>{tour.venue.replace(/DÍA \d+ — /, '')}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <Clock className="w-3 h-3 text-white/20"/>
+          <span className="font-mono-custom text-[10px] text-white/20">{tour.time}</span>
+        </div>
+      </div>
+
+      {/* Status + Price */}
+      <div className="shrink-0 flex items-center gap-3">
+        <StatusBadge status={tour.status}/>
+        {tour.price && (
+          <span className={`font-display text-base transition-colors duration-200 ${
+            hov && clickable ? 'text-white/60' : 'text-white/30'
+          }`}>{tour.price}</span>
+        )}
+        {clickable && (
+          <ChevronRight className={`w-4 h-4 transition-all duration-200 ${
+            hov ? 'text-white/50 translate-x-0' : 'text-white/15 -translate-x-1'
+          }`}/>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
+const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas }: TourScheduleProps) => {
+  if (tourScheduleConfig.tourDates.length === 0 && !tourScheduleConfig.sectionTitle) return null;
+
+  const allDates = tourScheduleConfig.tourDates;
+  const premiumDates = allDates.filter(t => t.category === 'premium');
+  const dailyDates   = allDates.filter(t => t.category === 'daily');
+
+  const buildEvent = (tour: TourDate): ReservationEvent => ({
+    id:               String(tour.id),
+    city:             tour.city,
+    venue:            tour.venue,
+    date:             tour.date,
+    time:             tour.time,
+    image:            tour.image,
+    venueType:        getVenueType(tour.venue),
+    initialAccessType: getAccessType(tour, 0),
+  });
+
+  const handleClick = (tour: TourDate) => {
+    const v = tour.venue.toLowerCase();
+    if (v.includes('suite')) { onOpenSuite(); return; }
+    onOpenReservation(buildEvent(tour));
+  };
+
+  return (
+    <section id="booking" className="relative py-24 md:py-32 bg-aira-darkBlue">
+
+      {/* Background grid */}
+      <div className="absolute inset-0 opacity-[0.025]"
+        style={{ backgroundImage:'radial-gradient(circle,#e1fe52 1px,transparent 1px)', backgroundSize:'32px 32px' }}/>
+
+      <div className="relative z-10 max-w-4xl mx-auto px-6">
+
+        {/* Header */}
+        <div className="mb-14">
+          <p className="font-mono-custom text-[10px] uppercase tracking-[0.35em] text-aira-lime/60 mb-3">
             {tourScheduleConfig.sectionLabel}
           </p>
-          <h2 className="font-display text-5xl md:text-7xl text-white">
+          <h2 className="font-display text-5xl md:text-6xl text-white leading-none mb-4">
             {tourScheduleConfig.sectionTitle}
           </h2>
+          <p className="font-mono-custom text-sm text-white/40 max-w-md">
+            {tourScheduleConfig.subtitle || 'Guatapé · Agosto 2025'}
+          </p>
         </div>
 
-        {/* ── Banner Mis Reservas ── */}
+        {/* ── Mis Reservas banner ── */}
         {onOpenMisReservas && (
           <div className="mb-10">
-            <button
-              onClick={onOpenMisReservas}
-              className="w-full group relative flex items-center justify-between gap-4 px-6 py-4 rounded-2xl border border-aira-lime/30 bg-aira-lime/5 hover:bg-aira-lime/10 hover:border-aira-lime/60 transition-all duration-300 overflow-hidden"
-            >
-              {/* Glow animado */}
+            <button onClick={onOpenMisReservas}
+              className="w-full group relative flex items-center justify-between gap-4 px-6 py-4 rounded-2xl border border-aira-lime/30 bg-aira-lime/5 hover:bg-aira-lime/10 hover:border-aira-lime/60 transition-all duration-300 overflow-hidden">
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                style={{background:'radial-gradient(ellipse at left center,rgba(225,254,82,0.08),transparent 60%)'}}/>
-
+                style={{ background:'radial-gradient(ellipse at left center,rgba(225,254,82,0.08),transparent 60%)' }}/>
               <div className="flex items-center gap-4 relative z-10">
                 <div className="w-10 h-10 rounded-xl bg-aira-lime/15 border border-aira-lime/30 flex items-center justify-center shrink-0 group-hover:bg-aira-lime/25 transition-colors">
                   <span className="text-lg">🎫</span>
                 </div>
                 <div className="text-left">
-                  <p className="font-display text-base text-aira-lime leading-none mb-0.5">
-                    ¿Ya tienes una reserva?
-                  </p>
+                  <p className="font-display text-base text-aira-lime leading-none mb-0.5">¿Ya tienes una reserva?</p>
                   <p className="font-mono-custom text-[11px] text-white/50 uppercase tracking-[0.2em]">
                     Ver estado · Pagar cuotas · Descargar QR
                   </p>
                 </div>
               </div>
-
               <div className="relative z-10 flex items-center gap-2 shrink-0">
-                <span className="font-mono-custom text-xs text-aira-lime/70 uppercase tracking-widest hidden sm:block">
-                  Mis reservas
-                </span>
+                <span className="font-mono-custom text-xs text-aira-lime/70 uppercase tracking-widest hidden sm:block">Mis reservas</span>
                 <div className="w-8 h-8 rounded-full border border-aira-lime/30 flex items-center justify-center group-hover:border-aira-lime/60 group-hover:bg-aira-lime/10 transition-all">
-                  <span className="text-aira-lime text-sm">→</span>
+                  <ChevronRight className="w-4 h-4 text-aira-lime"/>
                 </div>
               </div>
             </button>
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {TOUR_DATES.length > 0 && (
-            <div className="hidden lg:flex lg:items-center">
-              <div className="sticky top-32 w-full aspect-[4/3] rounded-2xl overflow-hidden bg-aira-darkBlue/20 border-2 border-aira-lime/30">
-                <img
-                  src={TOUR_DATES[activeVenue]?.image}
-                  alt={TOUR_DATES[activeVenue]?.venue}
-                  className="w-full h-full object-cover transition-opacity duration-500"
-                />
-                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-aira-darkBlue to-transparent">
-                  <p className="font-display text-2xl text-white">{TOUR_DATES[activeVenue]?.venue}</p>
-                  <p className="font-mono-custom text-sm text-aira-lime">{TOUR_DATES[activeVenue]?.city}</p>
-                </div>
-              </div>
-            </div>
-          )}
+        {/* ── PREMIUM SECTION ── */}
+        <div className="mb-12">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="h-px flex-1 bg-white/10"/>
+            <p className="font-mono-custom text-[9px] uppercase tracking-[0.4em] text-white/30">Experiencias destacadas</p>
+            <div className="h-px flex-1 bg-white/10"/>
+          </div>
 
-          <div className="space-y-4">
-            {TOUR_DATES.map((tour, index) => {
-              const status = getStatusLabel(tour.status);
-              const accessType = DAY_MAP[index] ?? (
-                tour.venue.toLowerCase().includes('vip') ||
-                tour.venue.toLowerCase().includes('paquete') ||
-                tour.venue.toLowerCase().includes('3 d') ||
-                tour.venue.toLowerCase().includes('backstage')
-                  ? 'package' as const
-                  : undefined
-              );
-              return (
-                <div
-                  key={tour.id}
-                  className="tour-item group relative p-6 rounded-xl bg-white/80 backdrop-blur-sm border border-aira-lime/20 hover:bg-white hover:border-aira-lime/50 transition-all duration-300 cursor-pointer"
-                  onMouseEnter={() => setActiveVenue(index)}
-                  onMouseLeave={() => setActiveVenue(0)}
-                >
-                  <div className="flex flex-col md:flex-row md:items-center gap-4">
-                    <div className="flex-shrink-0 w-28">
-                      <p className="font-mono-custom text-2xl font-bold text-aira-darkBlue">
-                        {tour.date.split('.').slice(1).join('.')}
-                      </p>
-                      <p className="font-mono-custom text-xs text-aira-darkBlue/50">
-                        {tour.date.split('.')[0]}
-                      </p>
-                    </div>
-                    <div className="flex-grow">
-                      <div className="flex items-center gap-2 mb-1">
-                        <MapPin className="w-4 h-4 text-aira-blue" />
-                        <span className="font-display text-lg text-aira-darkBlue">{tour.city}</span>
-                      </div>
-                      <p className="text-sm text-aira-darkBlue/60 ml-6">{tour.venue}</p>
-                    </div>
-                    <div className="flex items-center gap-2 text-aira-darkBlue/60">
-                      <Clock className="w-4 h-4" />
-                      <span className="font-mono-custom text-sm">{tour.time}</span>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${status.color}`}>
-                        {status.text}
-                      </span>
-                    </div>
-                    <div className="flex-shrink-0 flex flex-col gap-2">
-                      {tour.status === 'on-sale' ? (
-                        <button
-                          className="flex items-center gap-2 px-4 py-2 bg-aira-lime text-aira-darkBlue rounded-full text-sm font-medium hover:bg-aira-lime/80 transition-colors"
-                          onClick={() => onOpenReservation({
-                            id: String(tour.id),
-                            city: tour.city,
-                            venue: tour.venue,
-                            date: tour.date,
-                            time: tour.time,
-                            image: tour.image,
-                            venueType: getVenueType(tour.venue),
-                            initialAccessType: accessType,
-                          })}
-                        >
-                          <Ticket className="w-4 h-4" />
-                          <span>{tourScheduleConfig.buyButtonText}</span>
-                        </button>
-                      ) : (
-                        <button className="flex items-center gap-2 px-4 py-2 border border-aira-darkBlue/20 text-aira-darkBlue/60 rounded-full text-sm hover:border-aira-darkBlue/40 transition-colors">
-                          <ExternalLink className="w-4 h-4" />
-                          <span>{tourScheduleConfig.detailsButtonText}</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 bg-aira-lime rounded-full group-hover:h-12 transition-all duration-300" />
-                </div>
-              );
-            })}
-
-            {/* ── Suite AIRA premium CTA ── */}
-            <div className="tour-item relative rounded-xl overflow-hidden border border-amber-400/25 bg-[#0a0806] p-6">
-              <div
-                className="absolute inset-0 opacity-40 pointer-events-none"
-                style={{ background: 'radial-gradient(ellipse at top right, rgba(251,191,36,0.15), transparent 60%)' }}
+          <div className="space-y-3">
+            {premiumDates.map(tour => (
+              <PremiumCard
+                key={tour.id}
+                tour={tour}
+                onClick={() => handleClick(tour)}
               />
-              <div className="relative z-10 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Star className="w-4 h-4 text-amber-400" fill="currentColor" />
-                    <span className="font-mono-custom text-[9px] uppercase tracking-[0.3em] text-amber-400/80">Experiencia premium · Solo 6 disponibles</span>
-                  </div>
-                  <h4 className="font-display text-2xl text-white mb-1">Suite AIRA</h4>
-                  <p className="text-sm text-white/50">
-                    Habitación privada · Jacuzzi · Terraza · Vista represa · 3D/2N todo incluido
-                  </p>
-                </div>
-                <div className="flex flex-col items-start sm:items-end gap-2 shrink-0">
-                  <div>
-                    <p className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/35">Desde</p>
-                    <p className="font-display text-2xl text-amber-400">$2.200.000</p>
-                    <p className="font-mono-custom text-[9px] text-white/35">pareja · todo incluido</p>
-                  </div>
-                  <button
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-amber-400 text-[#06090f] text-sm font-display uppercase tracking-[0.2em] hover:bg-amber-300 active:scale-[0.97] transition-all"
-                    onClick={onOpenSuite}
-                  >
-                    <Star className="w-3.5 h-3.5" fill="currentColor" />
-                    Reservar Suite
-                  </button>
-                </div>
-              </div>
-            </div>
-
+            ))}
           </div>
         </div>
 
-        <div className="mt-20 text-center">
-          <p className="font-mono-custom text-sm text-white/60 mb-4">{tourScheduleConfig.bottomNote}</p>
-          <button className="px-8 py-4 bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-wider rounded-full hover:bg-white transition-colors">
+        {/* ── DAILY SECTION ── */}
+        {dailyDates.length > 0 && (
+          <div>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="h-px flex-1 bg-white/6"/>
+              <p className="font-mono-custom text-[9px] uppercase tracking-[0.4em] text-white/20">Pases por día</p>
+              <div className="h-px flex-1 bg-white/6"/>
+            </div>
+
+            <div className="space-y-2">
+              {dailyDates.map((tour, i) => (
+                <DailyCard
+                  key={tour.id}
+                  tour={tour}
+                  dayIndex={i}
+                  onClick={() => handleClick(tour)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Bottom CTA ── */}
+        <div className="mt-16 text-center">
+          <p className="font-mono-custom text-sm text-white/30 mb-5">{tourScheduleConfig.bottomNote}</p>
+          <button
+            className="px-8 py-4 bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] rounded-full hover:bg-white active:scale-[0.97] transition-all">
             {tourScheduleConfig.bottomCtaText}
           </button>
-
         </div>
       </div>
-
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-aira-lime/30 to-transparent" />
     </section>
   );
 };
