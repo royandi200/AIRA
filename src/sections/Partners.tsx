@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  ArrowRight, Music, Users, Target, MapPin, Anchor, Zap,
-  Menu, X, ChevronRight, Shield, Mic2, Volume2, Calendar,
-  Waves, TrendingUp, Building2, Briefcase, Bed, HeartPulse,
-  Film, Video, Star, Radio, Headphones, Globe, Instagram,
-  ExternalLink, Play,
+  ArrowRight, Users, Target, MapPin, Anchor,
+  Menu, X, Shield, Calendar,
+  Waves, Building2, Briefcase,
+  Video, Star, Headphones, Globe, Instagram,
+  ExternalLink,
 } from 'lucide-react';
 
 // ─── Brand colors ──────────────────────────────────────────────────────────────
@@ -17,11 +17,6 @@ const INSTAGRAM_URL = 'https://instagram.com/viveaira';
 const WEBSITE_URL   = 'https://www.viveaira.live';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const fadeUp = {
-  initial: { opacity: 0, transform: 'translateY(28px)' },
-  visible: { opacity: 1, transform: 'translateY(0)' },
-};
-
 function useInView(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
