@@ -61,10 +61,11 @@ function StatusBadge({ status }: { status: TourDate['status'] }) {
 
 // ─── Premium Card (grande, destacada) ────────────────────────────────────────
 function PremiumCard({
-  tour, onClick,
+  tour, onClick, onHover,
 }: {
   tour: TourDate;
   onClick: () => void;
+  onHover?: (img: string) => void;
 }) {
   const [hov, setHov] = useState(false);
   const clickable = tour.status === 'on-sale';
@@ -75,7 +76,7 @@ function PremiumCard({
       tabIndex={clickable ? 0 : undefined}
       onClick={clickable ? onClick : undefined}
       onKeyDown={e => { if (clickable && (e.key === 'Enter' || e.key === ' ')) onClick(); }}
-      onMouseEnter={() => setHov(true)}
+      onMouseEnter={() => { setHov(true); onHover?.(tour.image); }}
       onMouseLeave={() => setHov(false)}
       className={`relative rounded-2xl border overflow-hidden transition-all duration-300 ${
         clickable ? 'cursor-pointer' : 'cursor-default'
@@ -153,11 +154,12 @@ function PremiumCard({
 
 // ─── Daily Card (delgada, menos prominente) ────────────────────────────────
 function DailyCard({
-  tour, dayIndex, onClick,
+  tour, dayIndex, onClick, onHover,
 }: {
   tour: TourDate;
   dayIndex: number;
   onClick: () => void;
+  onHover?: (img: string) => void;
 }) {
   const [hov, setHov] = useState(false);
   const clickable = tour.status === 'on-sale';
@@ -170,7 +172,7 @@ function DailyCard({
       tabIndex={clickable ? 0 : undefined}
       onClick={clickable ? onClick : undefined}
       onKeyDown={e => { if (clickable && (e.key === 'Enter' || e.key === ' ')) onClick(); }}
-      onMouseEnter={() => setHov(true)}
+      onMouseEnter={() => { setHov(true); onHover?.(tour.image); }}
       onMouseLeave={() => setHov(false)}
       className={`relative flex items-center gap-4 px-5 py-3.5 rounded-xl border transition-all duration-200 ${
         clickable ? 'cursor-pointer' : 'cursor-default'
@@ -227,9 +229,11 @@ function DailyCard({
 const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas }: TourScheduleProps) => {
   if (tourScheduleConfig.tourDates.length === 0 && !tourScheduleConfig.sectionTitle) return null;
 
+  const [activeImage, setActiveImage] = useState<string | null>(null);
   const allDates = tourScheduleConfig.tourDates;
   const premiumDates = allDates.filter(t => t.category === 'premium');
   const dailyDates   = allDates.filter(t => t.category === 'daily');
+  const defaultImage = premiumDates[0]?.image || allDates[0]?.image || '/main-stage.jpg';
 
   const buildEvent = (tour: TourDate): ReservationEvent => ({
     id:               String(tour.id),
@@ -298,6 +302,27 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas }: Tou
           </div>
         )}
 
+        {/* ── Grid: imagen izquierda + listas derecha ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+
+          {/* Imagen preview — solo desktop */}
+          <div className="hidden lg:block lg:col-span-2 sticky top-8">
+            <div className="relative aspect-[3/4] rounded-2xl overflow-hidden">
+              <img
+                src={activeImage || defaultImage}
+                alt="preview"
+                className="w-full h-full object-cover transition-all duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-aira-darkBlue/80 via-transparent to-transparent"/>
+              {/* Decorative corner */}
+              <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-aira-lime/40 rounded-tl-lg"/>
+              <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-aira-lime/40 rounded-br-lg"/>
+            </div>
+          </div>
+
+          {/* Lists — right col */}
+          <div className="lg:col-span-3 space-y-10">
+
         {/* ── PREMIUM SECTION ── */}
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-5">
@@ -312,6 +337,7 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas }: Tou
                 key={tour.id}
                 tour={tour}
                 onClick={() => handleClick(tour)}
+                onHover={img => setActiveImage(img)}
               />
             ))}
           </div>
@@ -333,11 +359,15 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas }: Tou
                   tour={tour}
                   dayIndex={i}
                   onClick={() => handleClick(tour)}
+                  onHover={img => setActiveImage(img)}
                 />
               ))}
             </div>
           </div>
         )}
+
+          </div>{/* end right col */}
+        </div>{/* end grid */}
 
         {/* ── Bottom CTA ── */}
         <div className="mt-16 text-center">

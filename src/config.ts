@@ -268,7 +268,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
       image: "/vip-area.jpg",
       category: "premium",
       description: "Zona VIP exclusiva en todos los escenarios.",
-      price: "$ 350.000",
+      price: "$ 450.000",
     },
     {
       id: 8,
@@ -280,7 +280,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
       image: "/bar.jpg",
       category: "premium",
       description: "Bus directo ida y vuelta Medellín → Guatapé.",
-      price: "$ 45.000",
+      price: "$ 180.000",
     },
     {
       id: 5,
