@@ -288,7 +288,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
       time: "14:00",
       city: "GUATAPÉ",
       venue: "SUITE PRIVADA",
-      status: "coming-soon",
+      status: "on-sale",
       image: "/yacht-party.jpg",
       category: "premium",
       description: "Alojamiento premium en el embalse. 3 noches.",
