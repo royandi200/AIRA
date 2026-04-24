@@ -7,6 +7,9 @@ import {
   ExternalLink,
 } from 'lucide-react';
 
+// ─── Global styles
+const GLOBAL_STYLE = '@keyframes fadeIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }';
+
 // ─── Brand colors ──────────────────────────────────────────────────────────────
 const LIME  = '#e1fe52';
 const DARK  = '#00164c';
@@ -66,8 +69,8 @@ function Navbar() {
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         {/* Logo */}
         <a href={WEBSITE_URL} target="_blank" rel="noopener noreferrer"
-          className="font-display text-2xl text-white hover:text-aira-lime transition-colors">
-          AIRA
+          className="flex items-center">
+          <img src="/AIRA BLANCO.png" alt="AIRA" className="h-8 w-auto object-contain" />
         </a>
 
         {/* Desktop links */}
@@ -122,6 +125,43 @@ function Label({ children }: { children: React.ReactNode }) {
   );
 }
 
+// ─── Image hover tooltip ─────────────────────────────────────────────────────
+function ImageHover({ src, children, href, className = '' }: {
+  src: string; children: React.ReactNode; href?: string; className?: string;
+}) {
+  const [hov, setHov] = useState(false);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+
+  const onMove = (e: React.MouseEvent) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
+
+  const Tag = href ? 'a' : 'div';
+  const tagProps = href ? { href, target: '_blank', rel: 'noopener noreferrer' } : {};
+
+  return (
+    <Tag {...tagProps as any} className={`relative inline-block cursor-pointer ${className}`}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      onMouseMove={onMove}>
+      {children}
+      {hov && (
+        <div className="pointer-events-none fixed z-[200] rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
+          style={{
+            left: pos.x + 20, top: pos.y - 60,
+            width: '200px', height: '130px',
+            position: 'fixed',
+            animation: 'fadeIn .15s ease',
+          }}>
+          <img src={src} alt="" className="w-full h-full object-cover"/>
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(3,6,18,0.6), transparent)' }}/>
+        </div>
+      )}
+    </Tag>
+  );
+}
+
 // ─── Tier card ────────────────────────────────────────────────────────────────
 function TierCard({ letter, title, focus, contribution, benefits, delay = 0 }: {
   letter: string; title: string; focus: string;
@@ -157,7 +197,7 @@ function TierCard({ letter, title, focus, contribution, benefits, delay = 0 }: {
 }
 
 // ─── Ally card ────────────────────────────────────────────────────────────────
-function AllyGroup({ category, items }: { category: string; items: { name: string; link?: string }[] }) {
+function AllyGroup({ category, items }: { category: string; items: { name: string; link?: string; img?: string }[] }) {
   return (
     <div className="p-6 rounded-2xl border border-white/8 bg-white/[0.02] hover:border-white/15 transition-all">
       <p className="font-mono-custom text-[9px] uppercase tracking-[0.35em] text-white/30 mb-4 pb-3 border-b border-white/8">
@@ -166,11 +206,16 @@ function AllyGroup({ category, items }: { category: string; items: { name: strin
       <ul className="space-y-3">
         {items.map((item, i) => (
           <li key={i}>
-            {item.link ? (
+            {item.link && item.img ? (
+              <ImageHover src={item.img} href={item.link} className="flex items-center justify-between text-sm text-white/50 hover:text-aira-lime transition-colors w-full">
+                <span>{item.name}</span>
+                <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'inherit' }}/>
+              </ImageHover>
+            ) : item.link ? (
               <a href={item.link} target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-between group/a text-sm text-white/50 hover:text-aira-lime transition-colors">
+                className="flex items-center justify-between text-sm text-white/50 hover:text-aira-lime transition-colors">
                 {item.name}
-                <ExternalLink className="w-3 h-3 opacity-0 group-hover/a:opacity-100 transition-opacity"/>
+                <ExternalLink className="w-3 h-3"/>
               </a>
             ) : (
               <span className="text-sm text-white/50">{item.name}</span>
@@ -198,6 +243,7 @@ export default function Partners() {
 
   return (
     <div className="min-h-screen text-white overflow-x-hidden" style={{ background: BLACK, fontFamily: 'Figtree, sans-serif' }}>
+      <style>{GLOBAL_STYLE}</style>
       <Navbar/>
 
       {/* ── HERO ── */}
@@ -371,20 +417,22 @@ export default function Partners() {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { title: 'Floating Stage', desc: 'Plataforma en la mitad de la represa.', icon: <Target className="w-6 h-6"/> },
-              { title: 'Beach Stage',   desc: 'Ubicado en la playa del hotel.',        icon: <Waves className="w-6 h-6"/> },
-              { title: 'Lobby Stage',  desc: 'Epicentro de bienvenida en el hotel.',  icon: <Building2 className="w-6 h-6"/> },
-              { title: 'Main Stage',   desc: 'A bordo del yate Majestic (el más grande de LATAM).', icon: <Anchor className="w-6 h-6"/> },
+              { title: 'Floating Stage', desc: 'Plataforma en la mitad de la represa.',                 icon: <Target className="w-6 h-6"/>, img: '/beach-party.jpg' },
+              { title: 'Beach Stage',    desc: 'Ubicado en la playa del hotel.',                         icon: <Waves className="w-6 h-6"/>,  img: '/main-stage.jpg'  },
+              { title: 'Lobby Stage',   desc: 'Epicentro de bienvenida en el hotel.',                   icon: <Building2 className="w-6 h-6"/>, img: '/celebration.jpg' },
+              { title: 'Main Stage',    desc: 'A bordo del yate Majestic (el más grande de LATAM).',   icon: <Anchor className="w-6 h-6"/>,  img: '/yacht-party.jpg' },
             ].map((s, i) => (
               <Reveal key={i} delay={i * 70}>
-                <div className="p-6 rounded-2xl border border-white/8 bg-white/[0.02] hover:border-aira-lime/25 hover:bg-white/[0.04] transition-all group">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-5 transition-colors" style={{ background: `${LIME}12`, color: LIME }}>
-                    {s.icon}
+                <ImageHover src={s.img} className="block w-full">
+                  <div className="p-6 rounded-2xl border border-white/8 bg-white/[0.02] hover:border-aira-lime/25 hover:bg-white/[0.04] transition-all group h-full">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-5 transition-colors group-hover:bg-aira-lime/20" style={{ background: `${LIME}12`, color: LIME }}>
+                      {s.icon}
+                    </div>
+                    <span className="font-mono-custom text-[10px] uppercase tracking-widest text-white/25 block mb-1">{i + 1}.</span>
+                    <h4 className="font-display text-lg text-white mb-2 group-hover:text-aira-lime transition-colors">{s.title}</h4>
+                    <p className="text-white/40 text-sm leading-relaxed">{s.desc}</p>
                   </div>
-                  <span className="font-mono-custom text-[10px] uppercase tracking-widest text-white/25 block mb-1">{i + 1}.</span>
-                  <h4 className="font-display text-lg text-white mb-2">{s.title}</h4>
-                  <p className="text-white/40 text-sm leading-relaxed">{s.desc}</p>
-                </div>
+                </ImageHover>
               </Reveal>
             ))}
           </div>
@@ -478,23 +526,23 @@ export default function Partners() {
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <AllyGroup category="Institucional & Base" items={[
                 { name: 'Alcaldía de El Peñol' },
-                { name: 'Joinn Houtel', link: 'https://www.instagram.com/joinn_houtel/' },
+                { name: 'Joinn Houtel', link: 'https://www.instagram.com/joinn_houtel/', img: 'https://i.imgur.com/ITrRi84.jpeg' },
               ]}/>
               <AllyGroup category="Promotores & Producción" items={[
-                { name: 'Aphasia Collective', link: 'https://www.instagram.com/aphasia.col/' },
-                { name: 'Real Salsa Vibes', link: 'https://www.instagram.com/realsalsavibes/' },
-                { name: 'In House Production', link: 'https://www.instagram.com/djfrann75/' },
+                { name: 'Aphasia Collective',  link: 'https://www.instagram.com/aphasia.col/',    img: '/dj-1.jpg' },
+                { name: 'Real Salsa Vibes',    link: 'https://www.instagram.com/realsalsavibes/', img: '/crowd-1.jpg' },
+                { name: 'In House Production', link: 'https://www.instagram.com/djfrann75/',      img: '/dj-console.jpg' },
               ]}/>
               <AllyGroup category="Sellos & Estudios" items={[
-                { name: 'Isiday Music', link: 'https://www.instagram.com/isiday_music/' },
-                { name: 'Club Sonica', link: 'https://www.instagram.com/clubsonica/' },
+                { name: 'Isiday Music',     link: 'https://www.instagram.com/isiday_music/',  img: '/main-stage.jpg' },
+                { name: 'Club Sonica',      link: 'https://www.instagram.com/clubsonica/',    img: '/stage-1.jpg' },
                 { name: 'Japi' },
-                { name: 'Yin Yang Studios', link: 'https://www.instagram.com/yinyangcol/' },
+                { name: 'Yin Yang Studios', link: 'https://www.instagram.com/yinyangcol/',   img: '/dj-portrait.jpg' },
               ]}/>
               <AllyGroup category="Media & Turismo" items={[
-                { name: 'Iwana Travel', link: 'https://www.instagram.com/iwana.travel/' },
-                { name: 'El de los Planes', link: 'https://www.instagram.com/eldelosplanes/' },
-                { name: 'REC Emisora', link: 'https://www.instagram.com/recemisora/' },
+                { name: 'Iwana Travel',      link: 'https://www.instagram.com/iwana.travel/',     img: '/yacht-party.jpg' },
+                { name: 'El de los Planes',  link: 'https://www.instagram.com/eldelosplanes/',    img: '/beach-party.jpg' },
+                { name: 'REC Emisora',       link: 'https://www.instagram.com/recemisora/',       img: '/celebration.jpg' },
               ]}/>
             </div>
           </Reveal>
