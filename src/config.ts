@@ -256,7 +256,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
       image: "/vip-area.jpg",
       category: "premium",
       description: "Los 3 días completos. Acceso total al festival.",
-      price: "$ 280.000",
+      price: "Desde $ 590.000",
     },
     {
       id: 7,

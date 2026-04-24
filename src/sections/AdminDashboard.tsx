@@ -32,13 +32,20 @@ const statusColor: Record<string, string> = {
 
 // ─── Manual Registration Tab ─────────────────────────────────────────────────
 const PAQUETES = [
-  { label: 'Paquete 3 Días',                 priceLabel: '$280.000',   price: '280000',   cat: 'premium' },
-  { label: 'Pass VIP',                        priceLabel: '$450.000',   price: '450000',   cat: 'premium' },
-  { label: 'Transporte',                      priceLabel: '$180.000',   price: '180000',   cat: 'premium' },
-  { label: 'Suite Privada',                   priceLabel: '$2.200.000', price: '2200000',  cat: 'premium' },
-  { label: 'DÍA 1 — After Fiesta de Yates',  priceLabel: '$80.000',    price: '80000',    cat: 'daily'   },
+  // Paquete 3 días — por etapa
+  { label: 'Paquete 3D · Creyentes',          priceLabel: '$590.000',   price: '590000',   cat: '3 días' },
+  { label: 'Paquete 3D · Referidos',           priceLabel: '$690.000',   price: '690000',   cat: '3 días' },
+  { label: 'Paquete 3D · 1ª Etapa',            priceLabel: '$790.000',   price: '790000',   cat: '3 días' },
+  { label: 'Paquete 3D · 2ª Etapa',            priceLabel: '$890.000',   price: '890000',   cat: '3 días' },
+  { label: 'Paquete 3D · 3ª Etapa',            priceLabel: '$1.000.000', price: '1000000',  cat: '3 días' },
+  // Add-ons
+  { label: 'Pass VIP',                          priceLabel: '$450.000',   price: '450000',   cat: 'add-on' },
+  { label: 'Transporte',                        priceLabel: '$180.000',   price: '180000',   cat: 'add-on' },
+  { label: 'Suite Privada',                     priceLabel: '$2.200.000', price: '2200000',  cat: 'add-on' },
+  // Por día
+  { label: 'DÍA 1 — After Fiesta de Yates',    priceLabel: '$80.000',    price: '80000',    cat: 'daily'  },
   { label: 'DÍA 2 — Fiesta Majestic & Stage Joinn', priceLabel: '$150.000', price: '150000', cat: 'daily' },
-  { label: 'DÍA 3 — Open Deck',              priceLabel: '$50.000',    price: '50000',    cat: 'daily'   },
+  { label: 'DÍA 3 — Open Deck',                priceLabel: '$50.000',    price: '50000',    cat: 'daily'  },
 ];
 
 function ManualTab({ token }: { token: string }) {
@@ -102,8 +109,11 @@ function ManualTab({ token }: { token: string }) {
               setForm(f=>({...f, paquete:e.target.value, monto_total: opt?.price || f.monto_total}));
             }}>
               <option value="" style={{background:'#18181b'}}>— Seleccionar —</option>
-              <optgroup label="Premium" style={{background:'#18181b'}}>
-                {PAQUETES.filter(p=>p.cat==='premium').map(p=><option key={p.label} value={p.label} style={{background:'#18181b'}}>{p.label} · {p.priceLabel}</option>)}
+              <optgroup label="Paquete 3 Días" style={{background:'#18181b'}}>
+                {PAQUETES.filter(p=>p.cat==='3 días').map(p=><option key={p.label} value={p.label} style={{background:'#18181b'}}>{p.label} · {p.priceLabel}</option>)}
+              </optgroup>
+              <optgroup label="Add-ons" style={{background:'#18181b'}}>
+                {PAQUETES.filter(p=>p.cat==='add-on').map(p=><option key={p.label} value={p.label} style={{background:'#18181b'}}>{p.label} · {p.priceLabel}</option>)}
               </optgroup>
               <optgroup label="Por día" style={{background:'#18181b'}}>
                 {PAQUETES.filter(p=>p.cat==='daily').map(p=><option key={p.label} value={p.label} style={{background:'#18181b'}}>{p.label} · {p.priceLabel}</option>)}
