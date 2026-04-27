@@ -101,43 +101,47 @@ function PremiumCard({
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex items-center gap-5 px-6 py-5">
-        {/* Icon */}
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${
-          hov && clickable ? 'bg-aira-lime/20 text-aira-lime' : 'bg-white/8 text-white/50'
-        }`}>
-          {getCategoryIcon(tour.venue)}
+      <div className="relative z-10 px-5 py-4 md:px-6 md:py-5">
+        {/* Mobile: stack vertical | Desktop: row */}
+        <div className="flex items-start gap-4">
+          {/* Icon */}
+          <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${
+            hov && clickable ? 'bg-aira-lime/20 text-aira-lime' : 'bg-white/8 text-white/50'
+          }`}>
+            {getCategoryIcon(tour.venue)}
+          </div>
+
+          {/* Info block */}
+          <div className="flex-1 min-w-0">
+            {/* Name + badge */}
+            <div className="flex items-start gap-2 mb-1 flex-wrap">
+              <h3 className="font-display text-base md:text-lg text-white leading-snug">{tour.venue}</h3>
+              <StatusBadge status={tour.status}/>
+            </div>
+            {tour.description && (
+              <p className="text-white/45 text-xs leading-relaxed mb-2">{tour.description}</p>
+            )}
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="font-mono-custom text-[10px] text-white/30 uppercase tracking-wider flex items-center gap-1">
+                <MapPin className="w-3 h-3"/>{tour.city}
+              </span>
+              <span className="font-mono-custom text-[10px] text-white/30 flex items-center gap-1">
+                <Clock className="w-3 h-3"/>{tour.time}
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <h3 className="font-display text-lg text-white leading-none truncate">{tour.venue}</h3>
-            <StatusBadge status={tour.status}/>
-          </div>
-          {tour.description && (
-            <p className="text-white/45 text-xs mt-1 leading-snug">{tour.description}</p>
-          )}
-          <div className="flex items-center gap-3 mt-2 flex-wrap">
-            <span className="font-mono-custom text-[10px] text-white/30 uppercase tracking-wider flex items-center gap-1">
-              <MapPin className="w-3 h-3"/>{tour.city}
-            </span>
-            <span className="font-mono-custom text-[10px] text-white/30 flex items-center gap-1">
-              <Clock className="w-3 h-3"/>{tour.time}
-            </span>
-          </div>
-        </div>
-
-        {/* Price + CTA */}
-        <div className="shrink-0 text-right flex flex-col items-end gap-2">
+        {/* Price + CTA — always below on mobile, inline on desktop */}
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.06] md:border-0 md:mt-0 md:pt-0 md:absolute md:right-6 md:top-1/2 md:-translate-y-1/2 md:text-right md:flex-col md:items-end md:gap-2">
           {tour.price && (
-            <p className={`font-display text-xl leading-none transition-colors duration-300 ${
+            <p className={`font-display text-xl md:text-xl leading-none transition-colors duration-300 ${
               hov && clickable ? 'text-aira-lime' : 'text-white/80'
             }`}>{tour.price}</p>
           )}
           {tour.status === 'on-sale' ? (
             <div className={`flex items-center gap-1.5 font-mono-custom text-xs transition-all duration-300 ${
-              hov ? 'text-aira-lime translate-x-0' : 'text-white/30 -translate-x-1'
+              hov ? 'text-aira-lime' : 'text-white/40'
             }`}>
               {tourScheduleConfig.buyButtonText}
               <ChevronRight className="w-3.5 h-3.5"/>
@@ -175,7 +179,7 @@ function DailyCard({
       onKeyDown={e => { if (clickable && (e.key === 'Enter' || e.key === ' ')) onClick(); }}
       onMouseEnter={() => { setHov(true); onHover?.(tour.image); }}
       onMouseLeave={() => setHov(false)}
-      className={`relative flex items-center gap-4 px-5 py-3.5 rounded-xl border transition-all duration-200 ${
+      className={`relative flex items-center gap-3 md:gap-4 px-4 md:px-5 py-3.5 rounded-xl border transition-all duration-200 ${
         clickable ? 'cursor-pointer' : 'cursor-default'
       } ${
         hov && clickable ? 'border-white/20 bg-white/[0.05]' : 'border-white/[0.07] bg-white/[0.02]'
@@ -187,19 +191,19 @@ function DailyCard({
       }`}/>
 
       {/* Day label */}
-      <div className="shrink-0 w-16 text-center">
-        <p className={`font-mono-custom text-[10px] font-bold uppercase tracking-widest transition-colors duration-200 ${
+      <div className="shrink-0 w-12 md:w-16 text-center">
+        <p className={`font-mono-custom text-[9px] md:text-[10px] font-bold uppercase tracking-widest transition-colors duration-200 ${
           hov && clickable ? 'text-white/70' : 'text-white/30'
         }`}>{dayLabel}</p>
-        <p className="font-mono-custom text-xs text-white/20 mt-0.5">{dateShort}</p>
+        <p className="font-mono-custom text-[10px] text-white/20 mt-0.5">{dateShort}</p>
       </div>
 
       {/* Divider */}
       <div className="w-px h-8 bg-white/10 shrink-0"/>
 
-      {/* Venue */}
+      {/* Venue + time */}
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium truncate transition-colors duration-200 ${
+        <p className={`text-sm font-medium leading-snug transition-colors duration-200 ${
           hov && clickable ? 'text-white/80' : 'text-white/45'
         }`}>{tour.venue.replace(/DÍA \d+ — /, '')}</p>
         <div className="flex items-center gap-2 mt-0.5">
@@ -208,16 +212,16 @@ function DailyCard({
         </div>
       </div>
 
-      {/* Status + Price */}
-      <div className="shrink-0 flex items-center gap-3">
+      {/* Status + Price + Arrow — right side */}
+      <div className="shrink-0 flex flex-col items-end gap-1.5 md:flex-row md:items-center md:gap-3">
         <StatusBadge status={tour.status}/>
         {tour.price && (
-          <span className={`font-display text-base transition-colors duration-200 ${
-            hov && clickable ? 'text-white/60' : 'text-white/30'
+          <span className={`font-display text-sm md:text-base transition-colors duration-200 ${
+            hov && clickable ? 'text-white/70' : 'text-white/40'
           }`}>{tour.price}</span>
         )}
         {clickable && (
-          <ChevronRight className={`w-4 h-4 transition-all duration-200 ${
+          <ChevronRight className={`hidden md:block w-4 h-4 transition-all duration-200 ${
             hov ? 'text-white/50 translate-x-0' : 'text-white/15 -translate-x-1'
           }`}/>
         )}
@@ -256,20 +260,20 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas, onOpe
   };
 
   return (
-    <section id="booking" className="relative py-24 md:py-32 bg-aira-darkBlue">
+    <section id="booking" className="relative py-16 md:py-32 bg-aira-darkBlue">
 
       {/* Background grid */}
       <div className="absolute inset-0 opacity-[0.025]"
         style={{ backgroundImage:'radial-gradient(circle,#e1fe52 1px,transparent 1px)', backgroundSize:'32px 32px' }}/>
 
-      <div className="relative z-10 max-w-4xl mx-auto px-6">
+      <div className="relative z-10 max-w-4xl mx-auto px-4 md:px-6">
 
         {/* Header */}
-        <div className="mb-14">
+        <div className="mb-10 md:mb-14">
           <p className="font-mono-custom text-[10px] uppercase tracking-[0.35em] text-aira-lime/60 mb-3">
             {tourScheduleConfig.sectionLabel}
           </p>
-          <h2 className="font-display text-5xl md:text-6xl text-white leading-none mb-4">
+          <h2 className="font-display text-4xl md:text-6xl text-white leading-none mb-4">
             {tourScheduleConfig.sectionTitle}
           </h2>
           <p className="font-mono-custom text-sm text-white/40 max-w-md">
@@ -327,7 +331,7 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas, onOpe
           <div className="lg:col-span-3 space-y-10">
 
         {/* ── PREMIUM SECTION ── */}
-        <div className="mb-12">
+        <div className="mb-8 md:mb-12">
           <div className="flex items-center gap-3 mb-5">
             <div className="h-px flex-1 bg-white/10"/>
             <p className="font-mono-custom text-[9px] uppercase tracking-[0.4em] text-white/30">Experiencias destacadas</p>
