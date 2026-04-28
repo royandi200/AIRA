@@ -42,7 +42,6 @@ function useLockBodyScroll(isOpen: boolean) {
 
 const CabanaReserve = ({ isOpen, onClose }: CabanaReserveProps) => {
   // ── Estado principal ──
-  const [step, setStep]                 = useState(1);
   const [addTransport, setAddTransport] = useState(false);
   const [qty, setQty]                   = useState(7);
   const [paymentMode, setPaymentMode]   = useState<PaymentMode>('full');
@@ -83,7 +82,6 @@ const CabanaReserve = ({ isOpen, onClose }: CabanaReserveProps) => {
   // Reset on close
   useEffect(() => {
     if (!isOpen) return;
-    setStep(1);
     setAddTransport(false);
     setQty(7);
     setPaymentMode('full');
