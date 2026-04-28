@@ -277,7 +277,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
       image: "/yacht-party.jpg",
       category: "premium",
       description: "Cabaña privada para 7 personas. 3 noches en el embalse.",
-      price: "$ 2.800.000",
+      price: "Desde $ 4.600.000",
     },
     {
       id: 7,
@@ -315,18 +315,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
       description: "Alojamiento premium en el embalse. 3 noches.",
       price: "$ 2.200.000",
     },
-    {
-      id: 9,
-      date: "2025.08.15",
-      time: "14:00",
-      city: "GUATAPÉ",
-      venue: "CABAÑA COMPLETA x7",
-      status: "on-sale",
-      image: `${CLD}/Balcon_Suite_smpfes`,
-      category: "premium",
-      description: "Cabaña entera para 7 personas. 3 noches en el embalse.",
-      price: "$ 5.500.000",
-    },
+
     // ── POR DÍA ────────────────────────────────────────────────────────────
     {
       id: 1,

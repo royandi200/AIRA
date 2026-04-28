@@ -254,7 +254,7 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenCabana, onOpenMisR
 
   const handleClick = (tour: TourDate) => {
     const v = tour.venue.toLowerCase();
-    if (v.includes('caba'))                             { onOpenCabana?.() ?? onOpenSuite?.(); return; }
+    if (v.includes('caba'))                             { if (onOpenCabana) { onOpenCabana(); } else { onOpenSuite?.(); } return; }
     if (v.includes('suite'))                            { onOpenSuite?.(); return; }
     if (v.includes('vip') && !v.includes('paquete'))   { onOpenAddOn?.('vip'); return; }
     if (v.includes('transporte') || v.includes('bus')) { onOpenAddOn?.('transport'); return; }
