@@ -268,6 +268,18 @@ export const tourScheduleConfig: TourScheduleConfig = {
       price: "Desde $ 590.000",
     },
     {
+      id: 9,
+      date: "2025.08.15",
+      time: "14:00",
+      city: "GUATAPÉ",
+      venue: "CABAÑA COMPLETA x7",
+      status: "on-sale",
+      image: "/yacht-party.jpg",
+      category: "premium",
+      description: "Cabaña privada para 7 personas. 3 noches en el embalse.",
+      price: "$ 2.800.000",
+    },
+    {
       id: 7,
       date: "2025.08.15",
       time: "18:00",

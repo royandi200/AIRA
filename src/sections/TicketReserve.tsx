@@ -24,7 +24,6 @@ type PaymentMode = 'full' | 'abono';
 const ABONO_PLANS = [
   { id: 'a50', label: '2 cuotas', pct: 0.50, desc: '50% ahora · 50% antes del evento', badge: 'Popular' },
   { id: 'a33', label: '3 cuotas', pct: 0.33, desc: '33% ahora · 33% · 33% antes del evento', badge: null },
-  { id: 'a25', label: '4 cuotas', pct: 0.25, desc: '25% ahora · resto en 3 cuotas', badge: null },
 ];
 
 const PASS_VIP_PRICES: Record<AccessType, number> = {
