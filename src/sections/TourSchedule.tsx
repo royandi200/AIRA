@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { MapPin, Clock, Ticket, ChevronRight, Bus, Star, Calendar, Package } from 'lucide-react';
+import { MapPin, Clock, Ticket, ChevronRight, Bus, Star, Calendar, Package, Home } from 'lucide-react';
 import { tourScheduleConfig, type TourDate } from '../config';
 import type { ReservationEvent } from './TicketReserve';
 
 interface TourScheduleProps {
   onOpenReservation: (event: ReservationEvent) => void;
   onOpenSuite: () => void;
+  onOpenCabana: () => void;
   onOpenMisReservas?: () => void;
   onOpenAddOn?: (type: 'vip' | 'transport') => void;
 }
@@ -14,7 +15,7 @@ interface TourScheduleProps {
 const getVenueType = (venue: string): ReservationEvent['venueType'] => {
   const v = venue.toLowerCase();
   if (v.includes('yacht') || v.includes('yate') || v.includes('embalse')) return 'yacht';
-  if (v.includes('suite'))                                                  return 'club';
+  if (v.includes('suite') || v.includes('caba'))                          return 'club';
   if (v.includes('vip'))                                                   return 'club';
   return 'festival';
 };
@@ -22,7 +23,6 @@ const getVenueType = (venue: string): ReservationEvent['venueType'] => {
 const getAccessType = (tour: TourDate): 'day1'|'day2'|'day3'|'package'|undefined => {
   const v = tour.venue.toLowerCase();
   if (tour.category === 'premium') return 'package';
-  // Daily tickets — detect by day number in venue name
   if (v.includes('día 1') || v.includes('dia 1')) return 'day1';
   if (v.includes('día 2') || v.includes('dia 2')) return 'day2';
   if (v.includes('día 3') || v.includes('dia 3')) return 'day3';
@@ -34,6 +34,7 @@ const CATEGORY_ICON: Record<string, React.ReactNode> = {
   'VIP':        <Star className="w-4 h-4"/>,
   'TRANSPORTE': <Bus className="w-4 h-4"/>,
   'SUITE':      <Package className="w-4 h-4"/>,
+  'CABAÑA':     <Home className="w-4 h-4"/>,
 };
 
 function getCategoryIcon(venue: string): React.ReactNode {
@@ -42,6 +43,7 @@ function getCategoryIcon(venue: string): React.ReactNode {
   if (v.includes('VIP'))        return CATEGORY_ICON['VIP'];
   if (v.includes('TRANSPORT'))  return CATEGORY_ICON['TRANSPORTE'];
   if (v.includes('SUITE'))      return CATEGORY_ICON['SUITE'];
+  if (v.includes('CABA'))       return CATEGORY_ICON['CABAÑA'];
   return <Ticket className="w-4 h-4"/>;
 }
 
@@ -102,7 +104,6 @@ function PremiumCard({
 
       {/* Content */}
       <div className="relative z-10 px-5 py-4 md:px-6 md:py-5">
-        {/* Mobile: stack vertical | Desktop: row */}
         <div className="flex items-start gap-4">
           {/* Icon */}
           <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${
@@ -113,7 +114,6 @@ function PremiumCard({
 
           {/* Info block */}
           <div className="flex-1 min-w-0">
-            {/* Name + badge */}
             <div className="flex items-start gap-2 mb-1 flex-wrap">
               <h3 className="font-display text-base md:text-lg text-white leading-snug">{tour.venue}</h3>
               <StatusBadge status={tour.status}/>
@@ -132,7 +132,7 @@ function PremiumCard({
           </div>
         </div>
 
-        {/* Price + CTA — always below on mobile, inline on desktop */}
+        {/* Price + CTA */}
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.06] md:border-0 md:mt-0 md:pt-0 md:absolute md:right-6 md:top-1/2 md:-translate-y-1/2 md:text-right md:flex-col md:items-end md:gap-2">
           {tour.price && (
             <p className={`font-display text-xl md:text-xl leading-none transition-colors duration-300 ${
@@ -185,12 +185,10 @@ function DailyCard({
         hov && clickable ? 'border-white/20 bg-white/[0.05]' : 'border-white/[0.07] bg-white/[0.02]'
       }`}>
 
-      {/* Left accent bar */}
       <div className={`absolute left-0 top-2 bottom-2 w-0.5 rounded-full transition-all duration-300 ${
         hov && clickable ? 'bg-white/40' : 'bg-white/15'
       }`}/>
 
-      {/* Day label */}
       <div className="shrink-0 w-12 md:w-16 text-center">
         <p className={`font-mono-custom text-[9px] md:text-[10px] font-bold uppercase tracking-widest transition-colors duration-200 ${
           hov && clickable ? 'text-white/70' : 'text-white/30'
@@ -198,10 +196,8 @@ function DailyCard({
         <p className="font-mono-custom text-[10px] text-white/20 mt-0.5">{dateShort}</p>
       </div>
 
-      {/* Divider */}
       <div className="w-px h-8 bg-white/10 shrink-0"/>
 
-      {/* Venue + time */}
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-medium leading-snug transition-colors duration-200 ${
           hov && clickable ? 'text-white/80' : 'text-white/45'
@@ -212,7 +208,6 @@ function DailyCard({
         </div>
       </div>
 
-      {/* Status + Price + Arrow — right side */}
       <div className="shrink-0 flex flex-col items-end gap-1.5 md:flex-row md:items-center md:gap-3">
         <StatusBadge status={tour.status}/>
         {tour.price && (
@@ -231,7 +226,7 @@ function DailyCard({
 }
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas, onOpenAddOn }: TourScheduleProps) => {
+const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenCabana, onOpenMisReservas, onOpenAddOn }: TourScheduleProps) => {
   if (tourScheduleConfig.tourDates.length === 0 && !tourScheduleConfig.sectionTitle) return null;
 
   const [activeImage, setActiveImage] = useState<string | null>(null);
@@ -253,6 +248,7 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas, onOpe
 
   const handleClick = (tour: TourDate) => {
     const v = tour.venue.toLowerCase();
+    if (v.includes('caba'))                             { onOpenCabana?.(); return; }
     if (v.includes('suite'))                            { onOpenSuite?.(); return; }
     if (v.includes('vip') && !v.includes('paquete'))   { onOpenAddOn?.('vip'); return; }
     if (v.includes('transporte') || v.includes('bus')) { onOpenAddOn?.('transport'); return; }
@@ -262,13 +258,11 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas, onOpe
   return (
     <section id="booking" className="relative py-16 md:py-32 bg-aira-darkBlue">
 
-      {/* Background grid */}
       <div className="absolute inset-0 opacity-[0.025]"
         style={{ backgroundImage:'radial-gradient(circle,#e1fe52 1px,transparent 1px)', backgroundSize:'32px 32px' }}/>
 
       <div className="relative z-10 max-w-4xl mx-auto px-4 md:px-6">
 
-        {/* Header */}
         <div className="mb-10 md:mb-14">
           <p className="font-mono-custom text-[10px] uppercase tracking-[0.35em] text-aira-lime/60 mb-3">
             {tourScheduleConfig.sectionLabel}
@@ -309,7 +303,6 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas, onOpe
           </div>
         )}
 
-        {/* ── Grid: imagen izquierda + listas derecha ── */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
 
           {/* Imagen preview — solo desktop */}
@@ -321,7 +314,6 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas, onOpe
                 className="w-full h-full object-cover transition-all duration-500"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-aira-darkBlue/80 via-transparent to-transparent"/>
-              {/* Decorative corner */}
               <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-aira-lime/40 rounded-tl-lg"/>
               <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-aira-lime/40 rounded-br-lg"/>
             </div>
@@ -330,51 +322,51 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenMisReservas, onOpe
           {/* Lists — right col */}
           <div className="lg:col-span-3 space-y-10">
 
-        {/* ── PREMIUM SECTION ── */}
-        <div className="mb-8 md:mb-12">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="h-px flex-1 bg-white/10"/>
-            <p className="font-mono-custom text-[9px] uppercase tracking-[0.4em] text-white/30">Experiencias destacadas</p>
-            <div className="h-px flex-1 bg-white/10"/>
-          </div>
+            {/* ── PREMIUM SECTION ── */}
+            <div className="mb-8 md:mb-12">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="h-px flex-1 bg-white/10"/>
+                <p className="font-mono-custom text-[9px] uppercase tracking-[0.4em] text-white/30">Experiencias destacadas</p>
+                <div className="h-px flex-1 bg-white/10"/>
+              </div>
 
-          <div className="space-y-3">
-            {premiumDates.map(tour => (
-              <PremiumCard
-                key={tour.id}
-                tour={tour}
-                onClick={() => handleClick(tour)}
-                onHover={img => setActiveImage(img)}
-              />
-            ))}
+              <div className="space-y-3">
+                {premiumDates.map(tour => (
+                  <PremiumCard
+                    key={tour.id}
+                    tour={tour}
+                    onClick={() => handleClick(tour)}
+                    onHover={img => setActiveImage(img)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* ── DAILY SECTION ── */}
+            {dailyDates.length > 0 && (
+              <div>
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="h-px flex-1 bg-white/6"/>
+                  <p className="font-mono-custom text-[9px] uppercase tracking-[0.4em] text-white/20">Pases por día</p>
+                  <div className="h-px flex-1 bg-white/6"/>
+                </div>
+
+                <div className="space-y-2">
+                  {dailyDates.map((tour, i) => (
+                    <DailyCard
+                      key={tour.id}
+                      tour={tour}
+                      dayIndex={i}
+                      onClick={() => handleClick(tour)}
+                      onHover={img => setActiveImage(img)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
-
-        {/* ── DAILY SECTION ── */}
-        {dailyDates.length > 0 && (
-          <div>
-            <div className="flex items-center gap-3 mb-5">
-              <div className="h-px flex-1 bg-white/6"/>
-              <p className="font-mono-custom text-[9px] uppercase tracking-[0.4em] text-white/20">Pases por día</p>
-              <div className="h-px flex-1 bg-white/6"/>
-            </div>
-
-            <div className="space-y-2">
-              {dailyDates.map((tour, i) => (
-                <DailyCard
-                  key={tour.id}
-                  tour={tour}
-                  dayIndex={i}
-                  onClick={() => handleClick(tour)}
-                  onHover={img => setActiveImage(img)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-          </div>{/* end right col */}
-        </div>{/* end grid */}
 
         {/* ── Bottom CTA ── */}
         <div className="mt-16 text-center">

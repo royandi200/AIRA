@@ -8,6 +8,7 @@ import ParallaxGallery from './sections/ParallaxGallery';
 import TourSchedule from './sections/TourSchedule';
 import TicketReserve, { type ReservationEvent } from './sections/TicketReserve';
 import SuiteReserve from './sections/SuiteReserve';
+import CabanaReserve from './sections/CabanaReserve';
 import Footer from './sections/Footer';
 import AdminDashboard from './sections/AdminDashboard';
 import MisReservas from './sections/MisReservas';
@@ -19,6 +20,7 @@ function App() {
   const [selectedEvent, setSelectedEvent]   = useState<ReservationEvent | null>(null);
   const [isReserveOpen, setIsReserveOpen]   = useState(false);
   const [isSuiteOpen,   setIsSuiteOpen]     = useState(false);
+  const [isCabanaOpen,  setIsCabanaOpen]    = useState(false);
   const [addOnType, setAddOnType] = useState<'vip'|'transport'|null>(null);
   const [isMisReservasOpen, setIsMisReservasOpen] = useState(
     () => window.location.search.includes('reserva=')
@@ -38,7 +40,6 @@ function App() {
     }
   }, []);
 
-  // Escuchar cambios de hash para abrir/cerrar admin
   useEffect(() => {
     const onHash = () => setIsAdminOpen(window.location.hash === '#admin');
     window.addEventListener('hashchange', onHash);
@@ -64,6 +65,9 @@ function App() {
   const handleOpenSuite  = useCallback(() => setIsSuiteOpen(true),  []);
   const handleCloseSuite = useCallback(() => setIsSuiteOpen(false), []);
 
+  const handleOpenCabana  = useCallback(() => setIsCabanaOpen(true),  []);
+  const handleCloseCabana = useCallback(() => setIsCabanaOpen(false), []);
+
   useEffect(() => {
     return () => { document.body.style.overflow = ''; };
   }, []);
@@ -76,6 +80,7 @@ function App() {
       <TourSchedule
         onOpenReservation={handleOpenReservation}
         onOpenSuite={handleOpenSuite}
+        onOpenCabana={handleOpenCabana}
         onOpenMisReservas={() => setIsMisReservasOpen(true)}
         onOpenAddOn={(t) => setAddOnType(t)}
       />
@@ -90,6 +95,11 @@ function App() {
       <SuiteReserve
         isOpen={isSuiteOpen}
         onClose={handleCloseSuite}
+      />
+
+      <CabanaReserve
+        isOpen={isCabanaOpen}
+        onClose={handleCloseCabana}
       />
 
       {isAdminOpen && (
