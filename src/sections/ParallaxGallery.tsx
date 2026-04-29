@@ -409,9 +409,6 @@ const ParallaxGallery = () => {
     };
   }, []);
 
-  const scrollToTour = () => {
-    document.getElementById('tour')?.scrollIntoView({ behavior: 'smooth' });
-  };
 
   const openPhoto = (index: number) => {
     setPhotoModal({ open: true, index });
