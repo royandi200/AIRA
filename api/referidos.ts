@@ -41,10 +41,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // GET — listar
     if (req.method === 'GET') {
-      const [rows]: any = await pool.query(
-        'SELECT * FROM codigos_referido ORDER BY created_at DESC'
-      );
-      return res.status(200).json({ ok: true, codigos: rows });
+      try {
+        const [rows]: any = await pool.query(
+          'SELECT * FROM codigos_referido ORDER BY created_at DESC'
+        );
+        return res.status(200).json({ ok: true, codigos: rows });
+      } catch {
+        // Table might not exist yet
+        return res.status(200).json({ ok: true, codigos: [] });
+      }
     }
 
     // POST — crear
@@ -94,15 +99,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(405).json({ error: 'Método no permitido' });
   } catch (e: any) {
-    console.error('[referidos] FULL ERROR:', JSON.stringify({
-      message: e.message, code: e.code, sql: e.sql, sqlMessage: e.sqlMessage,
-      env: { host: !!process.env.DB_HOST, user: !!process.env.DB_USER, db: !!process.env.DB_NAME }
-    }));
-    return res.status(500).json({
-      error: e.message || 'Error interno',
-      code: e.code,
-      sqlMessage: e.sqlMessage,
-      hint: !process.env.DB_HOST ? 'DB_HOST no configurado' : undefined
-    });
+    console.error('[referidos]', e.code, e.message);
+    return res.status(500).json({ error: e.message || 'Error interno' });
   }
 }
