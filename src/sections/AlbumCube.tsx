@@ -69,16 +69,17 @@ const AlbumCube = () => {
 
   // ── Audio ────────────────────────────────────────────────────────────────
   const AUDIO_TRACKS = [
-  "https://res.cloudinary.com/dqfpxf3zq/video/upload/so_77/v1777448584/My_Love_My_Kisses_wireyy.mp3",
-  "https://res.cloudinary.com/dqfpxf3zq/video/upload/so_98/v1777448581/_ME_-_In_Your_Eyes_PAMPA032_vdhtnk.mp3",
-  "https://res.cloudinary.com/dqfpxf3zq/video/upload/so_60/v1777448576/Mark_Lower_-_Bad_Boys_Cry_bwwwdl.mp3",
-  "https://res.cloudinary.com/dqfpxf3zq/video/upload/so_71/v1777448574/Ornette_-_Crazy_N%C3%B4ze_remix_Official_gy2crr.mp3",
-  "https://res.cloudinary.com/dqfpxf3zq/video/upload/so_62/v1777448571/Jamie_Antonelli_-_Divine_Official_Video_ko7f6f.mp3"
-];
-  const audioRef     = useRef<HTMLAudioElement | null>(null);
+    "https://res.cloudinary.com/dqfpxf3zq/video/upload/so_77/v1777448584/My_Love_My_Kisses_wireyy.mp3",
+    "https://res.cloudinary.com/dqfpxf3zq/video/upload/so_98/v1777448581/_ME_-_In_Your_Eyes_PAMPA032_vdhtnk.mp3",
+    "https://res.cloudinary.com/dqfpxf3zq/video/upload/so_60/v1777448576/Mark_Lower_-_Bad_Boys_Cry_bwwwdl.mp3",
+    "https://res.cloudinary.com/dqfpxf3zq/video/upload/so_71/v1777448574/Ornette_-_Crazy_N%C3%B4ze_remix_Official_gy2crr.mp3",
+    "https://res.cloudinary.com/dqfpxf3zq/video/upload/so_62/v1777448571/Jamie_Antonelli_-_Divine_Official_Video_ko7f6f.mp3",
+  ];
   const [muted,      setMuted]      = useState(false);
   const [audioReady, setAudioReady] = useState(false);
-  const mutedRef = useRef(false);
+  const audioRef  = useRef<HTMLAudioElement | null>(null);
+  const mutedRef  = useRef(false);
+  const trackIdx  = useRef(-1);
 
   useEffect(() => {
     if (!sectionRef.current) return;
@@ -132,39 +133,36 @@ const AlbumCube = () => {
   };
   const accent = accentColors[currentAlbumIndex] ?? '#e1fe52';
 
-  if (albumCubeConfig.albums.length === 0 || albumCubeConfig.cubeTextures.length === 0) return null;
-
-  // Play track for current album
-  const playTrack = (index: number) => {
-    if (mutedRef.current) return;
-    const url = AUDIO_TRACKS[index];
-    if (!url) return;
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = url;
-      audioRef.current.volume = 0;
-      audioRef.current.play().then(() => {
-        // Fade in
-        let vol = 0;
-        const fade = setInterval(() => {
-          vol = Math.min(vol + 0.05, 0.55);
-          if (audioRef.current) audioRef.current.volume = vol;
-          if (vol >= 0.55) clearInterval(fade);
-        }, 80);
-      }).catch(() => {});
-    }
-  };
-
-  // Change track when album changes
+  // ── Audio: change track on album change ────────────────────────────────
   useEffect(() => {
-    if (audioReady) playTrack(currentAlbumIndex);
+    if (!audioReady || !audioRef.current) return;
+    if (trackIdx.current === currentAlbumIndex) return;
+    trackIdx.current = currentAlbumIndex;
+    const audio = audioRef.current;
+    const url   = AUDIO_TRACKS[currentAlbumIndex];
+    if (!url) return;
+    audio.pause();
+    audio.src    = url;
+    audio.volume = 0;
+    audio.loop   = true;
+    audio.muted  = mutedRef.current;
+    audio.play().then(() => {
+      let v = 0;
+      const fade = setInterval(() => {
+        v = Math.min(v + 0.04, 0.55);
+        audio.volume = v;
+        if (v >= 0.55) clearInterval(fade);
+      }, 80);
+    }).catch(() => {});
   }, [currentAlbumIndex, audioReady]);
 
-  // Sync muted state
+  // Sync mute
   useEffect(() => {
     mutedRef.current = muted;
     if (audioRef.current) audioRef.current.muted = muted;
   }, [muted]);
+
+  if (albumCubeConfig.albums.length === 0 || albumCubeConfig.cubeTextures.length === 0) return null;
 
   return (
     <section
@@ -191,7 +189,14 @@ const AlbumCube = () => {
       {/* Mute button */}
       <button
         onClick={() => {
-          if (!audioReady) { setAudioReady(true); setTimeout(() => playTrack(currentAlbumIndex), 100); }
+          if (!audioReady) {
+            // Create Audio element imperatively on first user gesture
+            const audio = new Audio();
+            audio.loop   = true;
+            audio.volume = 0;
+            audioRef.current = audio;
+            setAudioReady(true);
+          }
           setMuted(m => !m);
         }}
         className="absolute top-5 right-5 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full font-mono-custom text-[9px] uppercase tracking-widest transition-all duration-200"
