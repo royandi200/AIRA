@@ -520,6 +520,7 @@ const CabanaReserve = ({ isOpen, onClose }: CabanaReserveProps) => {
                         if (isUpcoming) return;
                         if (isCreyentes && !creyentesVerified) {
                           setCodigoRef(''); setCodigoError(''); setCodigoValid(false);
+                          setSelectedStageId(null);
                           setCreyentesOtpOpen(true);
                         } else if (isCreyentes && creyentesVerified) {
                           setCodigoRef(''); setCodigoError(''); setCodigoValid(false);
