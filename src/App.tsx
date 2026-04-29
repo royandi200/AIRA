@@ -4,6 +4,7 @@ import useLenis from './hooks/useLenis';
 import { siteConfig } from './config';
 import Hero from './sections/Hero';
 import AlbumCube from './sections/AlbumCube';
+import Experience from './sections/Experience';
 import ParallaxGallery from './sections/ParallaxGallery';
 import TourSchedule from './sections/TourSchedule';
 import TicketReserve, { type ReservationEvent } from './sections/TicketReserve';
@@ -75,7 +76,7 @@ function App() {
   return (
     <main className="relative w-full min-h-screen bg-void-black overflow-x-hidden">
       <Hero />
-      <AlbumCube />
+      <Experience />
       <ParallaxGallery />
       <TourSchedule
         onOpenReservation={handleOpenReservation}
