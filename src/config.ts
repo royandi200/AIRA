@@ -55,7 +55,7 @@ export const heroConfig: HeroConfig = {
   cornerLabel: "PRÓXIMO EVENTO",
   cornerDetail: "15-17 AGO 2025",
   navItems: [
-    { label: "Experiencia", sectionId: "gallery", icon: "disc" },
+    { label: "Experiencia", sectionId: "experiencia", icon: "disc" },
     { label: "Galería", sectionId: "gallery", icon: "play" },
     { label: "Booking", sectionId: "booking", icon: "calendar" },
     { label: "Contacto", sectionId: "contact", icon: "music" },

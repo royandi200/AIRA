@@ -482,7 +482,7 @@ const ParallaxGallery = () => {
         </div>
 
         {/* ── Horizontal Gallery (VIDEOS / MOMENTOS) ── */}
-        <div ref={galleryRef} className="relative h-screen overflow-hidden">
+        <div id="experiencia" ref={galleryRef} className="relative h-screen overflow-hidden">
           <div className="absolute top-12 left-12 z-20">
             <p className="font-mono-custom text-xs text-neon-soft/60 uppercase tracking-wider mb-2">
               {parallaxGalleryConfig.galleryLabel}
