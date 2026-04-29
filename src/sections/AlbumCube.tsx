@@ -18,7 +18,8 @@ const Cube = ({ rotationProgress }: CubeProps) => {
 
   const textures = useTexture(albumCubeConfig.cubeTextures);
 
-  const cubeSize = Math.min(viewport.width * 0.4, 3);
+  const isMobile = viewport.width < 5; // Three.js viewport units ~5 = mobile
+  const cubeSize = isMobile ? Math.min(viewport.width * 0.55, 3.2) : Math.min(viewport.width * 0.4, 3);
 
   useFrame(() => {
     if (meshRef.current) {
@@ -145,9 +146,9 @@ const AlbumCube = () => {
       </div>
 
       {/* 3D Canvas */}
-      <div className="absolute inset-0 z-10">
+      <div className="absolute inset-0 z-10" style={{ top: '-8%' }}>
         <Canvas
-          camera={{ position: [0, 0, 6], fov: 45 }}
+          camera={{ position: [0, 0, 5.2], fov: 48 }}
           gl={{ antialias: true, alpha: true }}
         >
           <Suspense fallback={null}>
