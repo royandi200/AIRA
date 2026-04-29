@@ -34,9 +34,9 @@ const PASS_VIP_PRICES: Record<AccessType, number> = {
 };
 
 const DAYS = [
-  { id: 'day1' as AccessType, label: 'DÍA 1', title: 'After Fiesta de Yates',        price: 80_000,  accentColor: '#004fff', icon: <Zap   className="w-5 h-5" /> },
-  { id: 'day2' as AccessType, label: 'DÍA 2', title: 'Fiesta Majestic & Stage Joinn', price: 150_000, accentColor: '#e1fe52', icon: <Crown className="w-5 h-5" /> },
-  { id: 'day3' as AccessType, label: 'DÍA 3', title: 'Open Deck',                     price: 50_000,  accentColor: '#ffffff', icon: <Star  className="w-5 h-5" /> },
+  { id: 'day1' as AccessType, label: 'DÍA 1', title: 'After Fiesta de Yates',        price: 100_000,  accentColor: '#004fff', icon: <Zap   className="w-5 h-5" /> },
+  { id: 'day2' as AccessType, label: 'DÍA 2', title: 'Fiesta Majestic & Stage Joinn', price: 170_000, accentColor: '#e1fe52', icon: <Crown className="w-5 h-5" /> },
+  { id: 'day3' as AccessType, label: 'DÍA 3', title: 'Open Deck',                     price: 70_000,  accentColor: '#ffffff', icon: <Star  className="w-5 h-5" /> },
 ];
 
 // Fechas reales de cada etapa — ajustar según calendario del evento
@@ -874,8 +874,8 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
   const passVipPrice  = accessType ? PASS_VIP_PRICES[accessType] : 450_000;
 
   const basePrice = useMemo(() => {
-    if (accessType === 'day1') return 80_000  * qty;
-    if (accessType === 'day3') return 50_000  * qty;
+    if (accessType === 'day1') return 100_000 * qty;
+    if (accessType === 'day3') return 70_000  * qty;
     if (accessType === 'package' && selectedStage) return selectedStage.price * qty;
     return 0;
   }, [accessType, selectedStage, qty]);

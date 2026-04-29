@@ -360,7 +360,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
       image: `${CLD}/Fraternidad_Bar_y_Restaurante_ujuwfo`,
       category: "premium",
       description: "Bus directo ida y vuelta Medellín → Guatapé.",
-      price: "$ 150.000",
+      price: "$ 180.000",
     },
     {
       id: 5,
