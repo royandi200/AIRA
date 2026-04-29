@@ -94,6 +94,15 @@ const AlbumCube = () => {
         const progress = self.progress;
         setRotationProgress(progress);
 
+        // Auto-start audio on first scroll interaction
+        if (!audioRef.current && progress > 0) {
+          const audio = new Audio();
+          audio.loop   = true;
+          audio.volume = 0;
+          audioRef.current = audio;
+          setAudioReady(true);
+        }
+
         const albumIndex = Math.min(
           Math.floor(progress * 4),
           albumCubeConfig.albums.length - 1
@@ -189,24 +198,25 @@ const AlbumCube = () => {
       {/* Mute button */}
       <button
         onClick={() => {
-          if (!audioReady) {
-            // Create Audio element imperatively on first user gesture
+          if (!audioRef.current) {
             const audio = new Audio();
             audio.loop   = true;
             audio.volume = 0;
             audioRef.current = audio;
             setAudioReady(true);
+            setMuted(false);
+          } else {
+            setMuted(m => !m);
           }
-          setMuted(m => !m);
         }}
-        className="absolute top-5 right-5 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full font-mono-custom text-[9px] uppercase tracking-widest transition-all duration-200"
+        className="absolute top-5 right-5 z-40 flex items-center gap-1.5 px-3 py-1.5 rounded-full font-mono-custom text-[9px] uppercase tracking-widest transition-all duration-200"
         style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', color: muted || !audioReady ? 'rgba(255,255,255,0.3)' : 'rgba(225,254,82,0.8)' }}
       >
         {muted || !audioReady
           ? <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
           : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
         }
-        {!audioReady ? 'Música' : muted ? 'Silencio' : 'Sonando'}
+        {!audioReady ? '♪ Música' : muted ? 'Silencio' : '♪ Sonando'}
       </button>
 
       {/* 3D Canvas */}
