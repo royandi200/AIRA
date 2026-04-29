@@ -138,12 +138,20 @@ export interface ParallaxImage {
 
 export interface GalleryImage {
   id: number;
-  src: string;        // thumbnail image
+  src: string;
   title: string;
   date: string;
-  videoUrl?: string;  // optional Vimeo/YouTube/Drive URL
-  videoType?: 'vimeo' | 'youtube' | 'external'; // type of video
-  transition?: 'morphing' | 'zoom'; // opening transition effect
+  videoUrl?: string;
+  videoType?: 'vimeo' | 'youtube' | 'external';
+  transition?: 'morphing' | 'zoom';
+  // Experience detail fields
+  subtitle?: string;
+  description?: string;
+  detail?: string;
+  highlights?: string[];
+  images?: string[];
+  badge?: string;
+  accent?: string;
 }
 
 export interface ParallaxGalleryConfig {
