@@ -132,7 +132,7 @@ function App() {
   useEffect(() => {
     if (playing && audioRef.current) {
       audioRef.current.pause();
-      audioRef.current.src = AUDIO_TRACKS[trackIdx] || AUDIO_TRACKS[0];
+      audioRef.current.src = AUDIO_TRACKS[trackIdx.current] || AUDIO_TRACKS[0];
       audioRef.current.volume = 0;
       audioRef.current.play().then(() => {
         let v = 0;
