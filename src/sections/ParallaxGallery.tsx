@@ -400,11 +400,7 @@ const ParallaxGallery = () => {
     document.getElementById('tour')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const openVideo = (image: GalleryImage, index: number) => {
-    const el = thumbRefs.current[index];
-    const rect = el ? el.getBoundingClientRect() : null;
-    setVideoModal({ open: true, video: image, rect });
-  };
+
 
   const openPhoto = (index: number) => {
     setPhotoModal({ open: true, index });

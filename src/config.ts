@@ -140,6 +140,8 @@ export interface GalleryImage {
   src: string;
   title: string;
   date: string;
+  transition?: string;
+  videoUrl?: string;
   // Experience detail
   subtitle?: string;
   description?: string;
