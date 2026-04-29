@@ -556,10 +556,10 @@ const ParallaxGallery = () => {
     const accent = z.accent || '#e1fe52';
     const closeModal = () => setExpModal({ open: false, zone: null, imgIdx: 0 });
     return (
-      <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-6"
+      <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 lg:p-6"
         style={{ background: 'rgba(3,6,18,0.92)', backdropFilter: 'blur(20px)' }}
         onClick={closeModal}>
-        <div className="relative w-full md:max-w-3xl rounded-t-3xl md:rounded-3xl overflow-y-auto md:overflow-visible"
+        <div className="relative w-full md:max-w-2xl lg:max-w-3xl max-h-[90vh] md:max-h-[88vh] flex flex-col rounded-t-3xl md:rounded-2xl overflow-hidden"
           style={{ background: '#09101f', border: '1px solid rgba(255,255,255,0.08)' }}
           onClick={e => e.stopPropagation()}>
           <div className="relative h-64 md:h-80 overflow-hidden rounded-t-3xl"
