@@ -125,6 +125,7 @@ const AlbumCube = () => {
   const accent = accentColors[currentAlbumIndex] ?? '#e1fe52';
 
   return (
+    <>
     <section
       id="albums"
       ref={sectionRef}
@@ -403,6 +404,7 @@ const AlbumCube = () => {
         </div>
       </div>
     )}
+    </>
   );
 };
 
