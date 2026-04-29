@@ -71,6 +71,19 @@ const AlbumCube = () => {
   const prevIndexRef = useRef(0);
   const scrollTriggerRef = useRef<ScrollTrigger | null>(null);
 
+  // ── Audio ────────────────────────────────────────────────────────────────
+  const AUDIO_TRACKS = [
+  "https://res.cloudinary.com/dqfpxf3zq/video/upload/so_77/v1777448584/My_Love_My_Kisses_wireyy.mp3",
+  "https://res.cloudinary.com/dqfpxf3zq/video/upload/so_98/v1777448581/_ME_-_In_Your_Eyes_PAMPA032_vdhtnk.mp3",
+  "https://res.cloudinary.com/dqfpxf3zq/video/upload/so_60/v1777448576/Mark_Lower_-_Bad_Boys_Cry_bwwwdl.mp3",
+  "https://res.cloudinary.com/dqfpxf3zq/video/upload/so_71/v1777448574/Ornette_-_Crazy_N%C3%B4ze_remix_Official_gy2crr.mp3",
+  "https://res.cloudinary.com/dqfpxf3zq/video/upload/so_62/v1777448571/Jamie_Antonelli_-_Divine_Official_Video_ko7f6f.mp3"
+];
+  const audioRef     = useRef<HTMLAudioElement | null>(null);
+  const [muted,      setMuted]      = useState(false);
+  const [audioReady, setAudioReady] = useState(false);
+  const mutedRef = useRef(false);
+
   useEffect(() => {
     if (!sectionRef.current) return;
 
@@ -122,6 +135,38 @@ const AlbumCube = () => {
     3: '#facc15',   // Pass VIP — dorado
   };
   const accent = accentColors[currentAlbumIndex] ?? '#e1fe52';
+
+  // Play track for current album
+  const playTrack = (index: number) => {
+    if (mutedRef.current) return;
+    const url = AUDIO_TRACKS[index];
+    if (!url) return;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = url;
+      audioRef.current.volume = 0;
+      audioRef.current.play().then(() => {
+        // Fade in
+        let vol = 0;
+        const fade = setInterval(() => {
+          vol = Math.min(vol + 0.05, 0.55);
+          if (audioRef.current) audioRef.current.volume = vol;
+          if (vol >= 0.55) clearInterval(fade);
+        }, 80);
+      }).catch(() => {});
+    }
+  };
+
+  // Change track when album changes
+  useEffect(() => {
+    if (audioReady) playTrack(currentAlbumIndex);
+  }, [currentAlbumIndex, audioReady]);
+
+  // Sync muted state
+  useEffect(() => {
+    mutedRef.current = muted;
+    if (audioRef.current) audioRef.current.muted = muted;
+  }, [muted]);
 
   return (
     <section
