@@ -799,20 +799,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
     finally { setCodigoChecking(false); }
   };
 
-  const validateCodigo = async (cod: string) => {
-    if (!cod.trim()) { setCodigoValid(false); return; }
-    setCodigoChecking(true); setCodigoError(''); setCodigoValid(false);
-    try {
-      const r = await fetch('/api/referidos-validar', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ codigo: cod, tipo: 'referidos' }),
-      });
-      const d = await r.json();
-      if (d.valid) { setCodigoValid(true); setCodigoError(''); }
-      else { setCodigoValid(false); setCodigoError(d.error || 'Código inválido'); }
-    } catch { setCodigoError('Error validando código'); }
-    finally { setCodigoChecking(false); }
-  };
   const [addPassVip,      setAddPassVip]     = useState(false);
   const [addTransport,    setAddTransport]   = useState(false);
   const [qty,             setQty]            = useState(1);
@@ -1187,7 +1173,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                         <input
                           type="text"
                           value={codigoRef}
-                          onChange={e => { setCodigoRef(e.target.value.toUpperCase()); setCodigoError(''); }}
+                          onChange={e => { setCodigoRef(e.target.value.toUpperCase()); setCodigoError(''); setCodigoValid(false); }} onBlur={e => validateCodigo(e.target.value)}
                           placeholder="EJ: AIRA-XYZ123"
                           className={`w-full rounded-xl border px-4 py-3 bg-white/5 text-white font-mono-custom text-sm tracking-widest uppercase placeholder:text-white/20 outline-none transition-all ${
                             codigoError ? 'border-red-400/50 bg-red-400/5' : codigoValid ? 'border-aira-lime/60 bg-aira-lime/8' : codigoChecking ? 'border-white/20' : 'border-white/15 focus:border-white/30'
