@@ -635,7 +635,7 @@ const ParallaxGallery = () => {
               </div>
             )}
             <div className="pt-4 flex justify-end" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-              <button onClick={closeModal}
+              <button onClick={() => { closeModal(); setTimeout(() => document.getElementById("booking")?.scrollIntoView({ behavior: "smooth" }), 350); }}
                 className="px-6 py-3 rounded-2xl font-display text-sm uppercase tracking-[0.2em]"
                 style={{ background: accent, color: '#000' }}>
                 Ver paquetes →
