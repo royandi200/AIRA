@@ -52,7 +52,7 @@ const COUNTRY_CODES = [
 type OtpSubStep = 'input' | 'code';
 
 function AuthStep({ onVerified }: { onVerified: (identifier: string) => void }) {
-  const method = 'phone';
+
   const [subStep,     setSubStep]     = useState<OtpSubStep>('input');
   const [countryCode, setCountryCode] = useState('57');
   const [localPhone,  setLocalPhone]  = useState('');
