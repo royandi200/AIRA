@@ -518,8 +518,16 @@ const CabanaReserve = ({ isOpen, onClose }: CabanaReserveProps) => {
                       )}
                       onClick={() => {
                         if (isUpcoming) return;
-                        if (isCreyentes && !creyentesVerified) { setCreyentesOtpOpen(true); }
-                        else if (isUnlocked) { setSelectedStageId(stage.id); }
+                        if (isCreyentes && !creyentesVerified) {
+                          setCodigoRef(''); setCodigoError(''); setCodigoValid(false);
+                          setCreyentesOtpOpen(true);
+                        } else if (isCreyentes && creyentesVerified) {
+                          setCodigoRef(''); setCodigoError(''); setCodigoValid(false);
+                          setSelectedStageId('creyentes');
+                        } else if (isUnlocked) {
+                          setCreyentesVerified(false); setCreyentesOtpOpen(false);
+                          setSelectedStageId(stage.id);
+                        }
                       }}
                     >
                       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -569,14 +577,18 @@ const CabanaReserve = ({ isOpen, onClose }: CabanaReserveProps) => {
 
               {/* Código referido */}
               {isReferidos && (
-                <div className="mt-2">
-                  <label className="block font-mono-custom text-[9px] uppercase tracking-[0.28em] text-white/35 mb-2">Código de Referido *</label>
+                <div className="mt-2 rounded-xl border border-amber-400/40 bg-amber-400/5 p-3 animate-pulse-once">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0"/>
+                    <label className="block font-mono-custom text-[9px] uppercase tracking-[0.28em] text-amber-400/80">Código de Referido *</label>
+                  </div>
                   <input
                     type="text"
                     value={codigoRef}
                     onChange={e => { setCodigoRef(e.target.value.toUpperCase()); setCodigoError(''); setCodigoValid(false); }}
                     onBlur={e => validateCodigo(e.target.value)}
                     placeholder="EJ: AIRA-XYZ123"
+                    autoFocus
                     className={`w-full rounded-xl border px-4 py-3 bg-white/5 text-white font-mono-custom text-sm tracking-widest uppercase placeholder:text-white/20 outline-none transition-all ${
                       codigoError ? 'border-red-400/50 bg-red-400/5' : codigoValid ? 'border-amber-400/60 bg-amber-400/8' : codigoChecking ? 'border-white/20' : 'border-white/15 focus:border-white/30'
                     }`}

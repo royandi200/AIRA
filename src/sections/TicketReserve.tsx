@@ -1179,8 +1179,16 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                             onClick={() => {
                               if (isUpcoming) return;
                               if (isCreyentes && !creyentesVerified) {
+                                // Reset referido state when switching to creyentes
+                                setCodigoRef(''); setCodigoError(''); setCodigoValid(false);
                                 setCreyentesOtpOpen(true);
+                              } else if (isCreyentes && creyentesVerified) {
+                                // Already verified — just select it
+                                setCodigoRef(''); setCodigoError(''); setCodigoValid(false);
+                                setSelectedStageId('creyentes');
                               } else if (isUnlocked) {
+                                // Referidos selected — reset creyentes
+                                setCreyentesVerified(false); setCreyentesOtpOpen(false);
                                 setSelectedStageId(stage.id);
                               }
                             }}
@@ -1221,11 +1229,15 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                     </div>
                     {/* Código referido */}
                     {isReferidos && (
-                      <div className="mt-4">
-                        <label className="block font-mono-custom text-[9px] uppercase tracking-[0.28em] text-white/35 mb-2">Código de Referido *</label>
+                      <div className="mt-4 rounded-xl border border-amber-400/40 bg-amber-400/5 p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0"/>
+                          <label className="block font-mono-custom text-[9px] uppercase tracking-[0.28em] text-amber-400/80">Código de Referido *</label>
+                        </div>
                         <input
                           type="text"
                           value={codigoRef}
+                          autoFocus
                           onChange={e => { setCodigoRef(e.target.value.toUpperCase()); setCodigoError(''); setCodigoValid(false); }} onBlur={e => validateCodigo(e.target.value)}
                           placeholder="EJ: AIRA-XYZ123"
                           className={`w-full rounded-xl border px-4 py-3 bg-white/5 text-white font-mono-custom text-sm tracking-widest uppercase placeholder:text-white/20 outline-none transition-all ${
