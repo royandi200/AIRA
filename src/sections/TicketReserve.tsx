@@ -778,6 +778,9 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
   const [step,            setStep]           = useState(initStep);
   const [accessType,      setAccessType]     = useState<AccessType | null>(initAccess);
   const [selectedStageId, setSelectedStageId]= useState<string | null>(null);
+  const [codigoRef,       setCodigoRef]      = useState('');
+  const [codigoError,     setCodigoError]    = useState('');
+  const isReferidos = selectedStageId === 'referidos';
   const [addPassVip,      setAddPassVip]     = useState(false);
   const [addTransport,    setAddTransport]   = useState(false);
   const [qty,             setQty]            = useState(1);
@@ -1145,9 +1148,35 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                     <div className="mt-5">
                       <PassVipBanner addPassVip={addPassVip} setAddPassVip={setAddPassVip} qty={qty} passVipPrice={passVipPrice} />
                     </div>
+                    {/* Código referido */}
+                    {isReferidos && (
+                      <div className="mt-4">
+                        <label className="block font-mono-custom text-[9px] uppercase tracking-[0.28em] text-white/35 mb-2">Código de Referido *</label>
+                        <input
+                          type="text"
+                          value={codigoRef}
+                          onChange={e => { setCodigoRef(e.target.value.toUpperCase()); setCodigoError(''); }}
+                          placeholder="EJ: AIRA-XYZ123"
+                          className={`w-full rounded-xl border px-4 py-3 bg-white/5 text-white font-mono-custom text-sm tracking-widest uppercase placeholder:text-white/20 outline-none transition-all ${
+                            codigoError ? 'border-red-400/50 bg-red-400/5' : codigoRef ? 'border-aira-lime/50 bg-aira-lime/5' : 'border-white/15 focus:border-white/30'
+                          }`}
+                        />
+                        {codigoError && <p className="text-xs text-red-400 mt-1">{codigoError}</p>}
+                        <p className="text-[10px] text-white/30 mt-1">Ingresa el código que te compartió tu referido.</p>
+                      </div>
+                    )}
+
                     <div className="mt-5 flex items-center justify-between gap-3">
                       <button className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 transition-colors" onClick={() => { setAccessType(null); setStep(1); }}>Volver</button>
-                      <button disabled={!selectedStageId} className="px-6 py-2.5 rounded-full bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] hover:bg-white active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed" onClick={() => selectedStageId && setStep(3)}>Continuar</button>
+                      <button
+                        disabled={!selectedStageId || (isReferidos && !codigoRef.trim())}
+                        className="px-6 py-2.5 rounded-full bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] hover:bg-white active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        onClick={() => {
+                          if (!selectedStageId) return;
+                          if (isReferidos && !codigoRef.trim()) { setCodigoError('Ingresa tu código de referido'); return; }
+                          setCodigoError(''); setStep(3);
+                        }}
+                      >Continuar</button>
                     </div>
                   </div>
                 )}
