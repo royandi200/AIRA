@@ -67,19 +67,7 @@ const AlbumCube = () => {
   const prevIndexRef = useRef(0);
   const scrollTriggerRef = useRef<ScrollTrigger | null>(null);
 
-  // ── Audio ────────────────────────────────────────────────────────────────
-  const AUDIO_TRACKS = [
-    "https://res.cloudinary.com/dqfpxf3zq/video/upload/so_77/v1777448584/My_Love_My_Kisses_wireyy.mp3",
-    "https://res.cloudinary.com/dqfpxf3zq/video/upload/so_98/v1777448581/_ME_-_In_Your_Eyes_PAMPA032_vdhtnk.mp3",
-    "https://res.cloudinary.com/dqfpxf3zq/video/upload/so_60/v1777448576/Mark_Lower_-_Bad_Boys_Cry_bwwwdl.mp3",
-    "https://res.cloudinary.com/dqfpxf3zq/video/upload/so_71/v1777448574/Ornette_-_Crazy_N%C3%B4ze_remix_Official_gy2crr.mp3",
-    "https://res.cloudinary.com/dqfpxf3zq/video/upload/so_62/v1777448571/Jamie_Antonelli_-_Divine_Official_Video_ko7f6f.mp3",
-  ];
-  const [muted,      setMuted]      = useState(false);
-  const [audioReady, setAudioReady] = useState(false);
-  const audioRef  = useRef<HTMLAudioElement | null>(null);
-  const mutedRef  = useRef(false);
-  const trackIdx  = useRef(-1);
+
 
   useEffect(() => {
     if (!sectionRef.current) return;
@@ -94,14 +82,6 @@ const AlbumCube = () => {
         const progress = self.progress;
         setRotationProgress(progress);
 
-        // Auto-start audio on first scroll interaction
-        if (!audioRef.current && progress > 0) {
-          const audio = new Audio();
-          audio.loop   = true;
-          audio.volume = 0;
-          audioRef.current = audio;
-          setAudioReady(true);
-        }
 
         const albumIndex = Math.min(
           Math.floor(progress * 4),
@@ -142,34 +122,7 @@ const AlbumCube = () => {
   };
   const accent = accentColors[currentAlbumIndex] ?? '#e1fe52';
 
-  // ── Audio: change track on album change ────────────────────────────────
-  useEffect(() => {
-    if (!audioReady || !audioRef.current) return;
-    if (trackIdx.current === currentAlbumIndex) return;
-    trackIdx.current = currentAlbumIndex;
-    const audio = audioRef.current;
-    const url   = AUDIO_TRACKS[currentAlbumIndex];
-    if (!url) return;
-    audio.pause();
-    audio.src    = url;
-    audio.volume = 0;
-    audio.loop   = true;
-    audio.muted  = mutedRef.current;
-    audio.play().then(() => {
-      let v = 0;
-      const fade = setInterval(() => {
-        v = Math.min(v + 0.04, 0.55);
-        audio.volume = v;
-        if (v >= 0.55) clearInterval(fade);
-      }, 80);
-    }).catch(() => {});
-  }, [currentAlbumIndex, audioReady]);
 
-  // Sync mute
-  useEffect(() => {
-    mutedRef.current = muted;
-    if (audioRef.current) audioRef.current.muted = muted;
-  }, [muted]);
 
   if (albumCubeConfig.albums.length === 0 || albumCubeConfig.cubeTextures.length === 0) return null;
 
@@ -194,30 +147,6 @@ const AlbumCube = () => {
           {currentAlbum.title}
         </h2>
       </div>
-
-      {/* Mute button */}
-      <button
-        onClick={() => {
-          if (!audioRef.current) {
-            const audio = new Audio();
-            audio.loop   = true;
-            audio.volume = 0;
-            audioRef.current = audio;
-            setAudioReady(true);
-            setMuted(false);
-          } else {
-            setMuted(m => !m);
-          }
-        }}
-        className="absolute top-5 right-5 z-40 flex items-center gap-1.5 px-3 py-1.5 rounded-full font-mono-custom text-[9px] uppercase tracking-widest transition-all duration-200"
-        style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', color: muted || !audioReady ? 'rgba(255,255,255,0.3)' : 'rgba(225,254,82,0.8)' }}
-      >
-        {muted || !audioReady
-          ? <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-          : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-        }
-        {!audioReady ? '♪ Música' : muted ? 'Silencio' : '♪ Sonando'}
-      </button>
 
       {/* 3D Canvas */}
       <div className="absolute inset-0 z-10" style={{ top: '-8%' }}>
