@@ -4,6 +4,8 @@
 // All animations, layouts, and styles are controlled by the components.
 // =============================================================================
 
+const CLD = "https://res.cloudinary.com/dqfpxf3zq/image/upload/f_auto,q_auto,w_1200";
+
 // -- Site-wide settings -------------------------------------------------------
 export interface SiteConfig {
   title: string;
@@ -268,6 +270,9 @@ export interface TourDate {
   venue: string;
   status: "on-sale" | "sold-out" | "coming-soon";
   image: string;
+  category?: string;
+  description?: string;
+  price?: string;
 }
 
 export interface TourStatusLabels {

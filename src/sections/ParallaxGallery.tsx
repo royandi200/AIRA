@@ -411,8 +411,6 @@ const ParallaxGallery = () => {
   };
 
   const images = parallaxGalleryConfig.galleryImages;
-  const hasVideo = images.some(im => im.videoUrl);
-
   const mainContent = (
     <>
       <section id="gallery" ref={sectionRef} className="relative w-full bg-void-black">
