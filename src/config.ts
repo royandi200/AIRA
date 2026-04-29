@@ -114,7 +114,7 @@ export const albumCubeConfig: AlbumCubeConfig = {
       subtitle: "UPGRADE",
       description: "Acceso exclusivo al Yate VIP, Zona VIP en Majestic y Zona VIP en Stage Joinn. La experiencia AIRA en su máxima expresión.",
       tag: "3 DÍAS",
-      price: "$500.000",
+      price: "$450.000",
       image: `${CLD}/majestic4_wzvhpd`,
     },
   ],
@@ -181,7 +181,7 @@ export const parallaxGalleryConfig: ParallaxGalleryConfig = {
     "AIRA",
     "ELECTRONIC MUSIC",
   ],
-  endCtaText: "Ver Más Fotos",
+  endCtaText: "",
   parallaxImagesTop: [
     { id: 1, src: `${CLD}/Bombillos_Amarillos_bqjry7`, alt: "Ambiente nocturno AIRA" },
     { id: 2, src: `${CLD}/Golfo_ob1g78`, alt: "Golfo Guatapé" },

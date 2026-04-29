@@ -351,6 +351,19 @@ const ParallaxGallery = () => {
   const [photoModal, setPhotoModal] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
   // Experience modal
   const [expModal, setExpModal] = useState<{ open: boolean; zone: (typeof images)[0] | null; imgIdx: number }>({ open: false, zone: null, imgIdx: 0 });
+
+  // Lock body scroll + Escape key when experience modal is open
+  useEffect(() => {
+    if (!expModal.open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setExpModal({ open: false, zone: null, imgIdx: 0 }); };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [expModal.open]);
   // Video modal state
   const [videoModal, setVideoModal] = useState<{ open: boolean; video: GalleryImage | null; rect: DOMRect | null }>({
     open: false, video: null, rect: null,
@@ -536,7 +549,7 @@ const ParallaxGallery = () => {
                 <div className="w-20 h-20 rounded-full border border-white/20 group-hover:border-neon-cyan flex items-center justify-center transition-colors">
                   <ArrowRight className="w-8 h-8 group-hover:translate-x-1 transition-transform"/>
                 </div>
-                <span className="font-display text-lg uppercase tracking-wider">{parallaxGalleryConfig.endCtaText}</span>
+                {parallaxGalleryConfig.endCtaText && <span className="font-display text-lg uppercase tracking-wider">{parallaxGalleryConfig.endCtaText}</span>}
               </button>
             </div>
           </div>
