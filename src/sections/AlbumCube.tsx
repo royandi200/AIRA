@@ -55,7 +55,9 @@ const Cube = ({ rotationProgress }: CubeProps) => {
   );
 };
 
-const AlbumCube = () => {
+interface AlbumCubeProps { onAlbumChange?: (idx: number) => void; }
+
+const AlbumCube = ({ onAlbumChange }: AlbumCubeProps) => {
   const sectionRef   = useRef<HTMLDivElement>(null);
   const titleRef     = useRef<HTMLDivElement>(null);
   const overlayRef   = useRef<HTMLDivElement>(null);

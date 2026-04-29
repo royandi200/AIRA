@@ -128,22 +128,7 @@ function App() {
     };
   }, [startAudio]);
 
-  // Change track when cube section changes trackIdx
-  useEffect(() => {
-    if (playing && audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = AUDIO_TRACKS[trackIdx.current] || AUDIO_TRACKS[0];
-      audioRef.current.volume = 0;
-      audioRef.current.play().then(() => {
-        let v = 0;
-        const fade = setInterval(() => {
-          v = Math.min(v + 0.04, 0.55);
-          if (audioRef.current) audioRef.current.volume = v;
-          if (v >= 0.55) clearInterval(fade);
-        }, 80);
-      }).catch(() => {});
-    }
-  }, []);
+  // Track change handled via onAlbumChange callback in AlbumCube
 
   // Sync mute
   useEffect(() => {
@@ -154,7 +139,7 @@ function App() {
   return (
     <main className="relative w-full min-h-screen bg-void-black overflow-x-hidden">
       <Hero />
-      <AlbumCube />
+      <AlbumCube onAlbumChange={(idx) => { trackIdx.current = idx; if (playingRef.current && audioRef.current) { audioRef.current.pause(); audioRef.current.src = AUDIO_TRACKS[idx] || AUDIO_TRACKS[0]; audioRef.current.volume = 0; audioRef.current.muted = mutedRef.current; audioRef.current.loop = true; audioRef.current.play().then(() => { let v=0; const fade=setInterval(()=>{ v=Math.min(v+0.04,0.55); if(audioRef.current) audioRef.current.volume=v; if(v>=0.55) clearInterval(fade); },80); }).catch(()=>{}); } }} />
       <ParallaxGallery />
       <TourSchedule
         onOpenReservation={handleOpenReservation}
@@ -200,7 +185,7 @@ function App() {
           else setMuted(m => !m);
         }}
         style={{
-          position: 'fixed', bottom: 24, right: 20, zIndex: 999,
+          position: 'fixed', top: 20, right: 20, zIndex: 999,
           display: 'flex', alignItems: 'center', gap: 7,
           padding: '8px 14px', borderRadius: 99,
           background: 'rgba(10,10,22,0.85)',
