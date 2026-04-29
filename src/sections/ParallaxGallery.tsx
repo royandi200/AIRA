@@ -7,7 +7,6 @@ import { parallaxGalleryConfig, type GalleryImage } from '../config';
 gsap.registerPlugin(ScrollTrigger);
 
 // ─── Photo Lightbox Modal ─────────────────────────────────────────────────────
-// Masonry grid that "explodes" — clicked image expands to fill screen
 function PhotoModal({
   images, startIndex, onClose,
 }: {
@@ -21,14 +20,12 @@ function PhotoModal({
   const imgRef      = useRef<HTMLImageElement>(null);
   const gridRef     = useRef<HTMLDivElement>(null);
 
-  // Lenis stop
   useEffect(() => {
     const lenis = (window as any).__lenis;
     if (lenis) lenis.stop();
     return () => { const l = (window as any).__lenis; if (l) l.start(); };
   }, []);
 
-  // Entrada: overlay fade + imagen explota desde su posición
   useEffect(() => {
     const tl = gsap.timeline({ onComplete: () => setPhase('open') });
     if (overlayRef.current) {
@@ -59,7 +56,6 @@ function PhotoModal({
   const prev = () => setCurrent(c => (c - 1 + images.length) % images.length);
   const next = () => setCurrent(c => (c + 1) % images.length);
 
-  // Keyboard
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') close();
@@ -70,7 +66,6 @@ function PhotoModal({
     return () => window.removeEventListener('keydown', onKey);
   }, [close]);
 
-  // Transition between images
   const changeImage = (idx: number) => {
     if (idx === current || !imgRef.current) return;
     gsap.to(imgRef.current, {
@@ -92,21 +87,15 @@ function PhotoModal({
       className="fixed inset-0 z-[300] flex flex-col"
       style={{ background: 'rgba(3,4,12,0.97)', backdropFilter: 'blur(24px)' }}>
 
-      {/* Header */}
+      {/* Header — solo título y contador, sin botón cerrar */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/8 shrink-0">
         <div>
           <p className="font-mono-custom text-[9px] uppercase tracking-[0.35em] text-aira-lime/60">{img.date}</p>
           <h3 className="font-display text-xl text-white leading-none">{img.title}</h3>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="font-mono-custom text-xs text-white/30">
-            {String(current + 1).padStart(2,'0')} / {String(images.length).padStart(2,'0')}
-          </span>
-          <button onClick={close}
-            className="w-10 h-10 rounded-full border border-white/15 flex items-center justify-center text-white/60 hover:bg-white/10 hover:text-white transition-all">
-            <X className="w-5 h-5"/>
-          </button>
-        </div>
+        <span className="font-mono-custom text-xs text-white/30">
+          {String(current + 1).padStart(2,'0')} / {String(images.length).padStart(2,'0')}
+        </span>
       </div>
 
       {/* Main image */}
@@ -116,9 +105,19 @@ function PhotoModal({
           <ChevronLeft className="w-6 h-6"/>
         </button>
 
-        <img ref={imgRef} src={img.src} alt={img.title}
-          className="max-w-full max-h-full object-contain rounded-2xl"
-          style={{ boxShadow: '0 40px 120px rgba(0,0,0,0.8)' }}/>
+        {/* Imagen con botón X superpuesto en su esquina */}
+        <div className="relative max-w-full max-h-full flex items-center justify-center">
+          <img ref={imgRef} src={img.src} alt={img.title}
+            className="max-w-full max-h-full object-contain rounded-2xl"
+            style={{ boxShadow: '0 40px 120px rgba(0,0,0,0.8)' }}/>
+          <button
+            onClick={close}
+            aria-label="Cerrar"
+            className="absolute top-3 right-3 z-20 w-10 h-10 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:scale-110 active:scale-95 transition-all"
+            style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)' }}>
+            <X className="w-5 h-5"/>
+          </button>
+        </div>
 
         <button onClick={next}
           className="absolute right-4 z-10 w-12 h-12 rounded-full border border-white/15 flex items-center justify-center text-white/60 hover:bg-white/10 hover:text-white transition-all hover:scale-110 active:scale-95">
@@ -126,7 +125,7 @@ function PhotoModal({
         </button>
       </div>
 
-      {/* Masonry thumbs — the "explosion" grid */}
+      {/* Thumbs */}
       <div ref={gridRef}
         className="shrink-0 px-6 pb-5 border-t border-white/8 pt-4"
         style={{ background: 'rgba(0,0,0,0.4)' }}>
@@ -165,7 +164,6 @@ function VideoModal({
   const iframeRef    = useRef<HTMLIFrameElement>(null);
   const [iframeVisible, setIframeVisible] = useState(false);
 
-  // Lenis stop
   useEffect(() => {
     const lenis = (window as any).__lenis;
     if (lenis) lenis.stop();
@@ -178,17 +176,14 @@ function VideoModal({
     const vh = window.innerHeight;
     const targetW = Math.min(vw * 0.88, 1100);
     const targetH = targetW * 9 / 16;
-    // Centro exacto de la pantalla
     const cx = vw / 2;
     const cy = vh / 2;
 
     if (video.transition === 'morphing' && rect && containerRef.current) {
-      // Partir desde rect del thumbnail, llegar al centro
       gsap.set(containerRef.current, {
         position: 'fixed',
         width:  rect.width,
         height: rect.height,
-        // Centrar el elemento en la posición del thumb usando xPercent/yPercent=0
         left: rect.left,
         top:  rect.top,
         xPercent: 0,
@@ -212,7 +207,6 @@ function VideoModal({
           onComplete:   () => setIframeVisible(true),
         }, 0.05);
     } else {
-      // Zoom desde el centro — nunca se mueve, solo escala
       gsap.set(containerRef.current, {
         position: 'fixed',
         width:    targetW,
@@ -245,14 +239,12 @@ function VideoModal({
     tl.to(containerRef.current, { scale: 0.85, opacity: 0, duration: 0.3, ease: 'power2.in' }, 0);
   }, [onClose]);
 
-  // Keyboard
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [close]);
 
-  // Build embed URL
   const getEmbedUrl = (url: string) => {
     if (!url || url.includes('placeholder')) return null;
     if (url.includes('vimeo.com')) {
@@ -279,18 +271,20 @@ function VideoModal({
         style={{ background: 'rgba(3,4,12,0.92)', backdropFilter: 'blur(20px)', opacity: 0 }}
         onClick={close}/>
 
-      {/* Close button */}
-      <button onClick={close}
-        className="fixed top-6 right-6 z-[310] w-11 h-11 rounded-full border border-white/20 flex items-center justify-center text-white/70 hover:bg-white/10 hover:text-white transition-all"
-        style={{ opacity: 0, animation: 'fadeIn .3s ease .4s forwards' }}>
-        <X className="w-5 h-5"/>
-      </button>
-
-      {/* Video container */}
+      {/* Video container con botón X superpuesto en su esquina */}
       <div ref={containerRef}
         className="fixed bg-black overflow-hidden"
         style={{ boxShadow: '0 60px 160px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.06)' }}
         onClick={e => e.stopPropagation()}>
+
+        {/* Botón cerrar — overlay sobre el video */}
+        <button
+          onClick={close}
+          aria-label="Cerrar"
+          className="absolute top-3 right-3 z-[10] w-10 h-10 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:scale-110 active:scale-95 transition-all"
+          style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)' }}>
+          <X className="w-5 h-5"/>
+        </button>
 
         {iframeVisible && !isPlaceholder ? (
           <iframe ref={iframeRef}
@@ -299,7 +293,6 @@ function VideoModal({
             allow="autoplay; fullscreen; picture-in-picture"
             allowFullScreen/>
         ) : iframeVisible && isPlaceholder ? (
-          // Placeholder cuando no hay URL real
           <div className="w-full h-full flex flex-col items-center justify-center gap-4"
             style={{ background: 'linear-gradient(135deg,#08101f,#0d1a30)' }}>
             <div className="w-16 h-16 rounded-full bg-aira-lime/10 border border-aira-lime/30 flex items-center justify-center">
@@ -313,7 +306,6 @@ function VideoModal({
             </div>
           </div>
         ) : (
-          // Thumbnail mientras carga
           <div className="w-full h-full relative">
             <img src={video.src} alt={video.title} className="w-full h-full object-cover"/>
             <div className="absolute inset-0 flex items-center justify-center bg-black/40">
@@ -347,12 +339,9 @@ const ParallaxGallery = () => {
   const scrollTriggerRefs    = useRef<ScrollTrigger[]>([]);
   const thumbRefs            = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Photo modal state
   const [photoModal, setPhotoModal] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
-  // Experience modal
   const [expModal, setExpModal] = useState<{ open: boolean; zone: (typeof images)[0] | null; imgIdx: number }>({ open: false, zone: null, imgIdx: 0 });
 
-  // Lock body scroll + Escape key when experience modal is open
   useEffect(() => {
     if (!expModal.open) return;
     const prev = document.body.style.overflow;
@@ -364,7 +353,7 @@ const ParallaxGallery = () => {
       window.removeEventListener('keydown', onKey);
     };
   }, [expModal.open]);
-  // Video modal state
+
   const [videoModal, setVideoModal] = useState<{ open: boolean; video: GalleryImage | null; rect: DOMRect | null }>({
     open: false, video: null, rect: null,
   });
@@ -409,7 +398,6 @@ const ParallaxGallery = () => {
     };
   }, []);
 
-
   const openPhoto = (index: number) => {
     setPhotoModal({ open: true, index });
   };
@@ -420,7 +408,7 @@ const ParallaxGallery = () => {
     <>
       <section id="gallery" ref={sectionRef} className="relative w-full bg-void-black">
 
-        {/* ── Parallax Strips (FOTOS) ── */}
+        {/* ── Parallax Strips ── */}
         <div ref={parallaxContainerRef} className="relative py-20 overflow-hidden">
           <div className="px-12 mb-12">
             <p className="font-mono-custom text-xs text-neon-soft/60 uppercase tracking-wider mb-2">
@@ -431,7 +419,6 @@ const ParallaxGallery = () => {
             </h2>
           </div>
 
-          {/* Top row */}
           <div ref={topRowRef} className="flex gap-4 mb-4 will-change-transform">
             {parallaxGalleryConfig.parallaxImagesTop.map((image, i) => (
               <div key={image.id}
@@ -448,7 +435,6 @@ const ParallaxGallery = () => {
             ))}
           </div>
 
-          {/* Bottom row */}
           <div ref={bottomRowRef} className="flex gap-4 will-change-transform" style={{ transform: 'translateX(-150px)' }}>
             {parallaxGalleryConfig.parallaxImagesBottom.map((image, i) => (
               <div key={image.id}
@@ -481,7 +467,7 @@ const ParallaxGallery = () => {
           </div>
         </div>
 
-        {/* ── Horizontal Gallery (VIDEOS / MOMENTOS) ── */}
+        {/* ── Horizontal Gallery ── */}
         <div id="experiencia" ref={galleryRef} className="relative h-screen overflow-hidden">
           <div className="absolute top-12 left-12 z-20">
             <p className="font-mono-custom text-xs text-neon-soft/60 uppercase tracking-wider mb-2">
@@ -505,7 +491,6 @@ const ParallaxGallery = () => {
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"/>
                   <div className="absolute inset-0 bg-gradient-to-t from-void-black/80 via-transparent to-transparent"/>
 
-                  {/* Zone badge */}
                   {image.badge && (
                     <div className="absolute top-4 left-4">
                       <span className="font-mono-custom text-[8px] uppercase tracking-widest px-2.5 py-1 rounded-full"
@@ -514,7 +499,6 @@ const ParallaxGallery = () => {
                       </span>
                     </div>
                   )}
-                  {/* Hover CTA */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="px-4 py-2 rounded-full border font-mono-custom text-[9px] uppercase tracking-widest"
                       style={{ borderColor: (image.accent || '#e1fe52') + '80', background: (image.accent || '#e1fe52') + '15', color: image.accent || '#e1fe52' }}>
@@ -522,7 +506,6 @@ const ParallaxGallery = () => {
                     </div>
                   </div>
 
-                  {/* Image info */}
                   <div className="absolute bottom-6 left-6">
                     <p className="font-mono-custom text-xs mb-1" style={{ color: (image.accent || '#ffffff') + 'aa' }}>
                       {image.subtitle || image.date}
@@ -538,11 +521,8 @@ const ParallaxGallery = () => {
                 </div>
               </div>
             ))}
-
-
           </div>
 
-          {/* Scroll progress */}
           <div className="absolute bottom-12 left-12 right-12 h-px bg-white/10">
             <div className="h-full bg-neon-cyan/50 w-0" id="gallery-progress"/>
           </div>
@@ -584,7 +564,6 @@ const ParallaxGallery = () => {
         <div className="relative w-full md:max-w-3xl rounded-t-3xl md:rounded-3xl overflow-y-auto md:overflow-visible"
           style={{ background: '#09101f', border: '1px solid rgba(255,255,255,0.08)' }}
           onClick={e => e.stopPropagation()}>
-          {/* Photos — touch swipe + dots */}
           <div className="relative h-64 md:h-80 overflow-hidden rounded-t-3xl"
             onTouchStart={e => { (e.currentTarget as any)._tx = e.touches[0].clientX; }}
             onTouchEnd={e => {
@@ -616,7 +595,6 @@ const ParallaxGallery = () => {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
           </div>
-          {/* Content */}
           <div className="p-6 md:p-8">
             <p className="font-mono-custom text-[9px] uppercase tracking-[0.3em] mb-2" style={{ color: accent + '99' }}>
               {z.subtitle} · AIRA 2026
