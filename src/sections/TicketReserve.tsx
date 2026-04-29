@@ -781,6 +781,21 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
   const [codigoRef,       setCodigoRef]      = useState('');
   const [codigoError,     setCodigoError]    = useState('');
   const isReferidos = selectedStageId === 'referidos';
+
+  const validateCodigo = async (cod: string) => {
+    if (!cod.trim()) { setCodigoValid(false); return; }
+    setCodigoChecking(true); setCodigoError(''); setCodigoValid(false);
+    try {
+      const r = await fetch('/api/referidos-validar', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigo: cod, tipo: 'referidos' }),
+      });
+      const d = await r.json();
+      if (d.valid) { setCodigoValid(true); setCodigoError(''); }
+      else { setCodigoValid(false); setCodigoError(d.error || 'Código inválido'); }
+    } catch { setCodigoError('Error validando código'); }
+    finally { setCodigoChecking(false); }
+  };
   const [addPassVip,      setAddPassVip]     = useState(false);
   const [addTransport,    setAddTransport]   = useState(false);
   const [qty,             setQty]            = useState(1);
@@ -1162,6 +1177,8 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                           }`}
                         />
                         {codigoError && <p className="text-xs text-red-400 mt-1">{codigoError}</p>}
+                  {codigoChecking && <p className="text-xs text-white/40 mt-1">Verificando código...</p>}
+                  {codigoValid && <p className="text-xs text-aira-400 mt-1">✓ Código válido</p>}
                         <p className="text-[10px] text-white/30 mt-1">Ingresa el código que te compartió tu referido.</p>
                       </div>
                     )}
@@ -1169,11 +1186,11 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                     <div className="mt-5 flex items-center justify-between gap-3">
                       <button className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 transition-colors" onClick={() => { setAccessType(null); setStep(1); }}>Volver</button>
                       <button
-                        disabled={!selectedStageId || (isReferidos && !codigoRef.trim())}
+                        disabled={!selectedStageId || (isReferidos && !codigoValid)}
                         className="px-6 py-2.5 rounded-full bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] hover:bg-white active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                         onClick={() => {
                           if (!selectedStageId) return;
-                          if (isReferidos && !codigoRef.trim()) { setCodigoError('Ingresa tu código de referido'); return; }
+                          if (isReferidos && !codigoValid) { setCodigoError('Ingresa un código válido'); return; }
                           setCodigoError(''); setStep(3);
                         }}
                       >Continuar</button>

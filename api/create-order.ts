@@ -139,6 +139,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     addPassVip = false, addTransport = false, transportPassengers = 0,
     total: frontendTotal,
     abonoPlan: abonoPlanId,
+    codigoReferido,  // código de referido si aplica
     // ✅ FIX: recibir amountToCharge del frontend (cuota en modo abono, total en modo full)
     amountToCharge: frontendAmountToCharge,
     primerPago: frontendPrimerPago,
@@ -157,6 +158,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       [name, email, phone, docType || 'CC', docNumber || null]
     );
     const [[user]]: any = await conn.query('SELECT id FROM users WHERE email = ?', [email]);
+
+    // ── Validar y consumir código referido ───────────────────────────────────
+    if (codigoReferido) {
+      const codigoUp = String(codigoReferido).toUpperCase().trim();
+      const [[refRow]]: any = await conn.query(
+        `SELECT * FROM codigos_referido WHERE codigo = ? LIMIT 1`, [codigoUp]
+      );
+      if (!refRow || !refRow.activo || refRow.usos_actuales >= refRow.usos_max) {
+        await conn.rollback();
+        return res.status(400).json({ error: 'Código de referido inválido o agotado' });
+      }
+      await conn.query(
+        `UPDATE codigos_referido SET usos_actuales = usos_actuales + 1 WHERE id = ?`,
+        [refRow.id]
+      );
+    }
 
     let subtotal = 0;
     for (const item of items) {

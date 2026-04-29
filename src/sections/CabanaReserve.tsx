@@ -288,6 +288,8 @@ const CabanaReserve = ({ isOpen, onClose }: CabanaReserveProps) => {
   const [addTransport,  setAddTransport]  = useState(false);
   const [codigoRef,     setCodigoRef]      = useState('');
   const [codigoError,   setCodigoError]    = useState('');
+  const [codigoValid,   setCodigoValid]    = useState(false);
+  const [codigoChecking,setCodigoChecking] = useState(false);
   const [qty,           setQty]           = useState(7);
   const [paymentMode,   setPaymentMode]   = useState<PaymentMode>('full');
   const [abonoPlanId,   setAbonoPlanId]   = useState(ABONO_PLANS[0].id);
@@ -330,6 +332,21 @@ const CabanaReserve = ({ isOpen, onClose }: CabanaReserveProps) => {
 
   const selectedStage = useMemo(() => CABANA_STAGES.find(s => s.id === selectedStageId) ?? null, [selectedStageId]);
   const isReferidos = selectedStageId === 'referidos';
+
+  const validateCodigo = async (cod: string) => {
+    if (!cod.trim()) { setCodigoValid(false); return; }
+    setCodigoChecking(true); setCodigoError(''); setCodigoValid(false);
+    try {
+      const r = await fetch('/api/referidos-validar', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigo: cod, tipo: 'referidos' }),
+      });
+      const d = await r.json();
+      if (d.valid) { setCodigoValid(true); setCodigoError(''); }
+      else { setCodigoValid(false); setCodigoError(d.error || 'Código inválido'); }
+    } catch { setCodigoError('Error validando código'); }
+    finally { setCodigoChecking(false); }
+  };
 
   const cabanaPrice  = selectedStage?.price ?? 0;
   const serviceFee   = Math.round(cabanaPrice * 0.05);
@@ -557,24 +574,27 @@ const CabanaReserve = ({ isOpen, onClose }: CabanaReserveProps) => {
                   <input
                     type="text"
                     value={codigoRef}
-                    onChange={e => { setCodigoRef(e.target.value.toUpperCase()); setCodigoError(''); }}
+                    onChange={e => { setCodigoRef(e.target.value.toUpperCase()); setCodigoError(''); setCodigoValid(false); }}
+                    onBlur={e => validateCodigo(e.target.value)}
                     placeholder="EJ: AIRA-XYZ123"
                     className={`w-full rounded-xl border px-4 py-3 bg-white/5 text-white font-mono-custom text-sm tracking-widest uppercase placeholder:text-white/20 outline-none transition-all ${
-                      codigoError ? 'border-red-400/50 bg-red-400/5' : codigoRef ? 'border-amber-400/40 bg-amber-400/5' : 'border-white/15 focus:border-white/30'
+                      codigoError ? 'border-red-400/50 bg-red-400/5' : codigoValid ? 'border-amber-400/60 bg-amber-400/8' : codigoChecking ? 'border-white/20' : 'border-white/15 focus:border-white/30'
                     }`}
                   />
                   {codigoError && <p className="text-xs text-red-400 mt-1">{codigoError}</p>}
+                  {codigoChecking && <p className="text-xs text-white/40 mt-1">Verificando código...</p>}
+                  {codigoValid && <p className="text-xs text-amber-400 mt-1">✓ Código válido</p>}
                   <p className="text-[10px] text-white/30 mt-1">Código compartido por tu referido para acceder a esta etapa.</p>
                 </div>
               )}
 
               <div className="flex justify-end">
                 <button
-                  disabled={!selectedStageId || (isReferidos && !codigoRef.trim())}
+                  disabled={!selectedStageId || (isReferidos && !codigoValid)}
                   className="px-7 py-3 rounded-full bg-amber-400 text-[#06090f] font-display text-sm uppercase tracking-[0.2em] hover:bg-amber-300 active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   onClick={() => {
                     if (!selectedStageId) return;
-                    if (isReferidos && !codigoRef.trim()) { setCodigoError('Ingresa tu código de referido'); return; }
+                    if (isReferidos && !codigoValid) { setCodigoError('Ingresa un código válido'); return; }
                     setCodigoError(''); setStep(2);
                   }}
                 >

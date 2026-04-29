@@ -200,7 +200,10 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
   const [data,     setData]     = useState<Overview | null>(null);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
-  const [tab,      setTab]      = useState<'kpis'|'orders'|'tickets'|'recordatorios'|'manual'>('kpis');
+  const [tab,      setTab]      = useState<'kpis'|'orders'|'tickets'|'recordatorios'|'manual'|'referidos'>('kpis');
+  const [codigos,    setCodigos]    = useState<any[]>([]);
+  const [newCodigo,  setNewCodigo]  = useState({ codigo:'', descripcion:'', usos_max:1 });
+  const [codigoSaving, setCodigoSaving] = useState(false);
   const [recLog,   setRecLog]   = useState<string[]>([]);
   const [recSending, setRecSending] = useState(false);
   const [recResult,  setRecResult]  = useState<any>(null);
@@ -323,7 +326,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
 
             {/* Tabs */}
             <div className="flex gap-1 mb-6 bg-zinc-900 border border-zinc-800 rounded-xl p-1 w-fit">
-              {(['kpis', 'orders', 'tickets', 'recordatorios', 'manual'] as const).map(t => (
+              {(['kpis', 'orders', 'tickets', 'recordatorios', 'manual', 'referidos'] as const).map(t => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
@@ -333,7 +336,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                       : 'text-zinc-400 hover:text-white'
                   }`}
                 >
-                  {{ kpis: 'Ingresos', orders: 'Órdenes', tickets: 'Cupos', recordatorios: '📲 Recordatorios', manual: '✍ Registro Manual' }[t]}
+                  {{ kpis: 'Ingresos', orders: 'Órdenes', tickets: 'Cupos', recordatorios: '📲 Recordatorios', manual: '✍ Registro Manual', referidos: '🎫 Referidos' }[t]}
                 </button>
               ))}
             </div>
@@ -534,6 +537,138 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
 
             {/* Tab: Registro Manual */}
             {tab === 'manual' && <ManualTab token={token} />}
+
+            {tab === 'referidos' && (
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-white">Códigos de Referido</h3>
+
+                {/* Crear código */}
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+                  <p className="text-xs uppercase tracking-widest text-zinc-500 mb-4">Nuevo Código</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                    <div>
+                      <label className="block text-xs text-zinc-500 mb-1">Código *</label>
+                      <input
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm font-mono tracking-widest uppercase placeholder:text-zinc-600 outline-none focus:border-zinc-500"
+                        value={newCodigo.codigo}
+                        onChange={e => setNewCodigo(f => ({ ...f, codigo: e.target.value.toUpperCase().replace(/\s+/g,'-') }))}
+                        placeholder="AIRA-2026"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-zinc-500 mb-1">Descripción</label>
+                      <input
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm placeholder:text-zinc-600 outline-none focus:border-zinc-500"
+                        value={newCodigo.descripcion}
+                        onChange={e => setNewCodigo(f => ({ ...f, descripcion: e.target.value }))}
+                        placeholder="Ej: Código para equipo de ventas"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-zinc-500 mb-1">Usos máx.</label>
+                      <input
+                        type="number" min={1} max={999}
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-zinc-500"
+                        value={newCodigo.usos_max}
+                        onChange={e => setNewCodigo(f => ({ ...f, usos_max: Number(e.target.value) }))}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    disabled={codigoSaving || !newCodigo.codigo}
+                    onClick={async () => {
+                      setCodigoSaving(true);
+                      const r = await fetch('/api/referidos', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+                        body: JSON.stringify(newCodigo),
+                      });
+                      const d = await r.json();
+                      if (d.ok) {
+                        setCodigos(cs => [d.codigo, ...cs]);
+                        setNewCodigo({ codigo:'', descripcion:'', usos_max:1 });
+                      } else { alert(d.error); }
+                      setCodigoSaving(false);
+                    }}
+                    className="px-5 py-2 rounded-lg bg-white text-black text-sm font-semibold disabled:opacity-40"
+                  >
+                    {codigoSaving ? 'Creando...' : '+ Crear Código'}
+                  </button>
+                </div>
+
+                {/* Lista */}
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+                  <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-800">
+                    <p className="text-xs uppercase tracking-widest text-zinc-500">Códigos registrados</p>
+                    <button onClick={async () => {
+                      const r = await fetch('/api/referidos', { headers: { 'x-admin-token': token } });
+                      const d = await r.json();
+                      setCodigos(d.codigos || []);
+                    }} className="text-xs text-zinc-500 hover:text-white transition">↻ Refrescar</button>
+                  </div>
+                  {codigos.length === 0
+                    ? <p className="text-center text-zinc-600 text-sm py-10">Sin códigos. Crea el primero arriba.</p>
+                    : (
+                      <table className="w-full text-sm">
+                        <thead><tr className="border-b border-zinc-800 text-left">
+                          {['Código','Descripción','Usos','Estado','Acciones'].map(h => (
+                            <th key={h} className="px-4 py-3 text-[10px] uppercase tracking-widest text-zinc-500 font-medium">{h}</th>
+                          ))}
+                        </tr></thead>
+                        <tbody>
+                          {codigos.map((cod: any) => (
+                            <tr key={cod.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition">
+                              <td className="px-4 py-3 font-mono text-white tracking-widest">{cod.codigo}</td>
+                              <td className="px-4 py-3 text-zinc-400 max-w-[200px] truncate">{cod.descripcion || '—'}</td>
+                              <td className="px-4 py-3">
+                                <span className={`font-mono text-sm ${cod.usos_actuales >= cod.usos_max ? 'text-red-400' : 'text-green-400'}`}>
+                                  {cod.usos_actuales}
+                                </span>
+                                <span className="text-zinc-600">/{cod.usos_max}</span>
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cod.activo ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}>
+                                  {cod.activo ? 'Activo' : 'Inactivo'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={async () => {
+                                      await fetch('/api/referidos', {
+                                        method: 'PUT',
+                                        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+                                        body: JSON.stringify({ id: cod.id, activo: cod.activo ? 0 : 1 }),
+                                      });
+                                      setCodigos(cs => cs.map(c => c.id === cod.id ? { ...c, activo: cod.activo ? 0 : 1 } : c));
+                                    }}
+                                    className="text-xs text-zinc-500 hover:text-white transition"
+                                  >
+                                    {cod.activo ? 'Desactivar' : 'Activar'}
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      if (!confirm(`¿Eliminar código ${cod.codigo}?`)) return;
+                                      await fetch(`/api/referidos?id=${cod.id}`, {
+                                        method: 'DELETE', headers: { 'x-admin-token': token },
+                                      });
+                                      setCodigos(cs => cs.filter(c => c.id !== cod.id));
+                                    }}
+                                    className="text-xs text-red-500 hover:text-red-400 transition"
+                                  >
+                                    Eliminar
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )
+                  }
+                </div>
+              </div>
+            )}
       </div>
     </div>
   );
