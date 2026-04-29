@@ -96,6 +96,7 @@ const AlbumCube = ({ onAlbumChange }: AlbumCubeProps) => {
           setIsTransitioning(true);
           setTimeout(() => {
             setCurrentAlbumIndex(albumIndex);
+            onAlbumChange?.(albumIndex);
             setIsTransitioning(false);
           }, 180);
         }
