@@ -94,7 +94,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(405).json({ error: 'Método no permitido' });
   } catch (e: any) {
-    console.error('[referidos]', e.message);
-    return res.status(500).json({ error: e.message || 'Error interno' });
+    console.error('[referidos] FULL ERROR:', JSON.stringify({
+      message: e.message, code: e.code, sql: e.sql, sqlMessage: e.sqlMessage,
+      env: { host: !!process.env.DB_HOST, user: !!process.env.DB_USER, db: !!process.env.DB_NAME }
+    }));
+    return res.status(500).json({
+      error: e.message || 'Error interno',
+      code: e.code,
+      sqlMessage: e.sqlMessage,
+      hint: !process.env.DB_HOST ? 'DB_HOST no configurado' : undefined
+    });
   }
 }
