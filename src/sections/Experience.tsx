@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { MapPin, Users, Music, Anchor, Home, Star, ChevronRight, X } from 'lucide-react';
+import { MapPin, Users, Music, Anchor, Home, ChevronRight, X } from 'lucide-react';
 
 const CLD = "https://res.cloudinary.com/dqfpxf3zq/image/upload/f_auto,q_auto,w_1200";
 
