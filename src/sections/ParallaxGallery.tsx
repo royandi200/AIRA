@@ -349,8 +349,8 @@ const ParallaxGallery = () => {
 
   // Photo modal state
   const [photoModal, setPhotoModal] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
-  // Experience modal state
-  const [expModal, setExpModal] = useState<{ open: boolean; zone: typeof images[0] | null; imgIdx: number }>({ open: false, zone: null, imgIdx: 0 });
+  // Experience modal
+  const [expModal, setExpModal] = useState<{ open: boolean; zone: (typeof images)[0] | null; imgIdx: number }>({ open: false, zone: null, imgIdx: 0 });
   // Video modal state
   const [videoModal, setVideoModal] = useState<{ open: boolean; video: GalleryImage | null; rect: DOMRect | null }>({
     open: false, video: null, rect: null,
@@ -400,14 +400,20 @@ const ParallaxGallery = () => {
     document.getElementById('tour')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-
+  const openVideo = (image: GalleryImage, index: number) => {
+    const el = thumbRefs.current[index];
+    const rect = el ? el.getBoundingClientRect() : null;
+    setVideoModal({ open: true, video: image, rect });
+  };
 
   const openPhoto = (index: number) => {
     setPhotoModal({ open: true, index });
   };
 
   const images = parallaxGalleryConfig.galleryImages;
-  const mainContent = (
+  const hasVideo = images.some(im => im.videoUrl);
+
+  const mainJsx = (
     <>
       <section id="gallery" ref={sectionRef} className="relative w-full bg-void-black">
 
@@ -496,7 +502,7 @@ const ParallaxGallery = () => {
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"/>
                   <div className="absolute inset-0 bg-gradient-to-t from-void-black/80 via-transparent to-transparent"/>
 
-                  {/* Experience badge */}
+                  {/* Zone badge */}
                   {image.badge && (
                     <div className="absolute top-4 left-4">
                       <span className="font-mono-custom text-[8px] uppercase tracking-widest px-2.5 py-1 rounded-full"
@@ -505,7 +511,6 @@ const ParallaxGallery = () => {
                       </span>
                     </div>
                   )}
-
                   {/* Hover CTA */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="px-4 py-2 rounded-full border font-mono-custom text-[9px] uppercase tracking-widest"
@@ -573,60 +578,42 @@ const ParallaxGallery = () => {
     </>
   );
 
-  // ── EXPERIENCE MODAL ──
   const ExpModal = () => {
     if (!expModal.open || !expModal.zone) return null;
     const z = expModal.zone;
     const accent = z.accent || '#e1fe52';
+    const closeModal = () => setExpModal({ open: false, zone: null, imgIdx: 0 });
     return (
-      <div
-        className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-6"
+      <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-6"
         style={{ background: 'rgba(3,6,18,0.92)', backdropFilter: 'blur(20px)' }}
-        onClick={() => setExpModal({ open: false, zone: null, imgIdx: 0 })}
-      >
-        <div
-          className="relative w-full md:max-w-2xl max-h-[92vh] overflow-y-auto rounded-t-3xl md:rounded-3xl"
+        onClick={closeModal}>
+        <div className="relative w-full md:max-w-2xl max-h-[92vh] overflow-y-auto rounded-t-3xl md:rounded-3xl"
           style={{ background: '#09101f', border: '1px solid rgba(255,255,255,0.08)' }}
-          onClick={e => e.stopPropagation()}
-        >
-          {/* Photo carousel */}
+          onClick={e => e.stopPropagation()}>
+          {/* Photos */}
           <div className="relative h-64 md:h-80 overflow-hidden rounded-t-3xl">
-            <img
-              src={(z.images && z.images[expModal.imgIdx]) || z.src}
-              alt={z.title}
-              className="w-full h-full object-cover transition-all duration-500"
-            />
-            <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, #09101f 0%, transparent 55%)' }} />
-
-            {/* Dots */}
+            <img src={(z.images && z.images[expModal.imgIdx]) || z.src} alt={z.title}
+              className="w-full h-full object-cover transition-all duration-500"/>
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, #09101f 0%, transparent 55%)' }}/>
             {z.images && z.images.length > 1 && (
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
                 {z.images.map((_: string, i: number) => (
-                  <button key={i}
-                    onClick={() => setExpModal(m => ({ ...m, imgIdx: i }))}
-                    className="transition-all duration-200 rounded-full"
-                    style={{ width: i === expModal.imgIdx ? 22 : 7, height: 7, background: i === expModal.imgIdx ? accent : 'rgba(255,255,255,0.3)' }}
-                  />
+                  <button key={i} onClick={() => setExpModal(m => ({ ...m, imgIdx: i }))}
+                    className="rounded-full transition-all duration-200"
+                    style={{ width: i === expModal.imgIdx ? 22 : 7, height: 7, background: i === expModal.imgIdx ? accent : 'rgba(255,255,255,0.3)' }}/>
                 ))}
               </div>
             )}
-
-            {/* Badge */}
             {z.badge && (
               <div className="absolute top-4 left-4 px-3 py-1 rounded-full font-mono-custom text-[9px] uppercase tracking-[0.3em]"
-                style={{ background: accent, color: '#000' }}>
-                {z.badge}
-              </div>
+                style={{ background: accent, color: '#000' }}>{z.badge}</div>
             )}
-
-            {/* Close */}
-            <button onClick={() => setExpModal({ open: false, zone: null, imgIdx: 0 })}
+            <button onClick={closeModal}
               className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.15)' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
           </div>
-
           {/* Content */}
           <div className="p-6 md:p-8">
             <p className="font-mono-custom text-[9px] uppercase tracking-[0.3em] mb-2" style={{ color: accent + '99' }}>
@@ -635,22 +622,19 @@ const ParallaxGallery = () => {
             <h3 className="font-display text-4xl md:text-5xl text-white leading-none mb-4">{z.title}</h3>
             {z.description && <p className="text-white/65 text-sm leading-relaxed mb-3">{z.description}</p>}
             {z.detail && <p className="text-white/45 text-sm leading-relaxed mb-6">{z.detail}</p>}
-
-            {/* Highlights */}
             {z.highlights && (
               <div className="grid grid-cols-2 gap-3 mb-6">
                 {z.highlights.map((h: string, i: number) => (
                   <div key={i} className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: accent }} />
+                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: accent }}/>
                     <span className="text-xs text-white/55">{h}</span>
                   </div>
                 ))}
               </div>
             )}
-
             <div className="pt-4 flex justify-end" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-              <button onClick={() => setExpModal({ open: false, zone: null, imgIdx: 0 })}
-                className="px-6 py-3 rounded-2xl font-display text-sm uppercase tracking-[0.2em] transition-all"
+              <button onClick={closeModal}
+                className="px-6 py-3 rounded-2xl font-display text-sm uppercase tracking-[0.2em]"
                 style={{ background: accent, color: '#000' }}>
                 Ver paquetes →
               </button>
@@ -663,7 +647,7 @@ const ParallaxGallery = () => {
 
   return (
     <>
-      {mainContent}
+      {mainJsx}
       <ExpModal />
     </>
   );
