@@ -1172,7 +1172,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                                   ? 'border-amber-400/20 bg-amber-400/5 hover:border-amber-400/40 cursor-pointer opacity-90'
                                   : !isUnlocked
                                     ? 'border-white/5 bg-white/[0.02] opacity-35 cursor-not-allowed'
-                                    : selectedStageId === stage.id
+                                    : (!creyentesOtpOpen && selectedStageId === stage.id)
                                       ? 'border-aira-lime/50 bg-aira-lime/10 active:scale-[0.99]'
                                       : 'border-white/10 bg-white/[0.03] hover:border-white/25 active:scale-[0.99]'
                             )}
@@ -1195,7 +1195,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                           >
                             <div className="flex items-center justify-between gap-3 flex-wrap">
                               <div className="flex items-center gap-3">
-                                {selectedStageId === stage.id && isUnlocked && <div className="w-5 h-5 rounded-full bg-aira-lime flex items-center justify-center shrink-0"><Check className="w-3 h-3 text-aira-darkBlue" /></div>}
+                                {!creyentesOtpOpen && selectedStageId === stage.id && isUnlocked && <div className="w-5 h-5 rounded-full bg-aira-lime flex items-center justify-center shrink-0"><Check className="w-3 h-3 text-aira-darkBlue" /></div>}
                                 <div>
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <span className="font-display text-base text-white">{stage.label}</span>
