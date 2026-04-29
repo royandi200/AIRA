@@ -15,7 +15,7 @@ const SUITES = [
   { id: 6, label: 'Suite N\u00ba 6', view: 'Vista represa sur',   available: true },
 ];
 
-const SUITE_PRICE    = 2_200_000;
+const SUITE_PRICE    = 2_500_000;
 const TRANSPORT_PRICE = 150_000;
 
 const ABONO_PLANS = [

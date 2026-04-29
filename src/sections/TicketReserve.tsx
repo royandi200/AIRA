@@ -260,4 +260,1186 @@ function BuyerForm({ name, email, phone, onChange }: {
   );
 }
 
-// truncated intentionally?
+// ─── MODAL OTP ────────────────────────────────────────────────────────────────
+interface OtpModalProps {
+  isOpen: boolean;
+  phone: string;
+  orderId: number | null;
+  orderRef: string | null;
+  paymentUrl: string | null;
+  onClose: () => void;
+}
+
+function OtpModal({ isOpen, phone, orderId, orderRef, paymentUrl, onClose }: OtpModalProps) {
+  const [digits, setDigits]       = useState(['', '', '', '', '', '']);
+  const [verifying, setVerifying] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [error, setError]         = useState<string | null>(null);
+  const [success, setSuccess]     = useState(false);
+  const [countdown, setCountdown] = useState(60);
+  const [canResend, setCanResend] = useState(false);
+  const inputRefs                 = Array.from({ length: 6 }, () => null as HTMLInputElement | null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setDigits(['', '', '', '', '', '']);
+    setError(null);
+    setSuccess(false);
+    setCountdown(60);
+    setCanResend(false);
+  }, [isOpen, orderId]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (countdown <= 0) { setCanResend(true); return; }
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [isOpen, countdown]);
+
+  const handleDigit = (idx: number, val: string) => {
+    const v = val.replace(/\D/g, '').slice(-1);
+    const next = [...digits];
+    next[idx] = v;
+    setDigits(next);
+    setError(null);
+    if (v && idx < 5) {
+      const ref = inputRefs[idx + 1];
+      if (ref) ref.focus();
+    }
+  };
+
+  const handleKeyDown = (idx: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !digits[idx] && idx > 0) {
+      const ref = inputRefs[idx - 1];
+      if (ref) ref.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6).split('');
+    const next = [...digits];
+    pasted.forEach((d, i) => { if (i < 6) next[i] = d; });
+    setDigits(next);
+  };
+
+  const handleVerify = async () => {
+    const code = digits.join('');
+    if (code.length < 6) { setError('Ingresa los 6 dígitos del código.'); return; }
+    setVerifying(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/otp-verificar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, otp: code, ...(orderId ? { orderId } : { orderRef }) }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Código incorrecto.'); return; }
+      setSuccess(true);
+      setTimeout(() => {
+        if (paymentUrl) window.location.href = paymentUrl;
+      }, 800);
+    } catch {
+      setError('Error de conexión. Intenta de nuevo.');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!canResend) return;
+    setResending(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/otp-reenviar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, ...(orderId ? { orderId } : { orderRef }) }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'No se pudo reenviar.'); return; }
+      setDigits(['', '', '', '', '', '']);
+      setCountdown(60);
+      setCanResend(false);
+    } catch {
+      setError('Error al reenviar. Intenta de nuevo.');
+    } finally {
+      setResending(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const phoneMask = phone ? phone.replace(/\D/g, '').slice(-4).padStart(phone.length, '*') : '****';
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+      style={{ background: 'rgba(3,6,18,0.92)', backdropFilter: 'blur(24px)' }}
+    >
+      <div
+        className="relative w-full max-w-md rounded-3xl border border-white/10 bg-[#08101f] shadow-2xl p-8"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="absolute inset-0 opacity-20 pointer-events-none rounded-[inherit]" style={{
+          background: 'radial-gradient(circle at top center,rgba(0,79,255,0.3),transparent 60%)',
+        }} />
+        <button
+          className="absolute top-4 right-4 w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:bg-white/10 transition-colors"
+          onClick={onClose} aria-label="Cerrar"
+        ><X className="w-4 h-4" /></button>
+
+        <div className="relative z-10 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-aira-blue/20 border border-aira-blue/30 flex items-center justify-center mx-auto mb-5">
+            {success
+              ? <ShieldCheck className="w-8 h-8 text-aira-lime" />
+              : <MessageCircle className="w-8 h-8 text-aira-blue" />
+            }
+          </div>
+
+          {success ? (
+            <>
+              <h3 className="font-display text-2xl text-white mb-2">¡Verificado! ✅</h3>
+              <p className="text-sm text-white/50 mb-6">Redirigiendo al pago…</p>
+              <div className="flex justify-center"><Loader2 className="w-6 h-6 text-aira-lime animate-spin" /></div>
+            </>
+          ) : (
+            <>
+              <p className="font-mono-custom text-[9px] uppercase tracking-[0.3em] text-aira-lime/70 mb-2">Verificación WhatsApp</p>
+              <h3 className="font-display text-2xl text-white mb-2">Código de seguridad</h3>
+              <p className="text-sm text-white/50 mb-6">
+                Enviamos un código de 6 dígitos al WhatsApp<br />
+                <span className="text-white/70 font-mono-custom text-xs">{phoneMask}</span>
+              </p>
+              <div className="flex gap-2 justify-center mb-5" onPaste={handlePaste}>
+                {digits.map((d, i) => (
+                  <input
+                    key={i}
+                    ref={el => { inputRefs[i] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={d}
+                    onChange={e => handleDigit(i, e.target.value)}
+                    onKeyDown={e => handleKeyDown(i, e)}
+                    className={`w-11 h-14 rounded-xl border text-center text-xl font-mono-custom text-white bg-white/[0.05] focus:outline-none transition-all ${
+                      error ? 'border-red-500/50 bg-red-500/5' : d ? 'border-aira-lime/50 bg-aira-lime/5' : 'border-white/15 focus:border-aira-lime/40 focus:bg-white/[0.07]'
+                    }`}
+                    aria-label={`Dígito ${i + 1}`}
+                  />
+                ))}
+              </div>
+              {error && (
+                <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 mb-4">
+                  <p className="text-sm text-red-400">{error}</p>
+                </div>
+              )}
+              <button
+                className="w-full px-6 py-3.5 rounded-2xl bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] hover:bg-white active:scale-[0.97] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+                onClick={handleVerify}
+                disabled={verifying || digits.join('').length < 6}
+              >
+                {verifying
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Verificando…</>
+                  : <><ShieldCheck className="w-4 h-4" /> Verificar y pagar</>
+                }
+              </button>
+              <div className="flex items-center justify-center gap-2">
+                {canResend ? (
+                  <button
+                    className="flex items-center gap-1.5 text-sm text-aira-lime/80 hover:text-aira-lime transition-colors disabled:opacity-50"
+                    onClick={handleResend}
+                    disabled={resending}
+                  >
+                    {resending
+                      ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Reenviando…</>
+                      : <><RefreshCw className="w-3.5 h-3.5" /> Reenviar código</>
+                    }
+                  </button>
+                ) : (
+                  <p className="font-mono-custom text-[10px] text-white/30">
+                    Reenviar en <span className="text-white/50">{countdown}s</span>
+                  </p>
+                )}
+              </div>
+              <p className="font-mono-custom text-[8px] uppercase tracking-[0.2em] text-white/20 mt-4">
+                Código válido por 10 minutos · máx. 3 intentos
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+// ─── CREYENTES OTP STEP (inline en Step 2) ───────────────────────────────────
+interface CreyentesOtpStepProps {
+  onVerified: () => void;
+  onCancel: () => void;
+}
+
+const COUNTRY_CODES = [
+  { code: '57',  flag: '🇨🇴', name: 'Colombia',     digits: 10 },
+  { code: '1',   flag: '🇺🇸', name: 'USA / Canadá', digits: 10 },
+  { code: '34',  flag: '🇪🇸', name: 'España',       digits: 9  },
+  { code: '52',  flag: '🇲🇽', name: 'México',       digits: 10 },
+  { code: '54',  flag: '🇦🇷', name: 'Argentina',    digits: 10 },
+  { code: '56',  flag: '🇨🇱', name: 'Chile',        digits: 9  },
+  { code: '51',  flag: '🇵🇪', name: 'Perú',         digits: 9  },
+  { code: '593', flag: '🇪🇨', name: 'Ecuador',      digits: 9  },
+  { code: '58',  flag: '🇻🇪', name: 'Venezuela',    digits: 10 },
+  { code: '55',  flag: '🇧🇷', name: 'Brasil',       digits: 11 },
+  { code: '44',  flag: '🇬🇧', name: 'Reino Unido',  digits: 10 },
+];
+
+function CreyentesOtpStep({ onVerified, onCancel }: CreyentesOtpStepProps) {
+  const [subStep,      setSubStep]      = useState<'phone' | 'otp'>('phone');
+  const [countryCode,  setCountryCode]  = useState('57');
+  const [localPhone,   setLocalPhone]   = useState('');
+  const [digits,       setDigits]       = useState(['', '', '', '', '', '']);
+  const [sending,      setSending]      = useState(false);
+  const [verifying,    setVerifying]    = useState(false);
+  const [resending,    setResending]    = useState(false);
+  const [error,        setError]        = useState<string | null>(null);
+  const [success,      setSuccess]      = useState(false);
+  const [countdown,    setCountdown]    = useState(60);
+  const [canResend,    setCanResend]    = useState(false);
+  const inputRefs = Array.from({ length: 6 }, () => null as HTMLInputElement | null);
+
+  const selectedCountry = COUNTRY_CODES.find(c => c.code === countryCode) ?? COUNTRY_CODES[0];
+  const digitsOnly = localPhone.replace(/\D/g, '');
+  const fullPhone = `${countryCode}${digitsOnly}`;
+  const isPhoneValid = digitsOnly.length === selectedCountry.digits;
+
+  useEffect(() => {
+    if (subStep !== 'otp') return;
+    if (countdown <= 0) { setCanResend(true); return; }
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [subStep, countdown]);
+
+  const handleSendOtp = async () => {
+    if (!isPhoneValid) {
+      setError(`Ingresa exactamente ${selectedCountry.digits} dígitos del celular.`);
+      return;
+    }
+    setSending(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/otp-creyentes-enviar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: fullPhone }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.code === 'NOT_IN_WHITELIST') {
+          setError(data.error);
+        } else {
+          throw new Error(data.error || 'No se pudo enviar el código.');
+        }
+        return;
+      }
+      setSubStep('otp');
+      setCountdown(60);
+      setCanResend(false);
+      setDigits(['', '', '', '', '', '']);
+    } catch (err: any) {
+      setError(err.message || 'Error al enviar el código.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleDigit = (idx: number, val: string) => {
+    const v = val.replace(/\D/g, '').slice(-1);
+    const next = [...digits];
+    next[idx] = v;
+    setDigits(next);
+    setError(null);
+    if (v && idx < 5) { const ref = inputRefs[idx + 1]; if (ref) ref.focus(); }
+  };
+
+  const handleKeyDown = (idx: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !digits[idx] && idx > 0) {
+      const ref = inputRefs[idx - 1]; if (ref) ref.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6).split('');
+    const next = [...digits];
+    pasted.forEach((d, i) => { if (i < 6) next[i] = d; });
+    setDigits(next);
+  };
+
+  const handleVerify = async () => {
+    const code = digits.join('');
+    if (code.length < 6) { setError('Ingresa los 6 dígitos del código.'); return; }
+    setVerifying(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/otp-creyentes-verificar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: fullPhone, otp: code }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Código incorrecto.'); return; }
+      setSuccess(true);
+      setTimeout(() => onVerified(), 700);
+    } catch {
+      setError('Error de conexión. Intenta de nuevo.');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!canResend) return;
+    setResending(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/otp-creyentes-enviar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: fullPhone }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'No se pudo reenviar.'); return; }
+      setDigits(['', '', '', '', '', '']);
+      setCountdown(60);
+      setCanResend(false);
+    } catch {
+      setError('Error al reenviar. Intenta de nuevo.');
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-aira-lime/50 focus:bg-white/[0.06] transition-all";
+
+  return (
+    <div className="rounded-2xl border border-aira-blue/30 bg-aira-blue/5 p-5 space-y-4">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="w-9 h-9 rounded-xl bg-aira-blue/20 border border-aira-blue/30 flex items-center justify-center shrink-0">
+          {success ? <ShieldCheck className="w-5 h-5 text-aira-lime" /> : <MessageCircle className="w-5 h-5 text-aira-blue" />}
+        </div>
+        <div>
+          <p className="font-mono-custom text-[9px] uppercase tracking-[0.28em] text-aira-blue/80">Etapa Creyentes · Verificación</p>
+          <p className="font-display text-base text-white leading-tight">
+            {subStep === 'phone' ? 'Ingresa tu WhatsApp' : 'Código de verificación'}
+          </p>
+        </div>
+      </div>
+
+      {success ? (
+        <div className="flex flex-col items-center gap-2 py-3">
+          <ShieldCheck className="w-8 h-8 text-aira-lime" />
+          <p className="font-display text-lg text-white">¡Verificado! ✅</p>
+          <p className="text-xs text-white/50">Desbloqueando etapa Creyentes…</p>
+        </div>
+      ) : subStep === 'phone' ? (
+        <>
+          <p className="text-xs text-white/50 leading-relaxed">
+            La etapa <span className="text-amber-400">Creyentes</span> está reservada para asistentes verificados de Melomania. Ingresa tu número para recibir el código de acceso.
+          </p>
+          <div>
+            <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Celular WhatsApp *</label>
+            <div className="flex gap-2">
+              <select
+                value={countryCode}
+                onChange={e => { setCountryCode(e.target.value); setLocalPhone(''); setError(null); }}
+                className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm text-white focus:outline-none focus:border-aira-lime/50 transition-all cursor-pointer shrink-0"
+                style={{ minWidth: '90px' }}
+              >
+                {COUNTRY_CODES.map(c => (
+                  <option key={c.code} value={c.code} style={{ background: '#08101f' }}>
+                    {c.flag} +{c.code}
+                  </option>
+                ))}
+              </select>
+              <div className="relative flex-1">
+                <input
+                  type="tel"
+                  value={localPhone}
+                  onChange={e => {
+                    const v = e.target.value.replace(/\D/g, '').slice(0, selectedCountry.digits);
+                    setLocalPhone(v);
+                    setError(null);
+                  }}
+                  onKeyDown={e => e.key === 'Enter' && handleSendOtp()}
+                  placeholder={`${'0'.repeat(selectedCountry.digits)}`}
+                  maxLength={selectedCountry.digits}
+                  className={`${inputClass} pr-12`}
+                  autoFocus
+                  inputMode="tel"
+                />
+                <span className={`absolute right-3 top-1/2 -translate-y-1/2 font-mono-custom text-[10px] transition-colors ${
+                  digitsOnly.length === selectedCountry.digits ? 'text-aira-lime' : 'text-white/25'
+                }`}>
+                  {digitsOnly.length}/{selectedCountry.digits}
+                </span>
+              </div>
+            </div>
+          </div>
+          {error && (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5">
+              <p className="text-sm text-red-400">{error}</p>
+            </div>
+          )}
+          <div className="flex gap-2 pt-1">
+            <button
+              className="px-4 py-2.5 rounded-full border border-white/10 text-white/60 text-sm hover:bg-white/5 transition-colors"
+              onClick={onCancel}
+              disabled={sending}
+            >Cancelar</button>
+            <button
+              className="flex-1 px-5 py-2.5 rounded-full bg-aira-blue text-white font-display text-sm uppercase tracking-[0.2em] hover:bg-aira-blue/80 active:scale-[0.97] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleSendOtp}
+              disabled={sending || !isPhoneValid}
+            >
+              {sending
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> Enviando…</>
+                : <><MessageCircle className="w-4 h-4" /> Enviar código</>
+              }
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-xs text-white/50">
+            Enviamos un código al WhatsApp <span className="text-white/70 font-mono-custom">+{countryCode} {localPhone.slice(0,-4).replace(/./g,'*')}{localPhone.slice(-4)}</span>
+          </p>
+          <div className="flex gap-2 justify-center" onPaste={handlePaste}>
+            {digits.map((d, i) => (
+              <input
+                key={i}
+                ref={el => { inputRefs[i] = el; }}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={d}
+                onChange={e => handleDigit(i, e.target.value)}
+                onKeyDown={e => handleKeyDown(i, e)}
+                className={`w-10 h-13 rounded-xl border text-center text-lg font-mono-custom text-white bg-white/[0.05] focus:outline-none transition-all ${
+                  error ? 'border-red-500/50 bg-red-500/5' : d ? 'border-aira-lime/50 bg-aira-lime/5' : 'border-white/15 focus:border-aira-lime/40 focus:bg-white/[0.07]'
+                }`}
+                style={{ height: '3.25rem' }}
+                aria-label={`Dígito ${i + 1}`}
+              />
+            ))}
+          </div>
+          {error && (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5">
+              <p className="text-sm text-red-400">{error}</p>
+            </div>
+          )}
+          <button
+            className="w-full px-5 py-3 rounded-full bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] hover:bg-white active:scale-[0.97] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleVerify}
+            disabled={verifying || digits.join('').length < 6}
+          >
+            {verifying
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Verificando…</>
+              : <><ShieldCheck className="w-4 h-4" /> Verificar acceso</>
+            }
+          </button>
+          <div className="flex justify-between items-center">
+            <button
+              className="text-xs text-white/40 hover:text-white/60 transition-colors"
+              onClick={() => { setSubStep('phone'); setError(null); setDigits(['', '', '', '', '', '']); setLocalPhone(''); }}
+            >← Cambiar número</button>
+            {canResend ? (
+              <button
+                className="flex items-center gap-1 text-xs text-aira-lime/80 hover:text-aira-lime transition-colors disabled:opacity-50"
+                onClick={handleResend}
+                disabled={resending}
+              >
+                {resending ? <><Loader2 className="w-3 h-3 animate-spin" /> Reenviando…</> : <><RefreshCw className="w-3 h-3" /> Reenviar</>}
+              </button>
+            ) : (
+              <p className="font-mono-custom text-[9px] text-white/30">Reenviar en <span className="text-white/50">{countdown}s</span></p>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
+const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) => {
+  const initAccess = selectedEvent?.initialAccessType ?? null;
+  const initStep   = initAccess === 'package' ? 2 : initAccess ? 3 : 1;
+
+  const [step,            setStep]           = useState(initStep);
+  const [accessType,      setAccessType]     = useState<AccessType | null>(initAccess);
+  const [selectedStageId, setSelectedStageId]= useState<string | null>(null);
+  const [codigoRef,       setCodigoRef]      = useState('');
+  const [codigoError,     setCodigoError]    = useState('');
+  const [codigoValid,     setCodigoValid]    = useState(false);
+  const [codigoChecking,  setCodigoChecking] = useState(false);
+  const isReferidos = selectedStageId === 'referidos';
+
+  const validateCodigo = async (cod: string) => {
+    if (!cod.trim()) { setCodigoValid(false); return; }
+    setCodigoChecking(true); setCodigoError(''); setCodigoValid(false);
+    try {
+      const r = await fetch('/api/referidos-validar', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigo: cod, tipo: 'referidos' }),
+      });
+      const d = await r.json();
+      if (d.valid) { setCodigoValid(true); setCodigoError(''); }
+      else { setCodigoValid(false); setCodigoError(d.error || 'Código inválido'); }
+    } catch { setCodigoError('Error validando código'); }
+    finally { setCodigoChecking(false); }
+  };
+
+  const [addPassVip,      setAddPassVip]     = useState(false);
+  const [addTransport,    setAddTransport]   = useState(false);
+  const [qty,             setQty]            = useState(1);
+  const [paymentMode,     setPaymentMode]    = useState<PaymentMode>('full');
+  const [abonoPlanId,     setAbonoPlanId]    = useState(ABONO_PLANS[0].id);
+  const [buyerName,       setBuyerName]      = useState('');
+  const [buyerEmail,      setBuyerEmail]     = useState('');
+  const [buyerPhone,      setBuyerPhone]     = useState('');
+  const [isSubmitting,    setIsSubmitting]   = useState(false);
+  const [paymentError,    setPaymentError]   = useState<string | null>(null);
+
+  // OTP state — para pago (días sueltos ya no lo usan; solo redirige directo)
+  const [otpOpen,       setOtpOpen]       = useState(false);
+  const [otpOrderId,    setOtpOrderId]    = useState<number | null>(null);
+  const [otpOrderRef,   setOtpOrderRef]   = useState<string | null>(null);
+  const [otpPaymentUrl, setOtpPaymentUrl] = useState<string | null>(null);
+
+  // Creyentes OTP — verificación antes de desbloquear la etapa
+  const [creyentesOtpOpen,    setCreyentesOtpOpen]    = useState(false);
+  const [creyentesVerified,   setCreyentesVerified]   = useState(false);
+
+  useLockBodyScroll(isOpen && !otpOpen);
+
+  const isDayTicket = accessType === 'day1' || accessType === 'day2' || accessType === 'day3';
+
+  const scrollRef = useCallback((el: HTMLDivElement | null) => {
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      const atTop    = scrollTop <= 0;
+      const atBottom = scrollTop + clientHeight >= scrollHeight - 1;
+      if (atTop    && e.deltaY < 0) { e.stopPropagation(); return; }
+      if (atBottom && e.deltaY > 0) { e.stopPropagation(); return; }
+      e.stopPropagation();
+      e.preventDefault();
+      el.scrollTop += e.deltaY;
+    };
+    el.addEventListener('wheel', handler, { passive: false });
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const ia = selectedEvent?.initialAccessType ?? null;
+    const is = ia === 'package' ? 2 : ia ? 3 : 1;
+    setStep(is);
+    setAccessType(ia);
+    setSelectedStageId(null);
+    setAddPassVip(false);
+    setAddTransport(false);
+    setQty(1);
+    setPaymentMode('full');
+    setAbonoPlanId(ABONO_PLANS[0].id);
+    setBuyerName('');
+    setBuyerEmail('');
+    setBuyerPhone('');
+    setPaymentError(null);
+    setOtpOpen(false);
+    setOtpOrderId(null);
+    setOtpOrderRef(null);
+    setOtpPaymentUrl(null);
+    setCreyentesOtpOpen(false);
+    setCreyentesVerified(false);
+  }, [isOpen, selectedEvent?.id, selectedEvent?.initialAccessType]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape' && isOpen && !otpOpen) onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isOpen, otpOpen, onClose]);
+
+  const selectedStage = useMemo(() => STAGES.find(s => s.id === selectedStageId) ?? null, [selectedStageId]);
+  const selectedDay   = useMemo(() => DAYS.find(d => d.id === accessType) ?? null, [accessType]);
+  const passVipPrice  = accessType ? PASS_VIP_PRICES[accessType] : 450_000;
+
+  const basePrice = useMemo(() => {
+    if (accessType === 'day1') return 80_000  * qty;
+    if (accessType === 'day2') return 150_000 * qty;
+    if (accessType === 'day3') return 50_000  * qty;
+    if (accessType === 'package' && selectedStage) return selectedStage.price * qty;
+    return 0;
+  }, [accessType, selectedStage, qty]);
+
+  const serviceFee = Math.round(basePrice * 0.05);
+  const passTotal  = addPassVip   ? passVipPrice    * qty : 0;
+  const transTotal = (!isDayTicket && addTransport) ? TRANSPORT_PRICE * qty : 0;
+  const total      = basePrice + serviceFee + passTotal + transTotal;
+
+  const selectedPlan = ABONO_PLANS.find(p => p.id === abonoPlanId) ?? ABONO_PLANS[0];
+  const effectivePaymentMode: PaymentMode = isDayTicket ? 'full' : paymentMode;
+  const primerPago = effectivePaymentMode === 'full' ? total : Math.ceil(total * selectedPlan.pct);
+
+  const ticketLabel = selectedDay ? `${selectedDay.label} · ${selectedDay.title}` : null;
+  const stageLabel  = accessType === 'package' && selectedStage ? selectedStage.label : null;
+
+  const handleSelectDay = (type: AccessType) => {
+    setAccessType(type);
+    setSelectedStageId(null);
+    setStep(3);
+  };
+
+  const handleSelectPackage = () => {
+    setAccessType('package');
+    setSelectedStageId(null);
+    setStep(2);
+  };
+
+  // ─── CHECKOUT ────────────────────────────────────────────────────────────────
+  // Días sueltos (day1/day2/day3): crear orden → redirigir directo a paymentUrl
+  // Paquete (package):             crear orden → enviar OTP → abrir Modal OTP
+  // ─────────────────────────────────────────────────────────────────────────────
+  const handleCheckout = async () => {
+    if (!buyerName.trim() || !buyerEmail.trim() || !buyerPhone.trim()) {
+      setPaymentError('Por favor completa nombre, correo y celular.');
+      return;
+    }
+    setIsSubmitting(true);
+    setPaymentError(null);
+    try {
+      // Paso 1: crear orden
+      const res = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: buyerName.trim(), email: buyerEmail.trim(), phone: buyerPhone.trim(),
+          eventId: selectedEvent?.id, accessType, ticketLabel, stageLabel,
+          qty, basePrice, addPassVip, passVipPrice,
+          addTransport: isDayTicket ? false : addTransport,
+          total,
+          paymentMode: effectivePaymentMode,
+          abonoPlan: effectivePaymentMode === 'abono' ? abonoPlanId : null,
+          primerPago,
+          amountToCharge: primerPago,
+          items: [{
+            ticketTypeId: 0, quantity: qty,
+            _unitPrice: basePrice > 0 ? Math.round(basePrice / qty) : Math.round(total / qty),
+            _label: ticketLabel ?? stageLabel ?? accessType ?? 'Entrada',
+          }],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al crear la orden');
+      if (!data.paymentUrl) {
+        throw new Error(data.boldError
+          ? `Error Bold: ${data.boldError.substring(0, 120)}`
+          : 'No se pudo generar el link de pago. Intenta de nuevo.');
+      }
+
+      // ── Días sueltos y paquete: ir directo al pago ────────────────────────
+      window.location.href = data.paymentUrl;
+
+    } catch (err: any) {
+      setPaymentError(err.message || 'Ocurrió un error. Intenta de nuevo.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isOpen || !selectedEvent) return null;
+
+  const visibleSteps = step === 1
+    ? [{ n: 1, label: 'Acceso' }, { n: 2, label: 'Zona' }, { n: 3, label: 'Confirmar' }]
+    : accessType === 'package'
+      ? [{ n: 1, label: 'Acceso' }, { n: 2, label: 'Etapa' }, { n: 3, label: 'Confirmar' }]
+      : [{ n: 3, label: 'Confirmar' }];
+
+  const modalTitle = accessType === 'day1' ? 'DÍA 1 · After Fiesta de Yates'
+    : accessType === 'day2' ? 'DÍA 2 · Fiesta Majestic & Stage Joinn'
+    : accessType === 'day3' ? 'DÍA 3 · Open Deck'
+    : accessType === 'package' ? 'Paquete 3D / 2N · Cabaña AIRA'
+    : selectedEvent.venue;
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center sm:p-4 md:p-6"
+        style={{ background: 'rgba(3,6,18,0.85)', backdropFilter: 'blur(20px)' }}
+        onClick={onClose}
+      >
+        <div
+          role="dialog" aria-modal="true" aria-label="Reserva de tickets"
+          className="relative w-full sm:max-w-6xl rounded-t-[2rem] sm:rounded-[2rem] border border-white/10 bg-[#08101f] shadow-2xl flex flex-col max-h-[96dvh] sm:max-h-[92dvh]"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="absolute inset-0 opacity-20 pointer-events-none rounded-[inherit]" style={{
+            background:
+              'radial-gradient(circle at top right,rgba(225,254,82,0.24),transparent 30%),' +
+              'radial-gradient(circle at left center,rgba(0,79,255,0.2),transparent 35%)',
+          }} />
+
+          {/* HEADER */}
+          <div className="relative z-10 flex-none border-b border-white/10 px-5 py-4 md:px-8 md:py-5 flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="font-mono-custom text-[10px] uppercase tracking-[0.35em] text-aira-lime/70 mb-1">Guatapé · AIRA</p>
+              <h3 className="font-display text-2xl md:text-4xl text-white leading-none truncate">{modalTitle}</h3>
+              <p className="font-mono-custom text-xs md:text-sm text-white/45 mt-1.5">{selectedEvent.city} · {selectedEvent.date} · {selectedEvent.time}</p>
+            </div>
+            <button
+              className="flex-none w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white/70 hover:bg-white/10 active:bg-white/20 transition-colors"
+              onClick={onClose} aria-label="Cerrar"
+            ><X className="w-5 h-5" /></button>
+          </div>
+
+          {/* STEP PILLS */}
+          {visibleSteps.length > 1 && (
+            <div className="relative z-10 flex-none px-5 md:px-8 pt-4 pb-3 flex flex-wrap gap-2 border-b border-white/[0.06]">
+              {visibleSteps.map((item, idx) => {
+                const visualN   = idx + 1;
+                const active    = step === item.n;
+                const completed = step > item.n;
+                return (
+                  <div key={item.n} className={'flex items-center gap-2 px-3 py-1.5 rounded-full border ' + (active ? 'border-aira-lime/40 bg-aira-lime/10' : 'border-white/10 bg-white/[0.03]')}>
+                    <div className={'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-mono-custom ' + (completed ? 'bg-aira-lime text-aira-darkBlue' : active ? 'bg-aira-blue text-white' : 'bg-white/10 text-white/50')}>
+                      {completed ? <Check className="w-3.5 h-3.5" /> : visualN}
+                    </div>
+                    <span className={'font-mono-custom text-[10px] uppercase tracking-[0.22em] ' + (active ? 'text-white' : 'text-white/45')}>{item.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* SCROLLABLE BODY */}
+          <div ref={scrollRef} className="relative z-10 flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr]">
+
+              {/* MAIN PANEL */}
+              <div className="p-5 md:p-8 lg:border-r border-white/10">
+
+                {/* ── STEP 1 ── */}
+                {step === 1 && (
+                  <div>
+                    <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-2">Paso 1</p>
+                    <h4 className="font-display text-3xl md:text-4xl text-white mb-1">¿Cómo quieres vivir AIRA?</h4>
+                    <p className="text-sm text-white/50 mb-6">Elige entre boletería por día o el paquete completo con alojamiento.</p>
+
+                    <p className="font-mono-custom text-[9px] uppercase tracking-[0.3em] text-aira-lime/60 mb-3">🎟 Boletería por día</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                      {DAYS.map(day => (
+                        <button key={day.id}
+                          className="text-left rounded-2xl border border-white/10 bg-white/[0.03] p-4 hover:border-white/30 active:scale-[0.98] transition-all duration-200"
+                          onClick={() => handleSelectDay(day.id)}
+                        >
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: `${day.accentColor}20`, color: day.accentColor }}>{day.icon}</div>
+                          <p className="font-mono-custom text-[9px] uppercase tracking-[0.25em] mb-1" style={{ color: day.accentColor }}>{day.label}</p>
+                          <h5 className="font-display text-base text-white leading-snug mb-2">{day.title}</h5>
+                          <p className="font-display text-lg" style={{ color: day.accentColor }}>{fmt(day.price)}</p>
+                        </button>
+                      ))}
+                    </div>
+
+                    <p className="font-mono-custom text-[9px] uppercase tracking-[0.3em] text-aira-lime/60 mb-3">🏠 Paquete completo · 3D / 2N</p>
+                    <button
+                      className="w-full text-left rounded-2xl border border-aira-lime/20 bg-aira-lime/5 p-5 hover:border-aira-lime/50 hover:bg-aira-lime/10 active:scale-[0.99] transition-all duration-200"
+                      onClick={handleSelectPackage}
+                    >
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <div>
+                          <div className="flex items-center gap-2 mb-2"><Users className="w-5 h-5 text-aira-lime" /><h5 className="font-display text-xl text-white">Cabaña AIRA</h5></div>
+                          <p className="text-sm text-white/50 mb-3 max-w-sm">2 habitaciones · 2 baños · terraza · cocina · jacuzzi · capacidad 7 personas</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {['Recorrido Peñol','Yacht party','Yate Majestic','Noches de música','Open decks','Meditación'].map(p => (
+                              <span key={p} className="px-2.5 py-1 rounded-full text-[8px] font-mono-custom uppercase tracking-[0.15em] border border-aira-lime/20 text-aira-lime/60 bg-aira-lime/5">{p}</span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/35 mb-1">Desde</p>
+                          <p className="font-display text-2xl text-aira-lime">{fmt(590_000)}</p>
+                          <p className="font-mono-custom text-[9px] text-white/35">por persona</p>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                )}
+
+                {/* ── STEP 2: Etapas (paquete) ── */}
+                {step === 2 && accessType === 'package' && (
+                  <div>
+                    <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-2">Paso 2</p>
+                    <h4 className="font-display text-3xl md:text-4xl text-white mb-1">Selecciona tu etapa</h4>
+                    <p className="text-sm text-white/50 mb-6">El precio varía según la etapa de compra. Cabaña para 7 personas.</p>
+                    <div className="space-y-2">
+                      {VISIBLE_STAGES.map(stage => {
+                        const isCreyentes  = stage.id === 'creyentes';
+                        const stageDates   = STAGE_DATES[stage.id];
+                        const nowTs        = new Date();
+                        const isDateActive = stageDates ? nowTs >= stageDates.start && nowTs <= stageDates.end : false;
+                        const isUpcoming   = stageDates ? nowTs < stageDates.start : false;
+                        // Bloqueado si: no es la fecha activa (excepto creyentes que tiene su propio OTP)
+                        const isUnlocked   = isCreyentes
+                          ? creyentesVerified && isDateActive
+                          : !stage.locked && isDateActive;
+
+                        // Creyentes con OTP abierto → mostrar componente inline
+                        if (isCreyentes && creyentesOtpOpen) {
+                          return (
+                            <div key={stage.id}>
+                              <CreyentesOtpStep
+                                onVerified={() => {
+                                  setCreyentesVerified(true);
+                                  setCreyentesOtpOpen(false);
+                                  setSelectedStageId('creyentes');
+                                }}
+                                onCancel={() => setCreyentesOtpOpen(false)}
+                              />
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <button
+                            key={stage.id}
+                            disabled={!isUnlocked && !isCreyentes}
+                            className={'w-full text-left rounded-2xl border p-4 transition-all duration-200 ' + (
+                              isUpcoming
+                                ? 'border-white/5 bg-white/[0.02] opacity-35 cursor-not-allowed'
+                                : isCreyentes && !creyentesVerified
+                                  ? 'border-amber-400/20 bg-amber-400/5 hover:border-amber-400/40 cursor-pointer opacity-90'
+                                  : !isUnlocked
+                                    ? 'border-white/5 bg-white/[0.02] opacity-35 cursor-not-allowed'
+                                    : selectedStageId === stage.id
+                                      ? 'border-aira-lime/50 bg-aira-lime/10 active:scale-[0.99]'
+                                      : 'border-white/10 bg-white/[0.03] hover:border-white/25 active:scale-[0.99]'
+                            )}
+                            onClick={() => {
+                              if (isUpcoming) return;
+                              if (isCreyentes && !creyentesVerified) {
+                                setCreyentesOtpOpen(true);
+                              } else if (isUnlocked) {
+                                setSelectedStageId(stage.id);
+                              }
+                            }}
+                          >
+                            <div className="flex items-center justify-between gap-3 flex-wrap">
+                              <div className="flex items-center gap-3">
+                                {selectedStageId === stage.id && isUnlocked && <div className="w-5 h-5 rounded-full bg-aira-lime flex items-center justify-center shrink-0"><Check className="w-3 h-3 text-aira-darkBlue" /></div>}
+                                <div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-display text-base text-white">{stage.label}</span>
+                                    {isCreyentes && !creyentesVerified && (
+                                      <span className="px-2 py-0.5 rounded-full text-[8px] font-mono-custom uppercase tracking-[0.15em] bg-amber-400/15 text-amber-400 border border-amber-400/20">🔒 Verificar acceso</span>
+                                    )}
+                                    {isCreyentes && creyentesVerified && (
+                                      <span className="px-2 py-0.5 rounded-full text-[8px] font-mono-custom uppercase tracking-[0.15em] bg-aira-lime/15 text-aira-lime border border-aira-lime/20">✓ Verificado</span>
+                                    )}
+                                    {!isCreyentes && stage.locked && <span className="px-2 py-0.5 rounded-full text-[8px] font-mono-custom uppercase tracking-[0.15em] bg-amber-400/15 text-amber-400 border border-amber-400/20">🔒 Solo Melomania</span>}
+                                    {(stage as any).urgent && <span className="px-2 py-0.5 rounded-full text-[8px] font-mono-custom uppercase tracking-[0.15em] bg-red-500/15 text-red-400 border border-red-500/20">Últimas {stage.slots}</span>}
+                                  </div>
+                                  <p className="font-mono-custom text-[9px] text-white/40 mt-0.5">{stage.dates} · {stage.slots} plazas</p>
+                                </div>
+                              </div>
+                              <p className="font-display text-xl text-aira-lime shrink-0">{fmt(stage.price)}<span className="font-mono-custom text-[10px] text-white/40 ml-1">/persona</span></p>
+                            </div>
+                            {isCreyentes && !creyentesVerified && (
+                              <p className="text-[10px] text-amber-400/70 mt-2 flex items-center gap-1.5">
+                                <MessageCircle className="w-3 h-3 shrink-0" />
+                                Toca para verificar tu acceso vía WhatsApp
+                              </p>
+                            )}
+                            {!isCreyentes && stage.locked && <p className="text-[10px] text-amber-400/60 mt-2">Disponible para asistentes verificados de Melomania</p>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-5">
+                      <PassVipBanner addPassVip={addPassVip} setAddPassVip={setAddPassVip} qty={qty} passVipPrice={passVipPrice} />
+                    </div>
+                    {/* Código referido */}
+                    {isReferidos && (
+                      <div className="mt-4">
+                        <label className="block font-mono-custom text-[9px] uppercase tracking-[0.28em] text-white/35 mb-2">Código de Referido *</label>
+                        <input
+                          type="text"
+                          value={codigoRef}
+                          onChange={e => { setCodigoRef(e.target.value.toUpperCase()); setCodigoError(''); setCodigoValid(false); }} onBlur={e => validateCodigo(e.target.value)}
+                          placeholder="EJ: AIRA-XYZ123"
+                          className={`w-full rounded-xl border px-4 py-3 bg-white/5 text-white font-mono-custom text-sm tracking-widest uppercase placeholder:text-white/20 outline-none transition-all ${
+                            codigoError ? 'border-red-400/50 bg-red-400/5' : codigoValid ? 'border-aira-lime/60 bg-aira-lime/8' : codigoChecking ? 'border-white/20' : 'border-white/15 focus:border-white/30'
+                          }`}
+                        />
+                        {codigoError && <p className="text-xs text-red-400 mt-1">{codigoError}</p>}
+                  {codigoChecking && <p className="text-xs text-white/40 mt-1">Verificando código...</p>}
+                  {codigoValid && <p className="text-xs text-aira-lime mt-1">✓ Código válido</p>}
+                        <p className="text-[10px] text-white/30 mt-1">Ingresa el código que te compartió tu referido.</p>
+                      </div>
+                    )}
+
+                    <div className="mt-5 flex items-center justify-between gap-3">
+                      <button className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 transition-colors" onClick={() => { setAccessType(null); setStep(1); }}>Volver</button>
+                      <button
+                        disabled={!selectedStageId || (isReferidos && !codigoValid)}
+                        className="px-6 py-2.5 rounded-full bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] hover:bg-white active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        onClick={() => {
+                          if (!selectedStageId) return;
+                          if (isReferidos && !codigoValid) { setCodigoError('Ingresa un código válido'); return; }
+                          setCodigoError(''); setStep(3);
+                        }}
+                      >Continuar</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── STEP 3: Confirmar ── */}
+                {step === 3 && (
+                  <div>
+                    <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-2">
+                      {accessType === 'package' ? 'Paso 3' : 'Confirmar'}
+                    </p>
+                    <h4 className="font-display text-3xl md:text-4xl text-white mb-1">Confirmar y pagar</h4>
+                    <p className="text-sm text-white/50 mb-5">Revisa tu pedido y completa tus datos.</p>
+
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-5">
+
+                      {/* Info evento */}
+                      <div className="grid grid-cols-2 gap-3">
+                        {(([['Evento', selectedEvent.venue], ['Ciudad', selectedEvent.city], ['Fecha', selectedEvent.date], ['Hora', selectedEvent.time]]) as [string,string][]).map(([label, value]) => (
+                          <div key={label} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+                            <p className="font-mono-custom text-[9px] uppercase tracking-[0.22em] text-white/35 mb-1">{label}</p>
+                            <p className="font-display text-base text-white truncate">{value}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Selección */}
+                      <div className="border-t border-white/10 pt-4">
+                        <p className="font-mono-custom text-[9px] uppercase tracking-[0.22em] text-white/35 mb-2">Tu selección</p>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedDay && (
+                            <span className="px-3 py-1.5 rounded-full border border-white/20 text-white/80 bg-white/[0.04] text-sm">
+                              {selectedDay.label} · {selectedDay.title} · {fmt(selectedDay.price)}
+                            </span>
+                          )}
+                          {accessType === 'package' && selectedStage && (
+                            <span className="px-3 py-1.5 rounded-full border border-aira-lime/30 text-aira-lime bg-aira-lime/8 text-sm">
+                              Cabaña AIRA · {selectedStage.label} · {fmt(selectedStage.price)}/persona
+                            </span>
+                          )}
+                          {addPassVip && (
+                            <span className="px-3 py-1.5 rounded-full border border-yellow-400/40 text-yellow-300 bg-yellow-400/10 text-sm flex items-center gap-1.5">
+                              <Sparkles className="w-3.5 h-3.5" /> Pass VIP · {fmt(passVipPrice)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Cantidad */}
+                      <div className="flex items-center justify-between border-t border-white/10 pt-4">
+                        <p className="font-mono-custom text-[9px] uppercase tracking-[0.22em] text-white/35">{accessType === 'package' ? 'Personas' : 'Boletas'}</p>
+                        <div className="flex items-center gap-1 rounded-full border border-white/10 p-1">
+                          <button className="w-8 h-8 rounded-full hover:bg-white/10 active:bg-white/20 flex items-center justify-center transition-colors" onClick={() => setQty(v => Math.max(1, v - 1))} aria-label="Reducir"><Minus className="w-3.5 h-3.5 text-white/60" /></button>
+                          <span className="w-8 text-center font-mono-custom text-sm text-white">{qty}</span>
+                          <button className="w-8 h-8 rounded-full hover:bg-white/10 active:bg-white/20 flex items-center justify-center transition-colors" onClick={() => setQty(v => Math.min(accessType === 'package' ? 7 : 8, v + 1))} aria-label="Aumentar"><Plus className="w-3.5 h-3.5 text-white/60" /></button>
+                        </div>
+                      </div>
+
+                      {/* Pass VIP */}
+                      <div className="border-t border-white/10 pt-4">
+                        <PassVipBanner addPassVip={addPassVip} setAddPassVip={setAddPassVip} qty={qty} passVipPrice={passVipPrice} compact />
+                      </div>
+
+                      {/* Transporte — solo para paquete */}
+                      {!isDayTicket && (
+                        <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <Bus className="w-4 h-4 text-white/40" />
+                            <div>
+                              <p className="text-sm text-white">Transporte Bogotá – Guatapé</p>
+                              <p className="font-mono-custom text-[9px] text-white/40">Ida y regreso · {fmt(TRANSPORT_PRICE)}/persona</p>
+                            </div>
+                          </div>
+                          <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                            <span className="font-display text-sm text-white/70">{fmt(TRANSPORT_PRICE)}</span>
+                            <input type="checkbox" checked={addTransport} onChange={e => setAddTransport(e.target.checked)} className="w-4 h-4 accent-white" />
+                          </label>
+                        </div>
+                      )}
+
+                      {/* Totales */}
+                      <div className="space-y-2 border-t border-white/10 pt-4">
+                        <div className="flex justify-between font-mono-custom text-sm text-white/55"><span>Subtotal</span><span className="text-white">{fmt(basePrice)}</span></div>
+                        <div className="flex justify-between font-mono-custom text-sm text-white/55"><span>Cargo de servicio (5%)</span><span className="text-white">{fmt(serviceFee)}</span></div>
+                        {addPassVip && <div className="flex justify-between font-mono-custom text-sm text-white/55"><span>Pass VIP ×{qty}</span><span className="text-yellow-300">{fmt(passTotal)}</span></div>}
+                        {!isDayTicket && addTransport && <div className="flex justify-between font-mono-custom text-sm text-white/55"><span>Transporte ×{qty}</span><span className="text-white/70">{fmt(transTotal)}</span></div>}
+                        <div className="flex justify-between pt-2 border-t border-white/10">
+                          <span className="font-display text-xl text-white">Total</span>
+                          <span className="font-display text-2xl text-aira-lime">{fmt(total)}</span>
+                        </div>
+                      </div>
+
+                      {/* Pago en cuotas — solo para paquete */}
+                      {!isDayTicket && (
+                        <div className="border-t border-white/10 pt-5">
+                          <AbonoSelector paymentMode={paymentMode} setPaymentMode={setPaymentMode} abonoPlanId={abonoPlanId} setAbonoPlanId={setAbonoPlanId} total={total} />
+                        </div>
+                      )}
+
+                      {/* Datos comprador */}
+                      <div className="border-t border-white/10 pt-5">
+                        <BuyerForm
+                          name={buyerName} email={buyerEmail} phone={buyerPhone}
+                          onChange={(field, value) => {
+                            if (field === 'name')  setBuyerName(value);
+                            if (field === 'email') setBuyerEmail(value);
+                            if (field === 'phone') setBuyerPhone(value);
+                          }}
+                        />
+                      </div>
+
+                      {paymentError && (
+                        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3">
+                          <p className="text-sm text-red-400">{paymentError}</p>
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap gap-3 pt-1 items-center">
+                        {!selectedEvent.initialAccessType || accessType === 'package' ? (
+                          <button
+                            className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 transition-colors"
+                            onClick={() => accessType === 'package' ? setStep(2) : (setAccessType(null), setStep(1))}
+                            disabled={isSubmitting}
+                          >Volver</button>
+                        ) : null}
+                        <button
+                          className="flex-1 min-w-[160px] px-6 py-3 rounded-full bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] hover:bg-white active:scale-[0.97] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={handleCheckout}
+                          disabled={isSubmitting}
+                        >
+                          {isSubmitting
+                            ? <><Loader2 className="w-4 h-4 animate-spin" /> Procesando...</>
+                            : <><Ticket className="w-4 h-4" /> Pagar {fmt(primerPago)}{effectivePaymentMode === 'abono' ? ' · 1ª cuota' : ''}</>
+                          }
+                        </button>
+                      </div>
+                      <p className="text-center font-mono-custom text-[8px] uppercase tracking-[0.2em] text-white/20 pt-1">
+                        Pago seguro · PSE · Tarjeta · Nequi · Daviplata
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+
+              {/* SIDEBAR */}
+              <aside className="hidden lg:block p-8 bg-white/[0.02] border-white/10">
+                <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-3">Evento</p>
+                <div className="rounded-2xl overflow-hidden border border-white/10 bg-white/[0.04]">
+                  {selectedEvent.image
+                    ? <img src={selectedEvent.image} alt={selectedEvent.venue} className="w-full aspect-video object-cover" loading="lazy" />
+                    : <div className="w-full aspect-video bg-gradient-to-br from-aira-blue/20 to-aira-lime/10" />}
+                  <div className="p-4 border-t border-white/10">
+                    <h5 className="font-display text-xl text-white mb-1">{selectedEvent.venue}</h5>
+                    <p className="text-xs text-white/45 mb-3">{selectedEvent.city} · {selectedEvent.date} · {selectedEvent.time}</p>
+                  </div>
+                </div>
+
+                {selectedDay && (
+                  <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                    <p className="font-mono-custom text-[9px] uppercase tracking-[0.24em] text-white/35 mb-2">{selectedDay.label} · Precio</p>
+                    <p className="font-display text-3xl" style={{ color: selectedDay.accentColor }}>{fmt(selectedDay.price)}</p>
+                    <p className="font-mono-custom text-[9px] text-white/35 mt-1">por persona · cargo de servicio incluido</p>
+                  </div>
+                )}
+
+                {!isDayTicket && (
+                  <div className="mt-4 rounded-2xl border border-aira-lime/15 bg-aira-lime/5 p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <CalendarClock className="w-4 h-4 text-aira-lime" />
+                      <p className="font-mono-custom text-[9px] uppercase tracking-[0.24em] text-aira-lime">Paga en cuotas</p>
+                    </div>
+                    <div className="space-y-2">
+                      {ABONO_PLANS.map(plan => (
+                        <div key={plan.id} className="flex items-center justify-between rounded-xl bg-aira-lime/5 border border-aira-lime/10 px-3 py-2">
+                          <p className="font-mono-custom text-[9px] uppercase tracking-[0.15em] text-white/50">{plan.label}</p>
+                          <p className="font-mono-custom text-[9px] text-aira-lime">{Math.round(plan.pct * 100)}% ahora</p>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="font-mono-custom text-[8px] text-white/30 mt-3 leading-relaxed">Tu cupo queda reservado desde el primer abono.</p>
+                  </div>
+                )}
+
+                <div className="mt-4 rounded-2xl border border-yellow-400/20 bg-yellow-400/5 p-4">
+                  <div className="flex items-center gap-2 mb-3"><Sparkles className="w-4 h-4 text-yellow-300" /><p className="font-mono-custom text-[9px] uppercase tracking-[0.24em] text-yellow-300">Pass VIP</p></div>
+                  <div className="space-y-2">
+                    {[
+                      { icon: '🛥', label: 'Yate VIP',             desc: 'Acceso exclusivo al yate' },
+                      { icon: '👑', label: 'Zona VIP Majestic',    desc: 'Área premium en el yate Majestic' },
+                      { icon: '🎵', label: 'Zona VIP Stage Joinn', desc: 'Acceso VIP al Stage Joinn' },
+                    ].map(item => (
+                      <div key={item.label} className="flex items-start gap-2.5 rounded-xl bg-yellow-400/8 border border-yellow-400/15 p-2.5">
+                        <span className="text-base shrink-0 mt-0.5">{item.icon}</span>
+                        <div>
+                          <p className="font-mono-custom text-[9px] uppercase tracking-[0.15em] text-yellow-300">{item.label}</p>
+                          <p className="text-[10px] text-white/40 mt-0.5">{item.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {accessType && (
+                    <p className="font-mono-custom text-[9px] text-yellow-300/60 mt-3">
+                      {accessType === 'day1' && `Día 1 · ${fmt(PASS_VIP_PRICES.day1)}/persona`}
+                      {accessType === 'day2' && `Día 2 · ${fmt(PASS_VIP_PRICES.day2)}/persona`}
+                      {accessType === 'day3' && `Día 3 · ${fmt(PASS_VIP_PRICES.day3)}/persona`}
+                      {accessType === 'package' && `Paquete · ${fmt(PASS_VIP_PRICES.package)}/persona`}
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <p className="font-mono-custom text-[9px] uppercase tracking-[0.24em] text-white/35 mb-3">Programa</p>
+                  <div className="space-y-3">
+                    {[
+                      { day: 'Día 1', items: ['After Fiesta de Yates', 'Noche de fiesta', 'Wellness'] },
+                      { day: 'Día 2', items: ['Yacht party', 'Yate Majestic · Stage Joinn', 'Noche de fiesta'] },
+                      { day: 'Día 3', items: ['Yacht party open deck', 'Wellness'] },
+                    ].map(({ day, items }) => (
+                      <div key={day}>
+                        <p className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-aira-lime/70 mb-1">{day}</p>
+                        <ul className="space-y-0.5">{items.map(i => <li key={i} className="text-xs text-white/45 flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-white/20 shrink-0" />{i}</li>)}</ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </aside>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal OTP — solo se activa para paquete */}
+      <OtpModal
+        isOpen={otpOpen}
+        phone={buyerPhone}
+        orderId={otpOrderId}
+        orderRef={otpOrderRef}
+        paymentUrl={otpPaymentUrl}
+        onClose={() => setOtpOpen(false)}
+      />
+    </>
+  );
+};
+
+export default TicketReserve;
