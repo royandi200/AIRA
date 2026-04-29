@@ -159,6 +159,16 @@ function AbonoSelector({ paymentMode, setPaymentMode, abonoPlanId, setAbonoPlanI
   );
 }
 
+const SUITE_COUNTRY_CODES = [
+  { code: "57",  flag: "🇨🇴", digits: 10 },
+  { code: "1",   flag: "🇺🇸", digits: 10 },
+  { code: "34",  flag: "🇪🇸", digits: 9  },
+  { code: "52",  flag: "🇲🇽", digits: 10 },
+  { code: "54",  flag: "🇦🇷", digits: 10 },
+  { code: "56",  flag: "🇨🇱", digits: 9  },
+  { code: "58",  flag: "🇻🇪", digits: 10 },
+];
+
 function BuyerForm({ name, email, onChange }: {
   name: string; email: string; phone: string;
   onChange: (field: 'name' | 'email' | 'phone', value: string) => void;
