@@ -523,7 +523,7 @@ const SuiteReserve = ({ isOpen, onClose }: SuiteReserveProps) => {
                       <div className="flex items-center gap-2">
                         <Bus className="w-4 h-4 text-white/40" />
                         <div>
-                          <p className="text-sm text-white">Transporte Bogotá \u2013 Guatapé</p>
+                          <p className="text-sm text-white">Transporte Bogotá – Guatapé</p>
                           <p className="font-mono-custom text-[9px] text-white/40">Ida y regreso · por persona</p>
                         </div>
                       </div>

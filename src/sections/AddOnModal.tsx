@@ -49,11 +49,23 @@ const ABONO_PLANS = [
   { id: 'a50',   label: '2 cuotas',      desc: '50% ahora · 50% antes del evento', pct: 0.50, badge: 'Popular' },
 ];
 
+const ADDON_COUNTRIES = [
+  { code: '57',  flag: '🇨🇴', digits: 10 },
+  { code: '1',   flag: '🇺🇸', digits: 10 },
+  { code: '34',  flag: '🇪🇸', digits: 9  },
+  { code: '52',  flag: '🇲🇽', digits: 10 },
+  { code: '54',  flag: '🇦🇷', digits: 10 },
+  { code: '56',  flag: '🇨🇱', digits: 9  },
+  { code: '58',  flag: '🇻🇪', digits: 10 },
+];
+
 export default function AddOnModal({ isOpen, onClose, type }: AddOnModalProps) {
   const [qty,      setQty]      = useState(1);
   const [nombre,   setNombre]   = useState('');
   const [email,    setEmail]    = useState('');
   const [phone,    setPhone]    = useState('');
+  const [cc,       setCc]       = useState('57');
+  const [localPh,  setLocalPh]  = useState('');
   const [planId,   setPlanId]   = useState('full');
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
@@ -61,7 +73,7 @@ export default function AddOnModal({ isOpen, onClose, type }: AddOnModalProps) {
 
   // Reset on open
   useEffect(() => {
-    if (isOpen) { setStep('detail'); setError(null); setQty(1); }
+    if (isOpen) { setStep('detail'); setError(null); setQty(1); setLocalPh(''); setCc('57'); setPhone(''); }
   }, [isOpen, type]);
 
   // Lenis stop + interceptar wheel para scroll interno
@@ -90,8 +102,8 @@ export default function AddOnModal({ isOpen, onClose, type }: AddOnModalProps) {
   const primer  = Math.ceil(total * plan.pct);
 
   const handlePay = async () => {
-    if (!nombre.trim() || !email.trim() || !phone.trim()) {
-      setError('Por favor completa todos los campos.'); return;
+    if (!nombre.trim() || !email.trim() || !phone.trim() || phone.length < 10) {
+      setError('Por favor completa todos los campos con un número válido.'); return;
     }
     setLoading(true); setError(null);
     try {
@@ -276,10 +288,32 @@ export default function AddOnModal({ isOpen, onClose, type }: AddOnModalProps) {
                     className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-aira-lime/50 focus:bg-white/[0.06] transition-all"/>
                 </div>
                 <div>
-                  <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Celular (WhatsApp) *</label>
-                  <input type="tel" value={phone} onChange={e => { setPhone(e.target.value); setError(null); }}
-                    placeholder="+57 300 000 0000"
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-aira-lime/50 focus:bg-white/[0.06] transition-all"/>
+                  <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Celular WhatsApp *</label>
+                  {(() => {
+                    const country = ADDON_COUNTRIES.find(x => x.code === cc) ?? ADDON_COUNTRIES[0];
+                    const digits  = localPh.replace(/\D/g, '');
+                    const valid   = digits.length === country.digits;
+                    return (
+                      <>
+                        <div className="flex">
+                          <select value={cc} onChange={e => { setCc(e.target.value); setLocalPh(''); setPhone(''); setError(null); }}
+                            className="rounded-l-xl border border-white/10 bg-white/[0.06] px-2 py-3 text-sm text-white focus:outline-none shrink-0" style={{minWidth:72}}>
+                            {ADDON_COUNTRIES.map(x => <option key={x.code} value={x.code} style={{background:'#0e1726'}}>{x.flag} +{x.code}</option>)}
+                          </select>
+                          <input type="tel" value={localPh} inputMode="numeric" maxLength={country.digits}
+                            placeholder={'0'.repeat(country.digits)}
+                            onChange={e => {
+                              const clean = e.target.value.replace(/\D/g, '').slice(0, country.digits);
+                              setLocalPh(clean); setError(null);
+                              setPhone(clean.length === country.digits ? `${cc}${clean}` : '');
+                            }}
+                            className={`flex-1 rounded-r-xl border-y border-r bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none transition-all ${localPh && !valid ? 'border-red-400/40' : 'border-white/10 focus:border-aira-lime/50'}`}/>
+                        </div>
+                        {localPh && !valid && <p className="font-mono-custom text-[9px] text-red-400/80 mt-1">Ingresa exactamente {country.digits} dígitos</p>}
+                        {valid && <p className="font-mono-custom text-[9px] text-aira-lime/60 mt-1">✓ +{cc} {localPh}</p>}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 
