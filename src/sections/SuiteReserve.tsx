@@ -159,25 +159,45 @@ function AbonoSelector({ paymentMode, setPaymentMode, abonoPlanId, setAbonoPlanI
   );
 }
 
-function BuyerForm({ name, email, phone, onChange }: {
+function BuyerForm({ name, email, onChange }: {
   name: string; email: string; phone: string;
   onChange: (field: 'name' | 'email' | 'phone', value: string) => void;
 }) {
-  const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-amber-400/50 focus:bg-white/[0.06] transition-all";
+  const [cc, setCc]       = useState('57');
+  const [local, setLocal] = useState('');
+  const country = SUITE_COUNTRY_CODES.find(x => x.code === cc) ?? SUITE_COUNTRY_CODES[0];
+  const digits  = local.replace(/\D/g, '');
+  const valid   = digits.length === country.digits;
+  const iCls    = "w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-amber-400/50 focus:bg-white/[0.06] transition-all";
+  const handleLocal = (v: string) => {
+    const clean = v.replace(/\D/g, '').slice(0, country.digits);
+    setLocal(clean);
+    onChange('phone', clean.length === country.digits ? `${cc}${clean}` : '');
+  };
   return (
     <div className="space-y-3">
       <p className="font-mono-custom text-[9px] uppercase tracking-[0.28em] text-white/35 mb-3">Datos del comprador</p>
       <div>
         <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Nombre completo *</label>
-        <input type="text" value={name} onChange={e => onChange('name', e.target.value)} placeholder="Tu nombre" className={inputClass} required />
+        <input type="text" value={name} onChange={e => onChange('name', e.target.value)} placeholder="Tu nombre" className={iCls} required />
       </div>
       <div>
         <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Correo electrónico *</label>
-        <input type="email" value={email} onChange={e => onChange('email', e.target.value)} placeholder="tu@email.com" className={inputClass} required />
+        <input type="email" value={email} onChange={e => onChange('email', e.target.value)} placeholder="tu@email.com" className={iCls} required />
       </div>
       <div>
-        <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Celular (WhatsApp) *</label>
-        <input type="tel" value={phone} onChange={e => onChange('phone', e.target.value)} placeholder="+57 300 000 0000" className={inputClass} required />
+        <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Celular WhatsApp *</label>
+        <div className="flex">
+          <select value={cc} onChange={e => { setCc(e.target.value); setLocal(''); onChange('phone',''); }}
+            className="rounded-l-xl border border-white/10 bg-white/[0.06] px-2 py-3 text-sm text-white focus:outline-none shrink-0" style={{minWidth:72}}>
+            {SUITE_COUNTRY_CODES.map(x => <option key={x.code} value={x.code} style={{background:'#0e1726'}}>{x.flag} +{x.code}</option>)}
+          </select>
+          <input type="tel" value={local} onChange={e => handleLocal(e.target.value)}
+            placeholder={'0'.repeat(country.digits)} maxLength={country.digits} inputMode="numeric"
+            className={`flex-1 rounded-r-xl border-y border-r bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none transition-all ${local && !valid ? 'border-red-400/40' : 'border-white/10 focus:border-amber-400/50'}`}/>
+        </div>
+        {local && !valid && <p className="font-mono-custom text-[9px] text-red-400/80 mt-1">Ingresa exactamente {country.digits} dígitos</p>}
+        {valid && <p className="font-mono-custom text-[9px] text-amber-400/60 mt-1">✓ +{cc} {local}</p>}
       </div>
     </div>
   );
