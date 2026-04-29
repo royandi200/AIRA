@@ -48,15 +48,15 @@ const COUNTRY_CODES = [
   {code:'56', flag:'🇨🇱', digits:9 },
 ];
 
-type AuthMethod = 'phone' | 'email';
+
 type OtpSubStep = 'input' | 'code';
 
 function AuthStep({ onVerified }: { onVerified: (identifier: string) => void }) {
-  const [method,      setMethod]      = useState<AuthMethod>('phone');
+  const method = 'phone';
   const [subStep,     setSubStep]     = useState<OtpSubStep>('input');
   const [countryCode, setCountryCode] = useState('57');
   const [localPhone,  setLocalPhone]  = useState('');
-  const [email,       setEmail]       = useState('');
+
   const [digits,      setDigits]      = useState(['','','','','','']);
   const [sending,     setSending]     = useState(false);
   const [verifying,   setVerifying]   = useState(false);
@@ -68,7 +68,7 @@ function AuthStep({ onVerified }: { onVerified: (identifier: string) => void }) 
   const digitsOnly = localPhone.replace(/\D/g,'');
   const fullPhone  = `${countryCode}${digitsOnly}`;
   const phoneValid = digitsOnly.length === selectedCountry.digits;
-  const emailValid = email.includes('@') && email.includes('.');
+
 
   useEffect(() => {
     if (countdown <= 0) return;
@@ -81,7 +81,7 @@ function AuthStep({ onVerified }: { onVerified: (identifier: string) => void }) 
     try {
       const res = await fetch('/api/otp-reservas-enviar', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(method==='phone' ? {phone:fullPhone} : {email:email.trim()}),
+        body: JSON.stringify({phone:fullPhone}),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error||'Error al enviar código');
@@ -97,13 +97,11 @@ function AuthStep({ onVerified }: { onVerified: (identifier: string) => void }) 
     try {
       const res = await fetch('/api/otp-reservas-verificar', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(method==='phone'
-          ? {phone:fullPhone, otp:code}
-          : {email:email.trim(), otp:code}),
+        body: JSON.stringify({phone:fullPhone, otp:code}),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error||'Código incorrecto');
-      onVerified(method==='phone' ? fullPhone : email.trim());
+      onVerified(fullPhone);
     } catch(e:any) { setError(e.message); }
     finally { setVerifying(false); }
   };
@@ -128,13 +126,13 @@ function AuthStep({ onVerified }: { onVerified: (identifier: string) => void }) 
     <div className="space-y-5">
       <div className="text-center">
         <div className="w-14 h-14 rounded-2xl bg-aira-blue/20 border border-aira-blue/30 flex items-center justify-center mx-auto mb-4">
-          {method==='phone' ? <MessageCircle className="w-7 h-7 text-aira-blue"/> : <ShieldCheck className="w-7 h-7 text-aira-blue"/>}
+          <MessageCircle className="w-7 h-7 text-aira-blue"/>
         </div>
         <p className="font-mono-custom text-[9px] uppercase tracking-[0.3em] text-aira-lime/70 mb-1">Código de verificación</p>
         <p className="text-sm text-white/60">
           Enviamos un código a{' '}
           <span className="text-white/80 font-mono-custom text-xs">
-            {method==='phone' ? `+${fullPhone}` : email}
+            `+${fullPhone}`
           </span>
         </p>
       </div>
@@ -184,57 +182,36 @@ function AuthStep({ onVerified }: { onVerified: (identifier: string) => void }) 
         <p className="text-sm text-white/50">Verifica tu identidad para ver tus boletas y pagar cuotas</p>
       </div>
 
-      {/* Method selector */}
-      <div className="flex gap-1 p-1 bg-white/5 rounded-xl">
-        {(['phone','email'] as AuthMethod[]).map(m=>(
-          <button key={m} onClick={()=>{setMethod(m);setError(null);}}
-            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-              method===m ? 'bg-aira-lime text-aira-darkBlue' : 'text-white/40 hover:text-white/60'
-            }`}>
-            {m==='phone' ? '📱 WhatsApp' : '📧 Email'}
-          </button>
-        ))}
-      </div>
-
-      {method==='phone' ? (
-        <div>
-          <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Celular WhatsApp</label>
-          <div className="flex gap-2">
-            <select value={countryCode} onChange={e=>{setCountryCode(e.target.value);setLocalPhone('');}}
-              className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm text-white focus:outline-none focus:border-aira-lime/50 transition-all"
-              style={{minWidth:'80px'}}>
-              {COUNTRY_CODES.map(c=>(
-                <option key={c.code} value={c.code} style={{background:'#08101f'}}>
-                  {c.flag} +{c.code}
-                </option>
-              ))}
-            </select>
-            <div className="relative flex-1">
-              <input type="tel" value={localPhone}
-                onChange={e=>{setLocalPhone(e.target.value.replace(/\D/g,'').slice(0,selectedCountry.digits));setError(null);}}
-                onKeyDown={e=>e.key==='Enter'&&phoneValid&&sendOtp()}
-                placeholder={'0'.repeat(selectedCountry.digits)}
-                className={`${inputClass} pr-12`} autoFocus inputMode="tel"/>
-              <span className={`absolute right-3 top-1/2 -translate-y-1/2 font-mono-custom text-[10px] transition-colors ${
-                digitsOnly.length===selectedCountry.digits?'text-aira-lime':'text-white/25'
-              }`}>{digitsOnly.length}/{selectedCountry.digits}</span>
-            </div>
+      {/* Phone only */}
+      <div>
+        <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Celular WhatsApp</label>
+        <div className="flex gap-2">
+          <select value={countryCode} onChange={e=>{setCountryCode(e.target.value);setLocalPhone('');}}
+            className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm text-white focus:outline-none focus:border-aira-lime/50 transition-all"
+            style={{minWidth:'80px'}}>
+            {COUNTRY_CODES.map(co=>(
+              <option key={co.code} value={co.code} style={{background:'#08101f'}}>
+                {co.flag} +{co.code}
+              </option>
+            ))}
+          </select>
+          <div className="relative flex-1">
+            <input type="tel" value={localPhone}
+              onChange={e=>{setLocalPhone(e.target.value.replace(/\D/g,'').slice(0,selectedCountry.digits));setError(null);}}
+              onKeyDown={e=>e.key==='Enter'&&phoneValid&&sendOtp()}
+              placeholder={'0'.repeat(selectedCountry.digits)}
+              className={`${inputClass} pr-12`} autoFocus inputMode="tel"/>
+            <span className={`absolute right-3 top-1/2 -translate-y-1/2 font-mono-custom text-[10px] transition-colors ${
+              digitsOnly.length===selectedCountry.digits?'text-aira-lime':'text-white/25'
+            }`}>{digitsOnly.length}/{selectedCountry.digits}</span>
           </div>
         </div>
-      ) : (
-        <div>
-          <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Correo electrónico</label>
-          <input type="email" value={email}
-            onChange={e=>{setEmail(e.target.value);setError(null);}}
-            onKeyDown={e=>e.key==='Enter'&&emailValid&&sendOtp()}
-            placeholder="tu@email.com" className={inputClass} autoFocus/>
-        </div>
-      )}
+      </div>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       <button onClick={sendOtp}
-        disabled={sending||(method==='phone'?!phoneValid:!emailValid)}
+        disabled={sending||!phoneValid}
         className="w-full py-3.5 rounded-2xl bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] hover:bg-white active:scale-[0.97] transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
         {sending
           ? <><Loader2 className="w-4 h-4 animate-spin"/>Enviando código…</>
@@ -489,7 +466,7 @@ export default function MisReservas({ isOpen, onClose }: MisReservasProps) {
                 <p className="text-sm text-red-400 font-semibold">{error}</p>
                 <button onClick={()=>{setVerified(false);setError(null);}}
                   className="text-xs text-white/40 hover:text-white/60 mt-1 transition-colors">
-                  Intentar con otro número / email
+                  Intentar con otro número
                 </button>
               </div>
             </div>
@@ -500,7 +477,7 @@ export default function MisReservas({ isOpen, onClose }: MisReservasProps) {
               <p className="text-xs text-white/40 mb-4">No encontramos reservas asociadas a este contacto.</p>
               <button onClick={()=>setVerified(false)}
                 className="text-xs text-aira-lime/70 hover:text-aira-lime transition-colors underline underline-offset-2">
-                Intentar con otro número / email
+                Intentar con otro número
               </button>
             </div>
           ) : (
