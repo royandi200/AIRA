@@ -236,25 +236,79 @@ function AbonoSelector({ paymentMode, setPaymentMode, abonoPlanId, setAbonoPlanI
   );
 }
 
-function BuyerForm({ name, email, phone, onChange }: {
+function BuyerForm({ name, email, onChange }: {
   name: string; email: string; phone: string;
   onChange: (field: 'name' | 'email' | 'phone', value: string) => void;
 }) {
-  const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-aira-lime/50 focus:bg-white/[0.06] transition-all";
+  const [countryCode, setCountryCode] = useState('57');
+  const [localPhone,  setLocalPhone]  = useState('');
+  const country     = COUNTRY_CODES.find(c => c.code === countryCode) ?? COUNTRY_CODES[0];
+  const digitsOnly  = localPhone.replace(/\D/g, '');
+  const isValid     = digitsOnly.length === country.digits;
+  const inputClass  = "w-full rounded-xl border bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none transition-all";
+  const phoneClass  = `flex-1 rounded-r-xl border-y border-r bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none transition-all ${
+    localPhone && !isValid ? 'border-red-400/40 focus:border-red-400/60' : 'border-white/10 focus:border-aira-lime/50 focus:bg-white/[0.06]'
+  }`;
+
+  const handleLocal = (v: string) => {
+    const clean = v.replace(/\D/g, '').slice(0, country.digits);
+    setLocalPhone(clean);
+    const full = clean.length === country.digits ? `${countryCode}${clean}` : '';
+    onChange('phone', full);
+  };
+
+  const handleCountry = (code: string) => {
+    setCountryCode(code);
+    setLocalPhone('');
+    onChange('phone', '');
+  };
+
   return (
     <div className="space-y-3">
       <p className="font-mono-custom text-[9px] uppercase tracking-[0.28em] text-white/35 mb-3">Datos del comprador</p>
       <div>
         <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Nombre completo *</label>
-        <input type="text" value={name} onChange={e => onChange('name', e.target.value)} placeholder="Tu nombre" className={inputClass} required />
+        <input type="text" value={name} onChange={e => onChange('name', e.target.value)} placeholder="Tu nombre" className={`${inputClass} border-white/10 focus:border-aira-lime/50 focus:bg-white/[0.06]`} required />
       </div>
       <div>
         <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Correo electrónico *</label>
-        <input type="email" value={email} onChange={e => onChange('email', e.target.value)} placeholder="tu@email.com" className={inputClass} required />
+        <input type="email" value={email} onChange={e => onChange('email', e.target.value)} placeholder="tu@email.com" className={`${inputClass} border-white/10 focus:border-aira-lime/50 focus:bg-white/[0.06]`} required />
       </div>
       <div>
-        <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Celular (WhatsApp) *</label>
-        <input type="tel" value={phone} onChange={e => onChange('phone', e.target.value)} placeholder="+57 300 000 0000" className={inputClass} required />
+        <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Celular WhatsApp *</label>
+        <div className="flex">
+          <select
+            value={countryCode}
+            onChange={e => handleCountry(e.target.value)}
+            className="rounded-l-xl border border-white/10 bg-white/[0.06] px-2 py-3 text-sm text-white focus:outline-none focus:border-aira-lime/50 transition-all shrink-0"
+            style={{ minWidth: 72 }}
+          >
+            {COUNTRY_CODES.map(c => (
+              <option key={c.code} value={c.code} style={{ background: '#0e1726' }}>
+                {c.flag} +{c.code}
+              </option>
+            ))}
+          </select>
+          <input
+            type="tel"
+            value={localPhone}
+            onChange={e => handleLocal(e.target.value)}
+            placeholder={'0'.repeat(country.digits)}
+            className={phoneClass}
+            inputMode="numeric"
+            maxLength={country.digits}
+          />
+        </div>
+        {localPhone && !isValid && (
+          <p className="font-mono-custom text-[9px] text-red-400/80 mt-1">
+            Ingresa exactamente {country.digits} dígitos
+          </p>
+        )}
+        {isValid && (
+          <p className="font-mono-custom text-[9px] text-aira-lime/60 mt-1">
+            ✓ +{countryCode} {localPhone}
+          </p>
+        )}
       </div>
     </div>
   );
