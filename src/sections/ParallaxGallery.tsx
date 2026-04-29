@@ -87,7 +87,7 @@ function PhotoModal({
       className="fixed inset-0 z-[300] flex flex-col"
       style={{ background: 'rgba(3,4,12,0.97)', backdropFilter: 'blur(24px)' }}>
 
-      {/* Header — solo título y contador, sin botón cerrar */}
+      {/* Header — título y contador, sin botón cerrar */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/8 shrink-0">
         <div>
           <p className="font-mono-custom text-[9px] uppercase tracking-[0.35em] text-aira-lime/60">{img.date}</p>
@@ -98,26 +98,26 @@ function PhotoModal({
         </span>
       </div>
 
-      {/* Main image */}
+      {/* Main image — imagen IGUAL que antes + botón X flotante cerca */}
       <div className="flex-1 flex items-center justify-center px-16 py-6 min-h-0 relative">
         <button onClick={prev}
           className="absolute left-4 z-10 w-12 h-12 rounded-full border border-white/15 flex items-center justify-center text-white/60 hover:bg-white/10 hover:text-white transition-all hover:scale-110 active:scale-95">
           <ChevronLeft className="w-6 h-6"/>
         </button>
 
-        {/* Imagen con botón X superpuesto en su esquina */}
-        <div className="relative max-w-full max-h-full flex items-center justify-center">
-          <img ref={imgRef} src={img.src} alt={img.title}
-            className="max-w-full max-h-full object-contain rounded-2xl"
-            style={{ boxShadow: '0 40px 120px rgba(0,0,0,0.8)' }}/>
-          <button
-            onClick={close}
-            aria-label="Cerrar"
-            className="absolute top-3 right-3 z-20 w-10 h-10 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:scale-110 active:scale-95 transition-all"
-            style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)' }}>
-            <X className="w-5 h-5"/>
-          </button>
-        </div>
+        {/* Imagen sin wrapper — tamaño original preservado */}
+        <img ref={imgRef} src={img.src} alt={img.title}
+          className="max-w-full max-h-full object-contain rounded-2xl"
+          style={{ boxShadow: '0 40px 120px rgba(0,0,0,0.8)' }}/>
+
+        {/* Botón X cerca de la foto — esquina superior derecha del área de imagen */}
+        <button
+          onClick={close}
+          aria-label="Cerrar"
+          className="absolute top-4 right-20 z-20 w-10 h-10 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:scale-110 active:scale-95 transition-all"
+          style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)' }}>
+          <X className="w-5 h-5"/>
+        </button>
 
         <button onClick={next}
           className="absolute right-4 z-10 w-12 h-12 rounded-full border border-white/15 flex items-center justify-center text-white/60 hover:bg-white/10 hover:text-white transition-all hover:scale-110 active:scale-95">
@@ -192,7 +192,6 @@ function VideoModal({
         overflow: 'hidden',
         zIndex: 305,
       });
-
       tl.to(overlayRef.current, { opacity: 1, duration: 0.25, ease: 'power2.out' }, 0)
         .to(containerRef.current, {
           left:         cx,
@@ -221,7 +220,6 @@ function VideoModal({
         overflow: 'hidden',
         zIndex:   305,
       });
-
       tl.to(overlayRef.current, { opacity: 1, duration: 0.2, ease: 'power2.out' }, 0)
         .to(containerRef.current, {
           scale:   1,
@@ -271,17 +269,17 @@ function VideoModal({
         style={{ background: 'rgba(3,4,12,0.92)', backdropFilter: 'blur(20px)', opacity: 0 }}
         onClick={close}/>
 
-      {/* Video container con botón X superpuesto en su esquina */}
+      {/* Video container con X superpuesto en su esquina */}
       <div ref={containerRef}
         className="fixed bg-black overflow-hidden"
         style={{ boxShadow: '0 60px 160px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.06)' }}
         onClick={e => e.stopPropagation()}>
 
-        {/* Botón cerrar — overlay sobre el video */}
+        {/* Botón cerrar sobre el video */}
         <button
           onClick={close}
           aria-label="Cerrar"
-          className="absolute top-3 right-3 z-[10] w-10 h-10 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:scale-110 active:scale-95 transition-all"
+          className="absolute top-3 right-3 z-10 w-10 h-10 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:scale-110 active:scale-95 transition-all"
           style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)' }}>
           <X className="w-5 h-5"/>
         </button>
