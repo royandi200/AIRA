@@ -87,7 +87,7 @@ export const albumCubeConfig: AlbumCubeConfig = {
       subtitle: "DÍA 1",
       description: "La fiesta arranca en el agua. Yacht party en el embalse más mágico de Colombia, rodeado de naturaleza y música electrónica.",
       tag: "15 AGO",
-      price: "$80.000",
+      price: "$100.000",
       image: `${CLD}/majestic1_rugvtk`,
     },
     {
@@ -96,7 +96,7 @@ export const albumCubeConfig: AlbumCubeConfig = {
       subtitle: "DÍA 2",
       description: "El yate de agua dulce más grande de Latinoamérica se convierte en el escenario más exclusivo. Fiesta en Majestic y noche en Stage Joinn.",
       tag: "16 AGO",
-      price: "$150.000",
+      price: "$170.000",
       image: `${CLD}/majestic2_jkxdyj`,
     },
     {
@@ -105,7 +105,7 @@ export const albumCubeConfig: AlbumCubeConfig = {
       subtitle: "DÍA 3",
       description: "El cierre perfecto. Open deck en el embalse al atardecer, con sessiones de meditación y la mejor música para despedir el festival.",
       tag: "17 AGO",
-      price: "$50.000",
+      price: "$70.000",
       image: `${CLD}/majestic3_amqbgj`,
     },
     {
@@ -360,7 +360,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
       image: `${CLD}/Fraternidad_Bar_y_Restaurante_ujuwfo`,
       category: "premium",
       description: "Bus directo ida y vuelta Medellín → Guatapé.",
-      price: "$ 180.000",
+      price: "$ 150.000",
     },
     {
       id: 5,
@@ -372,7 +372,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
       image: `${CLD}/Balcon_Suite_smpfes`,
       category: "premium",
       description: "Alojamiento premium en el embalse. 3 noches.",
-      price: "$ 2.200.000",
+      price: "$ 2.500.000",
     },
 
     // ── POR DÍA ────────────────────────────────────────────────────────────
@@ -385,7 +385,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
       status: "on-sale",
       image: `${CLD}/majestic1_rugvtk`,
       category: "daily",
-      price: "$ 80.000",
+      price: "$ 100.000",
     },
     {
       id: 2,
@@ -396,7 +396,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
       status: "on-sale",
       image: `${CLD}/majestic2_jkxdyj`,
       category: "daily",
-      price: "$ 150.000",
+      price: "$ 170.000",
     },
     {
       id: 3,
@@ -407,7 +407,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
       status: "on-sale",
       image: `${CLD}/majestic3_amqbgj`,
       category: "daily",
-      price: "$ 50.000",
+      price: "$ 70.000",
     },
   ],
 };
