@@ -23,6 +23,26 @@ function genRef() {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!auth(req)) return res.status(401).json({ error: 'No autorizado' });
 
+  // Ensure table exists always
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS manual_registros (
+      id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      nombre     VARCHAR(200) NOT NULL,
+      cedula     VARCHAR(50)  NULL,
+      movil      VARCHAR(30)  NULL,
+      evento_id  INT UNSIGNED NULL,
+      paquete    VARCHAR(100) NULL,
+      monto_total     DECIMAL(12,2) NULL,
+      monto_recibido  DECIMAL(12,2) NULL,
+      monto_pendiente DECIMAL(12,2) NULL,
+      medio_pago VARCHAR(50) NULL,
+      fecha_pago DATE NULL,
+      notas      TEXT NULL,
+      order_ref  VARCHAR(50)  NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB
+  `);
+
   // GET — listar registros manuales
   if (req.method === 'GET') {
     const [rows]: any = await pool.query(`

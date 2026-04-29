@@ -235,6 +235,16 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
     if (authed && token) fetchData(token);
   }, [authed, token, fetchData]);
 
+  // Cargar referidos cuando se abre ese tab
+  useEffect(() => {
+    if (tab === 'referidos' && token) {
+      fetch('/api/referidos', { headers: { 'x-admin-token': token } })
+        .then(r => r.json())
+        .then(d => setCodigos(d.codigos || []))
+        .catch(console.error);
+    }
+  }, [tab, token]);
+
   // Cerrar con Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
