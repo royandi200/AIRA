@@ -542,16 +542,7 @@ const ParallaxGallery = () => {
               </div>
             ))}
 
-            {/* End CTA */}
-            <div className="flex-shrink-0 flex flex-col items-center justify-center w-[300px] h-[300px]">
-              <button onClick={scrollToTour}
-                className="group flex flex-col items-center gap-4 text-white hover:text-neon-cyan transition-colors">
-                <div className="w-20 h-20 rounded-full border border-white/20 group-hover:border-neon-cyan flex items-center justify-center transition-colors">
-                  <ArrowRight className="w-8 h-8 group-hover:translate-x-1 transition-transform"/>
-                </div>
-                {parallaxGalleryConfig.endCtaText && <span className="font-display text-lg uppercase tracking-wider">{parallaxGalleryConfig.endCtaText}</span>}
-              </button>
-            </div>
+
           </div>
 
           {/* Scroll progress */}
@@ -593,11 +584,19 @@ const ParallaxGallery = () => {
       <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-6"
         style={{ background: 'rgba(3,6,18,0.92)', backdropFilter: 'blur(20px)' }}
         onClick={closeModal}>
-        <div className="relative w-full md:max-w-2xl max-h-[92vh] overflow-y-auto rounded-t-3xl md:rounded-3xl"
+        <div className="relative w-full md:max-w-3xl rounded-t-3xl md:rounded-3xl overflow-y-auto md:overflow-visible"
           style={{ background: '#09101f', border: '1px solid rgba(255,255,255,0.08)' }}
           onClick={e => e.stopPropagation()}>
-          {/* Photos */}
-          <div className="relative h-64 md:h-80 overflow-hidden rounded-t-3xl">
+          {/* Photos — touch swipe + dots */}
+          <div className="relative h-64 md:h-80 overflow-hidden rounded-t-3xl"
+            onTouchStart={e => { (e.currentTarget as any)._tx = e.touches[0].clientX; }}
+            onTouchEnd={e => {
+              const dx = e.changedTouches[0].clientX - ((e.currentTarget as any)._tx || 0);
+              if (Math.abs(dx) < 40) return;
+              const total = z.images?.length || 1;
+              if (dx < 0) setExpModal(m => ({ ...m, imgIdx: Math.min(m.imgIdx + 1, total - 1) }));
+              else        setExpModal(m => ({ ...m, imgIdx: Math.max(m.imgIdx - 1, 0) }));
+            }}>
             <img src={(z.images && z.images[expModal.imgIdx]) || z.src} alt={z.title}
               className="w-full h-full object-cover transition-all duration-500"/>
             <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, #09101f 0%, transparent 55%)' }}/>
@@ -625,11 +624,11 @@ const ParallaxGallery = () => {
             <p className="font-mono-custom text-[9px] uppercase tracking-[0.3em] mb-2" style={{ color: accent + '99' }}>
               {z.subtitle} · AIRA 2026
             </p>
-            <h3 className="font-display text-4xl md:text-5xl text-white leading-none mb-4">{z.title}</h3>
+            <h3 className="font-display text-3xl md:text-4xl text-white leading-none mb-3">{z.title}</h3>
             {z.description && <p className="text-white/65 text-sm leading-relaxed mb-3">{z.description}</p>}
-            {z.detail && <p className="text-white/45 text-sm leading-relaxed mb-6">{z.detail}</p>}
+            {z.detail && <p className="text-white/45 text-sm leading-relaxed mb-4">{z.detail}</p>}
             {z.highlights && (
-              <div className="grid grid-cols-2 gap-3 mb-6">
+              <div className="grid grid-cols-2 gap-2 mb-5">
                 {z.highlights.map((h: string, i: number) => (
                   <div key={i} className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: accent }}/>
