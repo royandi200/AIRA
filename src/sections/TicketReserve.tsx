@@ -780,7 +780,24 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
   const [selectedStageId, setSelectedStageId]= useState<string | null>(null);
   const [codigoRef,       setCodigoRef]      = useState('');
   const [codigoError,     setCodigoError]    = useState('');
+  const [codigoValid,     setCodigoValid]    = useState(false);
+  const [codigoChecking,  setCodigoChecking] = useState(false);
   const isReferidos = selectedStageId === 'referidos';
+
+  const validateCodigo = async (cod: string) => {
+    if (!cod.trim()) { setCodigoValid(false); return; }
+    setCodigoChecking(true); setCodigoError(''); setCodigoValid(false);
+    try {
+      const r = await fetch('/api/referidos-validar', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigo: cod, tipo: 'referidos' }),
+      });
+      const d = await r.json();
+      if (d.valid) { setCodigoValid(true); setCodigoError(''); }
+      else { setCodigoValid(false); setCodigoError(d.error || 'Código inválido'); }
+    } catch { setCodigoError('Error validando código'); }
+    finally { setCodigoChecking(false); }
+  };
 
   const validateCodigo = async (cod: string) => {
     if (!cod.trim()) { setCodigoValid(false); return; }
@@ -1173,12 +1190,12 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                           onChange={e => { setCodigoRef(e.target.value.toUpperCase()); setCodigoError(''); }}
                           placeholder="EJ: AIRA-XYZ123"
                           className={`w-full rounded-xl border px-4 py-3 bg-white/5 text-white font-mono-custom text-sm tracking-widest uppercase placeholder:text-white/20 outline-none transition-all ${
-                            codigoError ? 'border-red-400/50 bg-red-400/5' : codigoRef ? 'border-aira-lime/50 bg-aira-lime/5' : 'border-white/15 focus:border-white/30'
+                            codigoError ? 'border-red-400/50 bg-red-400/5' : codigoValid ? 'border-aira-lime/60 bg-aira-lime/8' : codigoChecking ? 'border-white/20' : 'border-white/15 focus:border-white/30'
                           }`}
                         />
                         {codigoError && <p className="text-xs text-red-400 mt-1">{codigoError}</p>}
                   {codigoChecking && <p className="text-xs text-white/40 mt-1">Verificando código...</p>}
-                  {codigoValid && <p className="text-xs text-aira-400 mt-1">✓ Código válido</p>}
+                  {codigoValid && <p className="text-xs text-aira-lime mt-1">✓ Código válido</p>}
                         <p className="text-[10px] text-white/30 mt-1">Ingresa el código que te compartió tu referido.</p>
                       </div>
                     )}
