@@ -27,9 +27,9 @@ const ABONO_PLANS = [
 ];
 
 const PASS_VIP_PRICES: Record<AccessType, number> = {
-  day1: 50_000,
-  day2: 100_000,
-  day3: 40_000,
+  day1: 100_000,
+  day2: 150_000,
+  day3: 100_000,
   package: 450_000,
 };
 
@@ -875,7 +875,6 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
 
   const basePrice = useMemo(() => {
     if (accessType === 'day1') return 80_000  * qty;
-    if (accessType === 'day2') return 150_000 * qty;
     if (accessType === 'day3') return 50_000  * qty;
     if (accessType === 'package' && selectedStage) return selectedStage.price * qty;
     return 0;

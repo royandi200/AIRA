@@ -7,21 +7,21 @@ interface SuiteReserveProps {
 }
 
 const SUITES = [
-  { id: 1, label: 'Suite N\u00ba 1', view: 'Vista represa norte', available: true },
-  { id: 2, label: 'Suite N\u00ba 2', view: 'Vista represa sur',   available: true },
-  { id: 3, label: 'Suite N\u00ba 3', view: 'Vista jardines',      available: true },
-  { id: 4, label: 'Suite N\u00ba 4', view: 'Vista represa norte', available: true },
-  { id: 5, label: 'Suite N\u00ba 5', view: 'Vista jardines',      available: false },
-  { id: 6, label: 'Suite N\u00ba 6', view: 'Vista represa sur',   available: true },
+  { id: 1, label: 'Suite Nº 1', view: 'Vista represa norte', available: true },
+  { id: 2, label: 'Suite Nº 2', view: 'Vista represa sur',   available: true },
+  { id: 3, label: 'Suite Nº 3', view: 'Vista jardines',      available: true },
+  { id: 4, label: 'Suite Nº 4', view: 'Vista represa norte', available: true },
+  { id: 5, label: 'Suite Nº 5', view: 'Vista jardines',      available: false },
+  { id: 6, label: 'Suite Nº 6', view: 'Vista represa sur',   available: true },
 ];
 
 const SUITE_PRICE    = 2_500_000;
-const TRANSPORT_PRICE = 150_000;
+const TRANSPORT_PRICE = 180_000;
 
 const ABONO_PLANS = [
-  { id: 'a50', label: '2 cuotas', pct: 0.50, desc: '50% ahora \u00b7 50% antes del evento', badge: 'Popular' },
-  { id: 'a33', label: '3 cuotas', pct: 0.33, desc: '33% ahora \u00b7 33% \u00b7 33% antes del evento', badge: null },
-  { id: 'a25', label: '4 cuotas', pct: 0.25, desc: '25% ahora \u00b7 resto en 3 cuotas', badge: null },
+  { id: 'a50', label: '2 cuotas', pct: 0.50, desc: '50% ahora · 50% antes del evento', badge: 'Popular' },
+  { id: 'a33', label: '3 cuotas', pct: 0.33, desc: '33% ahora · 33% · 33% antes del evento', badge: null },
+  { id: 'a25', label: '4 cuotas', pct: 0.25, desc: '25% ahora · resto en 3 cuotas', badge: null },
 ];
 
 type PaymentMode = 'full' | 'abono';
@@ -136,7 +136,7 @@ function AbonoSelector({ paymentMode, setPaymentMode, abonoPlanId, setAbonoPlanI
             <div className="flex items-start gap-2.5 rounded-xl border border-amber-400/20 bg-amber-400/5 px-3 py-2.5 mt-1">
               <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
               <p className="font-mono-custom text-[9px] text-amber-300/70 leading-relaxed">
-                El cupo queda reservado al realizar el primer abono. Las cuotas restantes se cobran autom\u00e1ticamente seg\u00fan el plan.
+                El cupo queda reservado al realizar el primer abono. Las cuotas restantes se cobran automáticamente según el plan.
               </p>
             </div>
           </div>
@@ -172,7 +172,7 @@ function BuyerForm({ name, email, phone, onChange }: {
         <input type="text" value={name} onChange={e => onChange('name', e.target.value)} placeholder="Tu nombre" className={inputClass} required />
       </div>
       <div>
-        <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Correo electr\u00f3nico *</label>
+        <label className="font-mono-custom text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5 block">Correo electrónico *</label>
         <input type="email" value={email} onChange={e => onChange('email', e.target.value)} placeholder="tu@email.com" className={inputClass} required />
       </div>
       <div>
@@ -260,7 +260,7 @@ const SuiteReserve = ({ isOpen, onClose }: SuiteReserveProps) => {
           phone:       buyerPhone.trim(),
           eventId:     'suite-aira',
           accessType:  'suite',
-          ticketLabel: `Suite AIRA N\u00ba ${selectedSuiteId} \u2014 ${selectedSuite?.view}`,
+          ticketLabel: `Suite AIRA Nº ${selectedSuiteId} \u2014 ${selectedSuite?.view}`,
           stageLabel:  null,
           qty:         1,
           basePrice:   SUITE_PRICE,
@@ -275,7 +275,7 @@ const SuiteReserve = ({ isOpen, onClose }: SuiteReserveProps) => {
             ticketTypeId: 0,
             quantity: 1,
             _unitPrice: SUITE_PRICE,
-            _label: `Suite AIRA N\u00ba ${selectedSuiteId}`,
+            _label: `Suite AIRA Nº ${selectedSuiteId}`,
           }],
         }),
       });
@@ -288,7 +288,7 @@ const SuiteReserve = ({ isOpen, onClose }: SuiteReserveProps) => {
       }
       window.location.href = data.paymentUrl;
     } catch (err: any) {
-      setPaymentError(err.message || 'Ocurri\u00f3 un error. Intenta de nuevo.');
+      setPaymentError(err.message || 'Ocurrió un error. Intenta de nuevo.');
     } finally {
       setIsSubmitting(false);
     }
@@ -329,11 +329,11 @@ const SuiteReserve = ({ isOpen, onClose }: SuiteReserveProps) => {
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <Star className="w-3.5 h-3.5 text-amber-400" fill="currentColor" />
-              <p className="font-mono-custom text-[10px] uppercase tracking-[0.35em] text-amber-400/80">Experiencia Premium \u00b7 Solo 6 suites</p>
+              <p className="font-mono-custom text-[10px] uppercase tracking-[0.35em] text-amber-400/80">Experiencia Premium · Solo 6 suites</p>
             </div>
             <h3 className="font-display text-2xl md:text-4xl text-white leading-none">Suite AIRA</h3>
             <p className="font-mono-custom text-xs md:text-sm text-white/40 mt-1.5">
-              Guatap\u00e9 \u00b7 3 d\u00edas, 2 noches \u00b7 Paquete completo
+              Guatapé · 3 días, 2 noches · Paquete completo
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -391,13 +391,13 @@ const SuiteReserve = ({ isOpen, onClose }: SuiteReserveProps) => {
             {/* \u2550\u2550\u2550\u2550 MAIN PANEL \u2550\u2550\u2550\u2550 */}
             <div className="p-5 md:p-8 lg:border-r border-white/[0.06]">
 
-              {/* \u2500\u2500 STEP 1: Selecci\u00f3n de suite \u2500\u2500 */}
+              {/* \u2500\u2500 STEP 1: Selección de suite \u2500\u2500 */}
               {step === 1 && (
                 <div>
                   <p className="font-mono-custom text-[10px] uppercase tracking-[0.3em] text-white/35 mb-2">Paso 1</p>
                   <h4 className="font-display text-3xl md:text-4xl text-white mb-1">Elige tu suite</h4>
                   <p className="text-sm text-white/50 mb-6">
-                    1 habitaci\u00f3n \u00b7 1 ba\u00f1o \u00b7 terraza privada \u00b7 jacuzzi \u00b7 capacidad 2 personas.
+                    1 habitación · 1 baño · terraza privada · jacuzzi · capacidad 2 personas.
                   </p>
 
                   <div className="flex flex-wrap gap-2 mb-6">
@@ -476,17 +476,17 @@ const SuiteReserve = ({ isOpen, onClose }: SuiteReserveProps) => {
                       </div>
                       <div>
                         <h5 className="font-display text-xl text-white">{selectedSuite.label}</h5>
-                        <p className="font-mono-custom text-[10px] text-white/40">{selectedSuite.view} \u00b7 Guatap\u00e9 \u00b7 3D/2N</p>
+                        <p className="font-mono-custom text-[10px] text-white/40">{selectedSuite.view} · Guatapé · 3D/2N</p>
                       </div>
                     </div>
 
                     {/* Event grid */}
                     <div className="grid grid-cols-2 gap-3">
                       {([
-                        ['Evento', 'AIRA Guatap\u00e9'],
+                        ['Evento', 'AIRA Guatapé'],
                         ['Capacidad', '2 personas (pareja)'],
-                        ['Duraci\u00f3n', '3 d\u00edas \u00b7 2 noches'],
-                        ['Check-in', 'D\u00eda 1 del evento'],
+                        ['Duración', '3 días · 2 noches'],
+                        ['Check-in', 'Día 1 del evento'],
                       ] as [string,string][]).map(([label, value]) => (
                         <div key={label} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
                           <p className="font-mono-custom text-[9px] uppercase tracking-[0.22em] text-white/35 mb-1">{label}</p>
@@ -503,10 +503,10 @@ const SuiteReserve = ({ isOpen, onClose }: SuiteReserveProps) => {
                           'Hospedaje 2 noches',
                           'Jacuzzi privado',
                           'Terraza con vista',
-                          'Recorrido Pe\u00f1ol & Guatap\u00e9',
-                          'Yacht parties (3 d\u00edas)',
+                          'Recorrido Peñol & Guatapé',
+                          'Yacht parties (3 días)',
                           'Yate Majestic',
-                          'Noches de m\u00fasica',
+                          'Noches de música',
                           'Open decks',
                           'Sesiones wellness',
                         ].map(item => (
@@ -523,8 +523,8 @@ const SuiteReserve = ({ isOpen, onClose }: SuiteReserveProps) => {
                       <div className="flex items-center gap-2">
                         <Bus className="w-4 h-4 text-white/40" />
                         <div>
-                          <p className="text-sm text-white">Transporte Bogot\u00e1 \u2013 Guatap\u00e9</p>
-                          <p className="font-mono-custom text-[9px] text-white/40">Ida y regreso \u00b7 por persona</p>
+                          <p className="text-sm text-white">Transporte Bogotá \u2013 Guatapé</p>
+                          <p className="font-mono-custom text-[9px] text-white/40">Ida y regreso · por persona</p>
                         </div>
                       </div>
                       <label className="flex items-center gap-2 cursor-pointer shrink-0">
@@ -556,7 +556,7 @@ const SuiteReserve = ({ isOpen, onClose }: SuiteReserveProps) => {
                     {/* Totals */}
                     <div className="space-y-2 border-t border-white/10 pt-4">
                       <div className="flex justify-between font-mono-custom text-sm text-white/55">
-                        <span>Suite AIRA \u00b7 pareja</span><span className="text-white">{fmt(SUITE_PRICE)}</span>
+                        <span>Suite AIRA · pareja</span><span className="text-white">{fmt(SUITE_PRICE)}</span>
                       </div>
                       <div className="flex justify-between font-mono-custom text-sm text-white/55">
                         <span>Cargo de servicio (5%)</span><span className="text-white">{fmt(serviceFee)}</span>
@@ -623,7 +623,7 @@ const SuiteReserve = ({ isOpen, onClose }: SuiteReserveProps) => {
                     </div>
 
                     <p className="text-center font-mono-custom text-[8px] uppercase tracking-[0.2em] text-white/20 pt-1">
-                      Pago seguro \u00b7 PSE \u00b7 Tarjeta \u00b7 Nequi \u00b7 Daviplata
+                      Pago seguro · PSE · Tarjeta · Nequi · Daviplata
                     </p>
                   </div>
                 </div>
@@ -640,10 +640,10 @@ const SuiteReserve = ({ isOpen, onClose }: SuiteReserveProps) => {
                   <span className="font-mono-custom text-[9px] uppercase tracking-[0.25em] text-amber-400">Experiencia exclusiva</span>
                 </div>
                 <p className="font-display text-2xl text-white mb-1">{fmt(SUITE_PRICE)}</p>
-                <p className="font-mono-custom text-[10px] text-white/40 mb-4">por pareja \u00b7 todo incluido</p>
+                <p className="font-mono-custom text-[10px] text-white/40 mb-4">por pareja · todo incluido</p>
                 <div className="space-y-2">
                   {[
-                    { icon: <Bath className="w-3.5 h-3.5" />, text: '1 habitaci\u00f3n \u00b7 1 ba\u00f1o completo' },
+                    { icon: <Bath className="w-3.5 h-3.5" />, text: '1 habitación · 1 baño completo' },
                     { icon: <Waves className="w-3.5 h-3.5" />, text: 'Jacuzzi + terraza privada' },
                     { icon: <Eye className="w-3.5 h-3.5" />, text: 'Vista a la represa' },
                     { icon: <Star className="w-3.5 h-3.5" fill="currentColor" />, text: 'Servicio y hospitalidad premium' },
