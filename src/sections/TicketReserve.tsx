@@ -1228,7 +1228,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                       <PassVipBanner addPassVip={addPassVip} setAddPassVip={setAddPassVip} qty={qty} passVipPrice={passVipPrice} />
                     </div>
                     {/* Código referido */}
-                    {isReferidos && (
+                    {isReferidos && !creyentesOtpOpen && (
                       <div className="mt-4 rounded-xl border border-amber-400/40 bg-amber-400/5 p-3">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0"/>
