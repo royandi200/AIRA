@@ -4,9 +4,6 @@
 // All animations, layouts, and styles are controlled by the components.
 // =============================================================================
 
-// -- Cloudinary Base URL ------------------------------------------------------
-const CLD = "https://res.cloudinary.com/dqfpxf3zq/image/upload/f_auto,q_auto,w_1200";
-
 // -- Site-wide settings -------------------------------------------------------
 export interface SiteConfig {
   title: string;
@@ -71,11 +68,6 @@ export interface Album {
   tag: string;
   price: string;
   image: string;
-  // Detail modal
-  detail?: string;
-  highlights?: string[];
-  images?: string[];
-  badge?: string;
 }
 
 export interface AlbumCubeConfig {
@@ -88,95 +80,48 @@ export const albumCubeConfig: AlbumCubeConfig = {
   albums: [
     {
       id: 1,
-      title: "FLOATING STAGE",
-      subtitle: "ESCENARIO PRINCIPAL",
-      description: "Una plataforma flotante en la mitad del embalse. Rodeado de agua, montañas y cielo abierto — el corazón de AIRA donde la música electrónica y la naturaleza se fusionan.",
-      tag: "2026",
-      price: "Desde $590.000",
-      image: `${CLD}/IMG_6978_azjins`,
-      badge: "MAIN STAGE",
-      detail: "Sound system de clase mundial, producción de luces y visuales inmersivos sobre el agua. El reflejo de los lasers en el embalse crea una experiencia que no existe en ningún otro festival de Colombia. Opera desde el atardecer hasta el amanecer los tres días.",
-      highlights: ["Sound system clase mundial", "Producción visual inmersiva", "Vista 360° del embalse", "2.000+ personas"],
-      images: [
-        `${CLD}/IMG_6978_azjins`,
-        `${CLD}/IMG_7035_zyvogp`,
-        `${CLD}/IMG_6953_d31rco`,
-      ],
+      title: "AFTER YATES",
+      subtitle: "DÍA 1",
+      description: "La fiesta arranca en el agua. Yacht party en el embalse más mágico de Colombia, rodeado de naturaleza y música electrónica.",
+      tag: "15 AGO",
+      price: "$80.000",
+      image: "/yacht-party.jpg",
     },
     {
       id: 2,
-      title: "MAJESTIC YACHT",
-      subtitle: "EL YATE MÁS GRANDE DE LATAM",
-      description: "A bordo del yate de agua dulce más grande de Latinoamérica. Los mejores DJs mezclan en cubierta mientras navegas el embalse. Una experiencia que pocas personas en el mundo han vivido.",
-      tag: "2026",
-      price: "Desde $590.000",
-      image: `${CLD}/majestic1_rugvtk`,
-      badge: "EXCLUSIVO",
-      detail: "El Majestic opera como escenario privado exclusivo durante AIRA 2026. Cupos muy limitados. Bar premium a bordo, atardecer sobre el embalse y la sensación de bailar mientras el agua se mueve bajo tus pies.",
-      highlights: ["Cupos exclusivos limitados", "DJs en cubierta", "Bar premium a bordo", "Navegación en el embalse"],
-      images: [
-        `${CLD}/majestic1_rugvtk`,
-        `${CLD}/majestic2_jkxdyj`,
-        `${CLD}/IMG_6998_vjiohx`,
-      ],
+      title: "MAJESTIC",
+      subtitle: "DÍA 2",
+      description: "El yate de agua dulce más grande de Latinoamérica se convierte en el escenario más exclusivo. Fiesta en Majestic y noche en Stage Joinn.",
+      tag: "16 AGO",
+      price: "$150.000",
+      image: "/main-stage.jpg",
     },
     {
       id: 3,
-      title: "BEACH STAGE",
-      subtitle: "LA PLAYA DEL FESTIVAL",
-      description: "Ubicado en la playa del hotel, el Beach Stage es el corazón social de AIRA. Música desde el mediodía, zona de descanso, food trucks y el agua del embalse a pasos.",
-      tag: "2026",
-      price: "Desde $590.000",
-      image: `${CLD}/IMG_7023_dbkww0`,
-      detail: "El Beach Stage opera desde mediodía hasta la noche con sets que van de lo relajado a lo intenso conforme avanza el día. Hamacas, zona de descanso y el ambiente más íntimo del festival.",
-      highlights: ["Acceso directo al agua", "Food & drinks toda la tarde", "Sets diurnos y nocturnos", "Ambiente más íntimo"],
-      images: [
-        `${CLD}/IMG_7023_dbkww0`,
-        `${CLD}/IMG_7069_de6ohx`,
-        `${CLD}/Ver_fotos_recientes_6_zdeq7j`,
-      ],
+      title: "OPEN DECK",
+      subtitle: "DÍA 3",
+      description: "El cierre perfecto. Open deck en el embalse al atardecer, con sessiones de meditación y la mejor música para despedir el festival.",
+      tag: "17 AGO",
+      price: "$50.000",
+      image: "/beach-party.jpg",
     },
     {
       id: 4,
-      title: "LOBBY STAGE",
-      subtitle: "EPICENTRO DE BIENVENIDA",
-      description: "El primer impacto cuando llegas a AIRA. Punto de encuentro, actividades de bienestar en las mañanas y música sin parar desde el mediodía hasta que todos migran al Floating Stage.",
-      tag: "2026",
-      price: "Desde $590.000",
-      image: `${CLD}/Bombillos_Amarillos_bqjry7`,
-      detail: "El Lobby Stage conecta todas las áreas del festival. Durante las mañanas: meditación y yoga. A partir del mediodía: música en vivo. De noche: punto de reunión antes de cada sesión en el Floating Stage.",
-      highlights: ["Actividades de bienestar", "Música desde el mediodía", "Centro del festival", "Incluido en todos los paquetes"],
-      images: [
-        `${CLD}/Bombillos_Amarillos_bqjry7`,
-        `${CLD}/IMG_7070_s1zkxl`,
-        `${CLD}/IMG_6881_hqab2v`,
-      ],
-    },
-    {
-      id: 5,
-      title: "CABAÑAS PRIVADAS",
-      subtitle: "TU CASA EN EL EMBALSE",
-      description: "Hasta 7 personas. Balcón directo al embalse. 3 noches. Acceso completo al festival. Las cabañas privadas convierten AIRA en un retiro que va mucho más allá de un festival.",
-      tag: "2026",
-      price: "Desde $4.600.000",
-      image: `${CLD}/Balcon_Suite_smpfes`,
-      badge: "LIMITADO",
-      detail: "Las cabañas incluyen acceso completo al festival los 3 días, desayunos, terraza privada con vista al embalse y servicio durante todo el evento. Disponibilidad muy limitada — históricamente son lo primero en agotarse.",
-      highlights: ["Hasta 7 personas", "3 noches en el embalse", "Balcón privado con vista", "Acceso completo incluido"],
-      images: [
-        `${CLD}/Balcon_Suite_smpfes`,
-        `${CLD}/Golfo_ob1g78`,
-        `${CLD}/Fraternidad_Bar_y_Restaurante_ujuwfo`,
-      ],
+      title: "PASS VIP",
+      subtitle: "UPGRADE",
+      description: "Acceso exclusivo al Yate VIP, Zona VIP en Majestic y Zona VIP en Stage Joinn. La experiencia AIRA en su máxima expresión.",
+      tag: "3 DÍAS",
+      price: "$500.000",
+      image: "/vip-area.jpg",
     },
   ],
   cubeTextures: [
-    `${CLD}/IMG_6978_azjins`,
-    `${CLD}/majestic1_rugvtk`,
-    `${CLD}/IMG_7023_dbkww0`,
-    `${CLD}/Bombillos_Amarillos_bqjry7`,
-    `${CLD}/Balcon_Suite_smpfes`,
-    `${CLD}/IMG_6953_d31rco`,
+    "/cube-1.jpg",
+    "/cube-2.jpg",
+    "/cube-3.jpg",
+    "/cube-4.jpg",
+    "/cube-5.jpg",
+    "/cube-6.jpg",
   ],
   scrollHint: "Desplaza para explorar",
 };
@@ -190,12 +135,17 @@ export interface ParallaxImage {
 
 export interface GalleryImage {
   id: number;
-  src: string;        // thumbnail image
+  src: string;
   title: string;
   date: string;
-  videoUrl?: string;  // optional Vimeo/YouTube/Drive URL
-  videoType?: 'vimeo' | 'youtube' | 'external'; // type of video
-  transition?: 'morphing' | 'zoom'; // opening transition effect
+  // Experience detail
+  subtitle?: string;
+  description?: string;
+  detail?: string;
+  highlights?: string[];
+  images?: string[];
+  badge?: string;
+  accent?: string;
 }
 
 export interface ParallaxGalleryConfig {
@@ -211,9 +161,9 @@ export interface ParallaxGalleryConfig {
 }
 
 export const parallaxGalleryConfig: ParallaxGalleryConfig = {
-  sectionLabel: "MÚSICA + NATURALEZA",
-  sectionTitle: "GALERÍA",
-  galleryLabel: "MOMENTOS AIRA",
+  sectionLabel: "LA EXPERIENCIA",
+  sectionTitle: "AIRA 2026",
+  galleryLabel: "GALERÍA",
   galleryTitle: "LA EXPERIENCIA",
   marqueeTexts: [
     "GUATAPÉ",
@@ -227,34 +177,85 @@ export const parallaxGalleryConfig: ParallaxGalleryConfig = {
   ],
   endCtaText: "Ver Más Fotos",
   parallaxImagesTop: [
-    { id: 1, src: `${CLD}/Bombillos_Amarillos_bqjry7`, alt: "Ambiente nocturno AIRA" },
-    { id: 2, src: `${CLD}/Golfo_ob1g78`, alt: "Golfo Guatapé" },
-    { id: 3, src: `${CLD}/Fraternidad_Bar_y_Restaurante_ujuwfo`, alt: "Fraternidad Bar" },
-    { id: 4, src: `${CLD}/Balcon_Suite_smpfes`, alt: "Balcón Suite" },
-    { id: 5, src: `${CLD}/unnamed_g7j6me`, alt: "Venue AIRA" },
-    { id: 6, src: `${CLD}/unnamed_1_qllup5`, alt: "Venue AIRA" },
+    { id: 1, src: "/dj-1.jpg", alt: "DJ en escenario" },
+    { id: 2, src: "/crowd-1.jpg", alt: "Multitud bailando" },
+    { id: 3, src: "/stage-1.jpg", alt: "Escenario principal" },
+    { id: 4, src: "/dj-female.jpg", alt: "DJ femenina" },
+    { id: 5, src: "/celebration.jpg", alt: "Celebración" },
+    { id: 6, src: "/dancers.jpg", alt: "Bailarines" },
   ],
   parallaxImagesBottom: [
-    { id: 1, src: `${CLD}/Ver_fotos_recientes_6_zdeq7j`, alt: "Fiesta AIRA" },
-    { id: 2, src: `${CLD}/Ver_fotos_recientes_7_nadnoe`, alt: "Fiesta AIRA" },
-    { id: 3, src: `${CLD}/Ver_fotos_recientes_8_pbkrhc`, alt: "Fiesta AIRA" },
-    { id: 4, src: `${CLD}/IMG_7069_de6ohx`, alt: "Crowd AIRA" },
-    { id: 5, src: `${CLD}/IMG_7056_psidvj`, alt: "Crowd AIRA" },
-    { id: 6, src: `${CLD}/IMG_7070_s1zkxl`, alt: "Crowd AIRA" },
+    { id: 1, src: "/guatape-aerial.jpg", alt: "Vista aérea de Guatapé" },
+    { id: 2, src: "/beach-party.jpg", alt: "Fiesta en la playa" },
+    { id: 3, src: "/yacht-party.jpg", alt: "Fiesta en yate" },
+    { id: 4, src: "/vip-area.jpg", alt: "Zona VIP" },
+    { id: 5, src: "/bar.jpg", alt: "Bar de cocteles" },
+    { id: 6, src: "/penol.jpg", alt: "Piedra del Peñol" },
   ],
   galleryImages: [
-    { id: 1,  src: `${CLD}/IMG_6978_azjins`,  title: "Main Stage",       date: "2024", transition: "morphing" },
-    { id: 2,  src: `${CLD}/IMG_7035_zyvogp`,  title: "Headliners",       date: "2024", transition: "zoom"     },
-    { id: 3,  src: `${CLD}/IMG_7023_dbkww0`,  title: "La Multitud",      date: "2024", transition: "morphing" },
-    { id: 4,  src: `${CLD}/IMG_6953_d31rco`,  title: "Sunset Session",   date: "2024", transition: "zoom"     },
-    { id: 5,  src: `${CLD}/IMG_6998_vjiohx`,  title: "Yacht Experience", date: "2024", transition: "morphing" },
-    { id: 6,  src: `${CLD}/IMG_6945_dpikoa`,  title: "VIP Lounge",       date: "2024", transition: "zoom"     },
-    { id: 7,  src: `${CLD}/IMG_6881_hqab2v`,  title: "After Party",      date: "2024", transition: "morphing" },
-    { id: 8,  src: `${CLD}/IMG_6912_i7tth1`,  title: "Open Deck",        date: "2024", transition: "zoom"     },
-    { id: 9,  src: `${CLD}/IMG_6737_tujfvd`,  title: "Embalse",          date: "2024", transition: "morphing" },
-    { id: 10, src: `${CLD}/IMG_6825_uclttl`,  title: "Crowd Energy",     date: "2024", transition: "zoom"     },
-    { id: 11, src: `${CLD}/IMG_6760_newlqz`,  title: "Night Vibes",      date: "2024", transition: "morphing" },
-    { id: 12, src: `${CLD}/unnamed_2_zmr1ro`, title: "Venue",            date: "2024", transition: "zoom"     },
+    {
+      id: 1,
+      src: `${CLD}/IMG_6978_azjins`,
+      title: "Floating Stage",
+      date: "2026",
+      subtitle: "Escenario principal",
+      badge: "MAIN STAGE",
+      accent: "#e1fe52",
+      description: "Una plataforma flotante en la mitad del embalse de Guatapé. Rodeado de agua, montañas y cielo abierto — el corazón de AIRA donde la música electrónica y la naturaleza se fusionan en algo que no existe en ningún otro festival de Colombia.",
+      detail: "Sound system de clase mundial, producción de luces y visuales inmersivos sobre el agua. El reflejo de los lasers en el embalse crea una experiencia única. Opera desde el atardecer hasta el amanecer los 3 días del festival.",
+      highlights: ["Sound system clase mundial", "Producción visual inmersiva", "Vista 360° del embalse", "2.000+ personas"],
+      images: [`${CLD}/IMG_6978_azjins`, `${CLD}/IMG_7035_zyvogp`, `${CLD}/IMG_6953_d31rco`],
+    },
+    {
+      id: 2,
+      src: `${CLD}/majestic1_rugvtk`,
+      title: "Majestic Yacht",
+      date: "2026",
+      subtitle: "El yate más grande de LATAM",
+      badge: "EXCLUSIVO",
+      accent: "#00D4FF",
+      description: "A bordo del yate de agua dulce más grande de Latinoamérica. Los mejores DJs mezclan en cubierta mientras navegas el embalse. Una experiencia que pocas personas en el mundo han vivido.",
+      detail: "Cupos muy limitados. Bar premium a bordo, atardecer sobre el embalse y la sensación de bailar mientras el agua se mueve bajo tus pies. El Majestic opera como escenario privado exclusivo durante AIRA 2026.",
+      highlights: ["Cupos exclusivos limitados", "DJs en cubierta", "Bar premium a bordo", "Navegación en el embalse"],
+      images: [`${CLD}/majestic1_rugvtk`, `${CLD}/majestic2_jkxdyj`, `${CLD}/IMG_6998_vjiohx`],
+    },
+    {
+      id: 3,
+      src: `${CLD}/IMG_7023_dbkww0`,
+      title: "Beach Stage",
+      date: "2026",
+      subtitle: "La playa del festival",
+      accent: "#FF6B35",
+      description: "Ubicado en la playa del hotel, el Beach Stage es el corazón social de AIRA. Música desde el mediodía, zona de descanso, food trucks y el agua del embalse a pasos de distancia.",
+      detail: "Opera desde mediodía hasta la noche con sets que van de lo relajado a lo intenso conforme avanza el día. Hamacas, zona de descanso y el ambiente más íntimo del festival.",
+      highlights: ["Acceso directo al agua", "Food & drinks toda la tarde", "Sets diurnos y nocturnos", "Ambiente íntimo"],
+      images: [`${CLD}/IMG_7023_dbkww0`, `${CLD}/IMG_7069_de6ohx`, `${CLD}/Ver_fotos_recientes_6_zdeq7j`],
+    },
+    {
+      id: 4,
+      src: `${CLD}/Bombillos_Amarillos_bqjry7`,
+      title: "Lobby Stage",
+      date: "2026",
+      subtitle: "Epicentro de bienvenida",
+      accent: "#B06EFF",
+      description: "El primer impacto cuando llegas a AIRA. Punto de encuentro, actividades de bienestar en las mañanas y música sin parar desde el mediodía hasta que todos migran al Floating Stage.",
+      detail: "El Lobby Stage conecta todas las áreas del festival. Meditación y yoga en la mañana. Música en vivo desde el mediodía. Punto de reunión antes de cada sesión en el Floating Stage.",
+      highlights: ["Actividades de bienestar", "Música desde el mediodía", "Centro del festival", "Incluido en todos los paquetes"],
+      images: [`${CLD}/Bombillos_Amarillos_bqjry7`, `${CLD}/IMG_7070_s1zkxl`, `${CLD}/IMG_6881_hqab2v`],
+    },
+    {
+      id: 5,
+      src: `${CLD}/Balcon_Suite_smpfes`,
+      title: "Cabañas Privadas",
+      date: "2026",
+      subtitle: "Tu casa en el embalse",
+      badge: "LIMITADO",
+      accent: "#e1fe52",
+      description: "Hasta 7 personas. Balcón directo al embalse. 3 noches. Acceso completo al festival. Las cabañas privadas convierten AIRA en un retiro que va mucho más allá de un festival.",
+      detail: "Incluye acceso completo los 3 días, desayunos, terraza privada con vista al embalse y servicio durante todo el evento. Históricamente son lo primero en agotarse.",
+      highlights: ["Hasta 7 personas", "3 noches en el embalse", "Balcón privado con vista", "Acceso completo incluido"],
+      images: [`${CLD}/Balcon_Suite_smpfes`, `${CLD}/Golfo_ob1g78`, `${CLD}/Fraternidad_Bar_y_Restaurante_ujuwfo`],
+    },
   ],
 };
 
@@ -267,9 +268,6 @@ export interface TourDate {
   venue: string;
   status: "on-sale" | "sold-out" | "coming-soon";
   image: string;
-  category: "premium" | "daily";  // premium = destacado, daily = por día
-  description?: string;           // texto corto descriptivo
-  price?: string;                 // precio visible en la card
 }
 
 export interface TourStatusLabels {
@@ -306,101 +304,59 @@ export const tourScheduleConfig: TourScheduleConfig = {
     default: "RESERVAR",
   },
   tourDates: [
-    // ── PREMIUM ────────────────────────────────────────────────────────────
-    {
-      id: 4,
-      date: "2025.08.15",
-      time: "18:00",
-      city: "GUATAPÉ",
-      venue: "PAQUETE 3 DÍAS",
-      status: "on-sale",
-      image: `${CLD}/majestic4_wzvhpd`,
-      category: "premium",
-      description: "Los 3 días completos. Acceso total al festival.",
-      price: "Desde $ 590.000",
-    },
-    {
-      id: 9,
-      date: "2025.08.15",
-      time: "14:00",
-      city: "GUATAPÉ",
-      venue: "CABAÑA COMPLETA x7",
-      status: "on-sale",
-      image: "/yacht-party.jpg",
-      category: "premium",
-      description: "Cabaña privada para 7 personas. 3 noches en el embalse.",
-      price: "Desde $ 4.600.000",
-    },
-    {
-      id: 7,
-      date: "2025.08.15",
-      time: "18:00",
-      city: "GUATAPÉ",
-      venue: "PASS VIP",
-      status: "on-sale",
-      image: `${CLD}/majestic4_wzvhpd`,
-      category: "premium",
-      description: "Zona VIP exclusiva en todos los escenarios.",
-      price: "$ 450.000",
-    },
-    {
-      id: 8,
-      date: "2025.08.15",
-      time: "07:00",
-      city: "MEDELLÍN",
-      venue: "TRANSPORTE",
-      status: "on-sale",
-      image: `${CLD}/Fraternidad_Bar_y_Restaurante_ujuwfo`,
-      category: "premium",
-      description: "Bus directo ida y vuelta Medellín → Guatapé.",
-      price: "$ 180.000",
-    },
-    {
-      id: 5,
-      date: "2025.08.15",
-      time: "14:00",
-      city: "GUATAPÉ",
-      venue: "SUITE PRIVADA",
-      status: "on-sale",
-      image: `${CLD}/Balcon_Suite_smpfes`,
-      category: "premium",
-      description: "Alojamiento premium en el embalse. 3 noches.",
-      price: "$ 2.200.000",
-    },
-
-    // ── POR DÍA ────────────────────────────────────────────────────────────
     {
       id: 1,
       date: "2025.08.15",
       time: "18:00",
       city: "GUATAPÉ",
-      venue: "DÍA 1 — After Fiesta de Yates",
+      venue: "ENTRADA GENERAL - DÍA 1",
       status: "on-sale",
-      image: `${CLD}/majestic1_rugvtk`,
-      category: "daily",
-      price: "$ 80.000",
+      image: "/stage-1.jpg",
     },
     {
       id: 2,
       date: "2025.08.16",
       time: "18:00",
       city: "GUATAPÉ",
-      venue: "DÍA 2 — Fiesta Majestic & Stage Joinn",
+      venue: "ENTRADA GENERAL - DÍA 2",
       status: "on-sale",
-      image: `${CLD}/majestic2_jkxdyj`,
-      category: "daily",
-      price: "$ 150.000",
+      image: "/main-stage.jpg",
     },
     {
       id: 3,
       date: "2025.08.17",
       time: "18:00",
       city: "GUATAPÉ",
-      venue: "DÍA 3 — Open Deck",
+      venue: "ENTRADA GENERAL - DÍA 3",
       status: "on-sale",
-      image: `${CLD}/majestic3_amqbgj`,
-      category: "daily",
-      price: "$ 50.000",
+      image: "/beach-party.jpg",
+    },
+    {
+      id: 4,
+      date: "2025.08.15",
+      time: "20:00",
+      city: "GUATAPÉ",
+      venue: "PAQUETE VIP - 3 DÍAS",
+      status: "on-sale",
+      image: "/vip-area.jpg",
+    },
+    {
+      id: 5,
+      date: "2025.08.16",
+      time: "14:00",
+      city: "EMBALSE",
+      venue: "YACHT PARTY EXPERIENCE",
+      status: "coming-soon",
+      image: "/yacht-party.jpg",
+    },
+    {
+      id: 6,
+      date: "2025.08.17",
+      time: "12:00",
+      city: "GUATAPÉ",
+      venue: "BACKSTAGE EXPERIENCE",
+      status: "sold-out",
+      image: "/dj-console.jpg",
     },
   ],
 };
@@ -447,7 +403,7 @@ export interface FooterConfig {
 }
 
 export const footerConfig: FooterConfig = {
-  portraitImage: `${CLD}/IMG_7202_vv0oat`,
+  portraitImage: "/dj-portrait.jpg",
   portraitAlt: "DJ AIRA",
   heroTitle: "AIRA",
   heroSubtitle: "A State of Feeling",
@@ -460,7 +416,7 @@ export const footerConfig: FooterConfig = {
   quickLinks: ["Experiencia", "Galería", "Booking", "Contacto"],
   contactTitle: "Contacto",
   emailLabel: "Email",
-  email: "info@viveaira.live",
+  email: "info@airafestival.com",
   phoneLabel: "Teléfono",
   phone: "+57 (604) 123-4567",
   addressLabel: "Ubicación",
@@ -478,9 +434,9 @@ export const footerConfig: FooterConfig = {
     { icon: "music", label: "Spotify", href: "https://spotify.com/airafestival" },
   ],
   galleryImages: [
-    { id: 1, src: `${CLD}/Ver_fotos_recientes_6_zdeq7j` },
-    { id: 2, src: `${CLD}/IMG_6912_i7tth1` },
-    { id: 3, src: `${CLD}/Golfo_ob1g78` },
-    { id: 4, src: `${CLD}/Bombillos_Amarillos_bqjry7` },
+    { id: 1, src: "/AIRA-2.png" },
+    { id: 2, src: "/AIRA-3.png" },
+    { id: 3, src: "/sunset.jpg" },
+    { id: 4, src: "/penol.jpg" },
   ],
 };
