@@ -83,11 +83,11 @@ function App() {
   const audioRef   = useRef<HTMLAudioElement | null>(null);
   const [muted,    setMuted]    = useState(false);
   const [playing,  setPlaying]  = useState(false);
-  const [trackIdx, setTrackIdx] = useState(0);
+  const trackIdx = useRef(0);
   const mutedRef   = useRef(false);
   const playingRef = useRef(false);
 
-  const startAudio = useCallback((idx: number = trackIdx) => {
+  const startAudio = useCallback((idx: number = trackIdx.current) => {
     if (playingRef.current && audioRef.current && audioRef.current.src.includes(String(idx))) return;
     if (!audioRef.current) audioRef.current = new Audio();
     const audio = audioRef.current;
@@ -105,7 +105,7 @@ function App() {
         if (v >= 0.55) clearInterval(fade);
       }, 80);
     }).catch(() => {});
-  }, [trackIdx]);
+  }, []);
 
   // Auto-start on first user gesture anywhere on the page
   useEffect(() => {
@@ -143,7 +143,7 @@ function App() {
         }, 80);
       }).catch(() => {});
     }
-  }, [trackIdx]);
+  }, []);
 
   // Sync mute
   useEffect(() => {
