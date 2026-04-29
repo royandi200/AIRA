@@ -56,10 +56,6 @@ const Cube = ({ rotationProgress }: CubeProps) => {
 };
 
 const AlbumCube = () => {
-  if (albumCubeConfig.albums.length === 0 || albumCubeConfig.cubeTextures.length === 0) {
-    return null;
-  }
-
   const sectionRef   = useRef<HTMLDivElement>(null);
   const titleRef     = useRef<HTMLDivElement>(null);
   const overlayRef   = useRef<HTMLDivElement>(null);
@@ -135,6 +131,8 @@ const AlbumCube = () => {
     3: '#facc15',   // Pass VIP — dorado
   };
   const accent = accentColors[currentAlbumIndex] ?? '#e1fe52';
+
+  if (albumCubeConfig.albums.length === 0 || albumCubeConfig.cubeTextures.length === 0) return null;
 
   // Play track for current album
   const playTrack = (index: number) => {
