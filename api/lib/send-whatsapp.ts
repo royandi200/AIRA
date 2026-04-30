@@ -26,7 +26,6 @@ export async function sendWhatsApp(phone: string, message: string): Promise<void
 
 /**
  * Envía la boleta QR por WhatsApp cuando el pago está completo.
- * URL: /boleta/:orderRef?token=... → rewrite a /api/boleta?ref=...&token=...
  */
 export async function sendTicketWhatsApp(params: {
   phone: string;
@@ -36,8 +35,7 @@ export async function sendTicketWhatsApp(params: {
   qrToken: string;
 }): Promise<void> {
   const { phone, name, orderRef, eventLabel, qrToken } = params;
-  const BASE = 'https://www.viveaira.live';
-  // /boleta/:ref → rewrite en vercel.json → /api/boleta?ref=:ref (+ token en query)
+  const BASE      = 'https://www.viveaira.live';
   const boletaUrl = `${BASE}/boleta/${orderRef}?token=${qrToken}`;
 
   const msg =
@@ -54,6 +52,7 @@ export async function sendTicketWhatsApp(params: {
 
 /**
  * Envía el comprobante de reserva (sin QR) cuando se paga una cuota parcial.
+ * Incluye link al comprobante web para que el cliente pueda consultarlo.
  */
 export async function sendReservaWhatsApp(params: {
   phone: string;
@@ -69,7 +68,11 @@ export async function sendReservaWhatsApp(params: {
   const { phone, name, orderRef, eventLabel, cuotasPagadas, cuotasTotal,
           montoPagado, saldoPendiente, proximaFecha } = params;
 
-  const fmt = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
+  const fmt = (n: number) =>
+    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
+
+  const BASE          = 'https://www.viveaira.live';
+  const comprobanteUrl = `${BASE}/boleta/${orderRef}`;
 
   const msg =
     `🔒 *Reserva AIRA confirmada*\n\n` +
@@ -82,6 +85,7 @@ export async function sendReservaWhatsApp(params: {
     `⏳ Saldo pendiente: *${fmt(saldoPendiente)}*\n` +
     `📅 Próximo cobro: *${proximaFecha}*\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `📄 Ver tu comprobante de reserva:\n${comprobanteUrl}\n\n` +
     `⚠️ Tu *QR de acceso* se generará automáticamente cuando completes el pago total.\n\n` +
     `📍 *AIRA Experience · 15–17 Agosto 2026 · Guatapé*`;
 
