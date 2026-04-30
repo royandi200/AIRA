@@ -53,7 +53,7 @@ export const heroConfig: HeroConfig = {
   ctaSecondary: "Ver Galería",
   ctaSecondaryTarget: "gallery",
   cornerLabel: "PRÓXIMO EVENTO",
-  cornerDetail: "15-17 AGO 2025",
+  cornerDetail: "15-17 AGO 2026",
   navItems: [
     { label: "Experiencia", sectionId: "experiencia", icon: "disc" },
     { label: "Galería", sectionId: "gallery", icon: "play" },
