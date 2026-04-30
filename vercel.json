@@ -11,6 +11,10 @@
       "destination": "/api/$1"
     },
     {
+      "source": "/boleta/:ref",
+      "destination": "/api/boleta?ref=:ref"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

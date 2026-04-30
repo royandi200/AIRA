@@ -26,7 +26,7 @@ export async function sendWhatsApp(phone: string, message: string): Promise<void
 
 /**
  * Envía la boleta QR por WhatsApp cuando el pago está completo.
- * Incluye link a /boleta/:orderRef para que el usuario la descargue.
+ * URL: /boleta/:orderRef?token=... → rewrite a /api/boleta?ref=...&token=...
  */
 export async function sendTicketWhatsApp(params: {
   phone: string;
@@ -37,6 +37,7 @@ export async function sendTicketWhatsApp(params: {
 }): Promise<void> {
   const { phone, name, orderRef, eventLabel, qrToken } = params;
   const BASE = 'https://www.viveaira.live';
+  // /boleta/:ref → rewrite en vercel.json → /api/boleta?ref=:ref (+ token en query)
   const boletaUrl = `${BASE}/boleta/${orderRef}?token=${qrToken}`;
 
   const msg =
@@ -52,7 +53,7 @@ export async function sendTicketWhatsApp(params: {
 }
 
 /**
- * Envía el comprobante de reserva (sin QR) cuando se paga la primera cuota.
+ * Envía el comprobante de reserva (sin QR) cuando se paga una cuota parcial.
  */
 export async function sendReservaWhatsApp(params: {
   phone: string;
