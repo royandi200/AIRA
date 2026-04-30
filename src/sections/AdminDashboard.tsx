@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState, useCallback } from 'react';
 
 const ADMIN_TOKEN_KEY = 'aira_admin_token';
@@ -17,6 +18,7 @@ interface Overview {
     id: number; order_ref: string; total: number; status: string;
     payment_mode: string; reserved_until: string; created_at: string;
     customer_name: string; customer_email: string;
+    qr_token?: string;
   }>;
   dailyRevenue: Array<{ day: string; revenue: number; orders: number }>;
 }
@@ -32,17 +34,14 @@ const statusColor: Record<string, string> = {
 
 // ─── Manual Registration Tab ─────────────────────────────────────────────────
 const PAQUETES = [
-  // Paquete 3 días — por etapa
   { label: 'Paquete 3D · Creyentes',          priceLabel: '$590.000',   price: '590000',   cat: '3 días' },
   { label: 'Paquete 3D · Referidos',           priceLabel: '$690.000',   price: '690000',   cat: '3 días' },
   { label: 'Paquete 3D · 1ª Etapa',            priceLabel: '$790.000',   price: '790000',   cat: '3 días' },
   { label: 'Paquete 3D · 2ª Etapa',            priceLabel: '$890.000',   price: '890000',   cat: '3 días' },
   { label: 'Paquete 3D · 3ª Etapa',            priceLabel: '$1.000.000', price: '1000000',  cat: '3 días' },
-  // Add-ons
   { label: 'Pass VIP',                          priceLabel: '$450.000',   price: '450000',   cat: 'add-on' },
   { label: 'Transporte',                        priceLabel: '$180.000',   price: '180000',   cat: 'add-on' },
   { label: 'Suite Privada',                     priceLabel: '$2.200.000', price: '2200000',  cat: 'add-on' },
-  // Por día
   { label: 'DÍA 1 — After Fiesta de Yates',    priceLabel: '$80.000',    price: '80000',    cat: 'daily'  },
   { label: 'DÍA 2 — Fiesta Majestic & Stage Joinn', priceLabel: '$150.000', price: '150000', cat: 'daily' },
   { label: 'DÍA 3 — Open Deck',                priceLabel: '$50.000',    price: '50000',    cat: 'daily'  },
@@ -92,7 +91,7 @@ function ManualTab({ token }: { token: string }) {
 
   const inputCls = "w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-zinc-500 transition-colors";
   const labelCls = "block text-[10px] uppercase tracking-widest text-zinc-500 mb-1 font-semibold";
-  const fmt = (n: any) => n != null ? Number(n).toLocaleString('es-CO', {style:'currency',currency:'COP',maximumFractionDigits:0}) : '—';
+  const fmtLocal = (n: any) => n != null ? Number(n).toLocaleString('es-CO', {style:'currency',currency:'COP',maximumFractionDigits:0}) : '—';
 
   return (
     <div className="space-y-6">
@@ -122,7 +121,7 @@ function ManualTab({ token }: { token: string }) {
           </div>
           <div><label className={labelCls}>Monto Total ($)</label><input type="number" className={inputCls} value={form.monto_total} placeholder="280000" onChange={e=>setForm(f=>({...f,monto_total:e.target.value}))}/></div>
           <div><label className={labelCls}>Monto Recibido ($)</label><input type="number" className={inputCls} value={form.monto_recibido} placeholder="140000" onChange={e=>setForm(f=>({...f,monto_recibido:e.target.value}))}/></div>
-          <div><label className={labelCls}>Monto Pendiente</label><div className={`${inputCls} text-yellow-400 font-semibold`}>{form.monto_total ? fmt(Number(form.monto_total)-Number(form.monto_recibido||0)) : '—'}</div></div>
+          <div><label className={labelCls}>Monto Pendiente</label><div className={`${inputCls} text-yellow-400 font-semibold`}>{form.monto_total ? fmtLocal(Number(form.monto_total)-Number(form.monto_recibido||0)) : '—'}</div></div>
           <div><label className={labelCls}>Medio de Pago</label>
             <select className={inputCls} value={form.medio_pago} onChange={e=>setForm(f=>({...f,medio_pago:e.target.value}))}>
               {['Efectivo','Transferencia','Nequi','Daviplata','Tarjeta','Bold','Otro'].map(m=><option key={m} value={m} style={{background:'#18181b'}}>{m}</option>)}
@@ -158,9 +157,9 @@ function ManualTab({ token }: { token: string }) {
                 <td className="px-4 py-3 text-zinc-300 font-mono text-xs">{r.cedula}</td>
                 <td className="px-4 py-3 text-zinc-400 text-xs">{r.movil||'—'}</td>
                 <td className="px-4 py-3 text-xs"><span className="text-aira-lime/80 font-medium">{r.paquete||'—'}</span></td>
-                <td className="px-4 py-3 text-white tabular-nums text-xs">{fmt(r.monto_total)}</td>
-                <td className="px-4 py-3 text-green-400 tabular-nums text-xs font-semibold">{fmt(r.monto_recibido)}</td>
-                <td className="px-4 py-3 tabular-nums text-xs font-semibold"><span className={Number(r.monto_pendiente)>0?'text-yellow-400':'text-zinc-500'}>{fmt(r.monto_pendiente)}</span></td>
+                <td className="px-4 py-3 text-white tabular-nums text-xs">{fmtLocal(r.monto_total)}</td>
+                <td className="px-4 py-3 text-green-400 tabular-nums text-xs font-semibold">{fmtLocal(r.monto_recibido)}</td>
+                <td className="px-4 py-3 tabular-nums text-xs font-semibold"><span className={Number(r.monto_pendiente)>0?'text-yellow-400':'text-zinc-500'}>{fmtLocal(r.monto_pendiente)}</span></td>
                 <td className="px-4 py-3 text-zinc-400 text-xs">{r.medio_pago||'—'}</td>
                 <td className="px-4 py-3 text-zinc-400 text-xs">{r.fecha_pago?new Date(r.fecha_pago).toLocaleDateString('es-CO'):'—'}</td>
                 <td className="px-4 py-3 text-zinc-500 text-xs max-w-[160px] truncate">{r.notas||'—'}</td>
@@ -174,26 +173,21 @@ function ManualTab({ token }: { token: string }) {
 }
 
 export default function AdminDashboard({ onClose }: { onClose: () => void }) {
-  // Parar Lenis + interceptar wheel manualmente para el modal
   useEffect(() => {
     const lenis = (window as any).__lenis;
     if (lenis) lenis.stop();
-
     const onWheel = (e: WheelEvent) => {
       const modal = document.getElementById('admin-modal');
-      if (modal) {
-        modal.scrollTop += e.deltaY;
-        e.preventDefault();
-      }
+      if (modal) { modal.scrollTop += e.deltaY; e.preventDefault(); }
     };
     window.addEventListener('wheel', onWheel, { passive: false });
-
     return () => {
       const l = (window as any).__lenis;
       if (l) l.start();
       window.removeEventListener('wheel', onWheel);
     };
   }, []);
+
   const [token,    setToken]    = useState(() => sessionStorage.getItem(ADMIN_TOKEN_KEY) || '');
   const [password, setPassword] = useState('');
   const [authed,   setAuthed]   = useState(() => !!sessionStorage.getItem(ADMIN_TOKEN_KEY));
@@ -207,13 +201,12 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
   const [recLog,   setRecLog]   = useState<string[]>([]);
   const [recSending, setRecSending] = useState(false);
   const [recResult,  setRecResult]  = useState<any>(null);
+  const [copied, setCopied] = useState<string|null>(null);
 
   const fetchData = useCallback(async (tk: string) => {
     setLoading(true); setError('');
     try {
-      const r = await fetch('/api/admin?section=overview', {
-        headers: { 'x-admin-token': tk },
-      });
+      const r = await fetch('/api/admin?section=overview', { headers: { 'x-admin-token': tk } });
       if (r.status === 401) { setAuthed(false); sessionStorage.removeItem(ADMIN_TOKEN_KEY); setError('Token inválido'); return; }
       if (!r.ok) throw new Error(await r.text());
       setData(await r.json());
@@ -231,26 +224,30 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
     fetchData(password);
   };
 
-  useEffect(() => {
-    if (authed && token) fetchData(token);
-  }, [authed, token, fetchData]);
+  useEffect(() => { if (authed && token) fetchData(token); }, [authed, token, fetchData]);
 
-  // Cargar referidos cuando se abre ese tab
   useEffect(() => {
     if (tab === 'referidos' && token) {
       fetch('/api/referidos', { headers: { 'x-admin-token': token } })
-        .then(r => r.json())
-        .then(d => setCodigos(d.codigos || []))
-        .catch(console.error);
+        .then(r => r.json()).then(d => setCodigos(d.codigos || [])).catch(console.error);
     }
   }, [tab, token]);
 
-  // Cerrar con Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
+
+  const copyBoletaLink = (ref: string, qrToken?: string) => {
+    const url = qrToken
+      ? `https://www.viveaira.live/boleta/${ref}?token=${qrToken}`
+      : `https://www.viveaira.live/boleta/${ref}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(ref);
+      setTimeout(() => setCopied(null), 2000);
+    });
+  };
 
   // ── Login ──────────────────────────────────────────────────────────────────
   if (!authed) return (
@@ -258,29 +255,19 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
       <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-8 w-full max-w-sm">
         <h2 className="text-white text-xl font-bold mb-1">Admin AIRA</h2>
         <p className="text-zinc-400 text-sm mb-6">Ingresa el token de acceso</p>
-        <input
-          type="password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleLogin()}
-          placeholder="Token..."
+        <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleLogin()} placeholder="Token..."
           className="w-full bg-zinc-800 border border-zinc-600 rounded-lg px-4 py-3 text-white placeholder-zinc-500 outline-none focus:border-zinc-400 mb-3"
         />
         {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
-        <button
-          onClick={handleLogin}
-          className="w-full bg-white text-black font-semibold rounded-lg py-3 hover:bg-zinc-200 transition-colors"
-        >Entrar</button>
+        <button onClick={handleLogin} className="w-full bg-white text-black font-semibold rounded-lg py-3 hover:bg-zinc-200 transition-colors">Entrar</button>
         <button onClick={onClose} className="w-full mt-3 text-zinc-500 text-sm hover:text-zinc-300 transition-colors">Cancelar</button>
       </div>
     </div>
   );
 
-  // ── Dashboard ──────────────────────────────────────────────────────────────
   const r = data?.revenue;
-  const maxRevenue = data?.dailyRevenue.length
-    ? Math.max(...data.dailyRevenue.map(d => d.revenue), 1)
-    : 1;
+  const maxRevenue = data?.dailyRevenue.length ? Math.max(...data.dailyRevenue.map(d => d.revenue), 1) : 1;
 
   return (
     <div id="admin-modal" className="fixed inset-0 z-[200] bg-black/95 overflow-y-auto overscroll-contain" style={{WebkitOverflowScrolling:"touch"}}>
@@ -291,10 +278,8 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
           <span className="text-zinc-500 text-sm">/ Admin</span>
         </div>
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => fetchData(token)}
-            className="text-zinc-400 hover:text-white text-sm transition-colors flex items-center gap-1"
-          >
+          <button onClick={() => fetchData(token)}
+            className="text-zinc-400 hover:text-white text-sm transition-colors flex items-center gap-1">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
             Actualizar
           </button>
@@ -319,12 +304,12 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
             {/* KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
               {[
-                { label: 'Recaudado', value: fmt(r?.paid_revenue ?? 0), sub: 'pagos aprobados' },
-                { label: 'Total generado', value: fmt(r?.total_revenue ?? 0), sub: 'todas las órdenes' },
-                { label: 'Órdenes total', value: String(r?.total_orders ?? 0), sub: 'creadas' },
-                { label: 'Pagadas', value: String(r?.paid_orders ?? 0), sub: 'aprobadas Bold' },
-                { label: 'Pendientes', value: String(r?.pending_orders ?? 0), sub: 'sin pagar' },
-                { label: 'Canceladas', value: String(r?.cancelled_orders ?? 0), sub: 'rechazadas' },
+                { label: 'Recaudado',      value: fmt(r?.paid_revenue ?? 0),    sub: 'pagos aprobados' },
+                { label: 'Total generado', value: fmt(r?.total_revenue ?? 0),   sub: 'todas las órdenes' },
+                { label: 'Órdenes total',  value: String(r?.total_orders ?? 0), sub: 'creadas' },
+                { label: 'Pagadas',        value: String(r?.paid_orders ?? 0),  sub: 'aprobadas Bold' },
+                { label: 'Pendientes',     value: String(r?.pending_orders ?? 0), sub: 'sin pagar' },
+                { label: 'Canceladas',     value: String(r?.cancelled_orders ?? 0), sub: 'rechazadas' },
               ].map(kpi => (
                 <div key={kpi.label} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
                   <p className="text-zinc-500 text-xs uppercase tracking-widest mb-1">{kpi.label}</p>
@@ -335,59 +320,49 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 mb-6 bg-zinc-900 border border-zinc-800 rounded-xl p-1 w-fit">
+            <div className="flex gap-1 mb-6 bg-zinc-900 border border-zinc-800 rounded-xl p-1 w-fit flex-wrap">
               {(['kpis', 'orders', 'tickets', 'recordatorios', 'manual', 'referidos'] as const).map(t => (
-                <button
-                  key={t}
-                  onClick={() => setTab(t)}
+                <button key={t} onClick={() => setTab(t)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    tab === t
-                      ? 'bg-white text-black'
-                      : 'text-zinc-400 hover:text-white'
-                  }`}
-                >
+                    tab === t ? 'bg-white text-black' : 'text-zinc-400 hover:text-white'
+                  }`}>
                   {{ kpis: 'Ingresos', orders: 'Órdenes', tickets: 'Cupos', recordatorios: '📲 Recordatorios', manual: '✍ Registro Manual', referidos: '🎫 Referidos' }[t]}
                 </button>
               ))}
             </div>
 
-            {/* Tab: Ingresos (chart de barras) */}
+            {/* Tab: Ingresos */}
             {tab === 'kpis' && (
               <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
                 <h3 className="text-white font-semibold mb-6">Ingresos últimos 30 días</h3>
-                {data.dailyRevenue.length === 0 ? (
-                  <p className="text-zinc-500 text-sm text-center py-12">Sin datos de ingresos aún</p>
-                ) : (
-                  <div className="flex items-end gap-1 h-48">
-                    {data.dailyRevenue.map(d => (
-                      <div key={d.day} className="flex-1 flex flex-col items-center gap-1 group">
-                        <div className="relative w-full">
-                          <div
-                            className="w-full bg-white/80 rounded-sm transition-all group-hover:bg-white"
-                            style={{ height: `${Math.round((d.revenue / maxRevenue) * 160)}px`, minHeight: d.revenue > 0 ? '4px' : '1px' }}
-                          />
-                          <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-zinc-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
-                            {d.day}<br />{fmt(d.revenue)}
+                {data.dailyRevenue.length === 0
+                  ? <p className="text-zinc-500 text-sm text-center py-12">Sin datos de ingresos aún</p>
+                  : <div className="flex items-end gap-1 h-48">
+                      {data.dailyRevenue.map(d => (
+                        <div key={d.day} className="flex-1 flex flex-col items-center gap-1 group">
+                          <div className="relative w-full">
+                            <div className="w-full bg-white/80 rounded-sm transition-all group-hover:bg-white"
+                              style={{ height: `${Math.round((d.revenue / maxRevenue) * 160)}px`, minHeight: d.revenue > 0 ? '4px' : '1px' }} />
+                            <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-zinc-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
+                              {d.day}<br />{fmt(d.revenue)}
+                            </div>
                           </div>
+                          <span className="text-zinc-600 text-[10px] rotate-45 origin-left hidden md:block">{d.day.slice(5)}</span>
                         </div>
-                        <span className="text-zinc-600 text-[10px] rotate-45 origin-left hidden md:block">
-                          {d.day.slice(5)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                }
               </div>
             )}
 
-            {/* Tab: Órdenes */}
+            {/* Tab: Órdenes — CON BOLETA LINK */}
             {tab === 'orders' && (
               <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-zinc-800">
-                        {['Ref', 'Cliente', 'Total', 'Modo', 'Estado', 'Fecha'].map(h => (
+                        {['Ref', 'Cliente', 'Total', 'Modo', 'Estado', 'Fecha', 'Boleta'].map(h => (
                           <th key={h} className="text-left text-zinc-500 text-xs uppercase tracking-widest px-4 py-3 font-medium">{h}</th>
                         ))}
                       </tr>
@@ -401,9 +376,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                             <p className="text-zinc-500 text-xs">{o.customer_email}</p>
                           </td>
                           <td className="px-4 py-3 text-white tabular-nums text-xs">{fmt(o.total)}</td>
-                          <td className="px-4 py-3">
-                            <span className="text-zinc-400 text-xs capitalize">{o.payment_mode}</span>
-                          </td>
+                          <td className="px-4 py-3"><span className="text-zinc-400 text-xs capitalize">{o.payment_mode}</span></td>
                           <td className="px-4 py-3">
                             <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor[o.status] ?? 'bg-zinc-700 text-zinc-300'}`}>
                               {o.status}
@@ -411,6 +384,43 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                           </td>
                           <td className="px-4 py-3 text-zinc-500 text-xs tabular-nums">
                             {new Date(o.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
+                          </td>
+                          {/* ── BOLETA ── */}
+                          <td className="px-4 py-3">
+                            {(o.status === 'paid' || o.status === 'abono') ? (
+                              <div className="flex items-center gap-2">
+                                <a
+                                  href={o.qr_token
+                                    ? `/boleta/${o.order_ref}?token=${o.qr_token}`
+                                    : `/boleta/${o.order_ref}`
+                                  }
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 text-xs text-aira-lime hover:text-white transition-colors font-medium"
+                                  title="Ver boleta"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                  </svg>
+                                  Ver
+                                </a>
+                                <button
+                                  onClick={() => copyBoletaLink(o.order_ref, o.qr_token)}
+                                  className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-200 transition-colors"
+                                  title="Copiar link"
+                                >
+                                  {copied === o.order_ref ? (
+                                    <span className="text-green-400 text-xs">✓ copiado</span>
+                                  ) : (
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                  )}
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-zinc-700 text-xs">—</span>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -440,24 +450,14 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                         </div>
                         <span className="text-zinc-400 text-sm tabular-nums">{fmt(t.price)}</span>
                       </div>
-                      {/* Barra de progreso */}
                       <div className="h-2 bg-zinc-800 rounded-full overflow-hidden flex mb-3">
                         <div className="bg-emerald-500 h-full transition-all" style={{ width: `${soldPct}%` }} />
                         <div className="bg-amber-400 h-full transition-all" style={{ width: `${resPct}%` }} />
                       </div>
                       <div className="flex gap-4 text-xs">
-                        <span className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-                          <span className="text-zinc-400">Vendidos: <b className="text-white">{t.sold_qty}</b></span>
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
-                          <span className="text-zinc-400">Reservados: <b className="text-white">{t.reserved_qty}</b></span>
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-zinc-600 inline-block" />
-                          <span className="text-zinc-400">Libres: <b className="text-white">{free}</b></span>
-                        </span>
+                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /><span className="text-zinc-400">Vendidos: <b className="text-white">{t.sold_qty}</b></span></span>
+                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /><span className="text-zinc-400">Reservados: <b className="text-white">{t.reserved_qty}</b></span></span>
+                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-zinc-600 inline-block" /><span className="text-zinc-400">Libres: <b className="text-white">{free}</b></span></span>
                       </div>
                     </div>
                   );
@@ -467,218 +467,103 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
           </>
         )}
 
-            {/* Tab: Recordatorios */}
-            {tab === 'recordatorios' && (
-              <div className="space-y-4">
-                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-                  <h3 className="text-white font-semibold mb-1">Recordatorios de cuotas</h3>
-                  <p className="text-zinc-400 text-sm mb-6">
-                    Envía mensajes WhatsApp a compradores con cuotas que vencen en 3 días o mañana.
-                    El cron automático lo ejecuta cada día a las 9am hora Colombia.
-                  </p>
-                  <div className="flex flex-wrap gap-3 mb-6">
-                    <button
-                      disabled={recSending}
-                      onClick={async () => {
-                        setRecSending(true); setRecLog([]); setRecResult(null);
-                        try {
-                          const r = await fetch('/api/recordatorios-cuotas?dry=1', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'x-admin-key': token },
-                            body: JSON.stringify({ dry: true }),
-                          });
-                          const d = await r.json();
-                          setRecResult(d); setRecLog(d.log || []);
-                        } catch(e:any) { setRecLog(['Error: ' + e.message]); }
-                        finally { setRecSending(false); }
-                      }}
-                      className="px-4 py-2.5 rounded-xl border border-zinc-700 text-zinc-300 text-sm hover:border-zinc-500 transition-colors disabled:opacity-40 flex items-center gap-2"
-                    >
-                      {recSending ? 'Procesando…' : '🔍 Simular (dry run)'}
-                    </button>
-                    <button
-                      disabled={recSending}
-                      onClick={async () => {
-                        if (!confirm('¿Enviar recordatorios WhatsApp reales ahora?')) return;
-                        setRecSending(true); setRecLog([]); setRecResult(null);
-                        try {
-                          const r = await fetch('/api/recordatorios-cuotas', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'x-admin-key': token },
-                            body: JSON.stringify({}),
-                          });
-                          const d = await r.json();
-                          setRecResult(d); setRecLog(d.log || []);
-                        } catch(e:any) { setRecLog(['Error: ' + e.message]); }
-                        finally { setRecSending(false); }
-                      }}
-                      className="px-4 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-semibold transition-colors disabled:opacity-40 flex items-center gap-2"
-                    >
-                      {recSending ? 'Enviando…' : '📲 Enviar ahora'}
-                    </button>
-                  </div>
-
-                  {recResult && (
-                    <div className={`rounded-xl border p-4 mb-4 text-sm ${
-                      recResult.ok ? 'border-green-500/30 bg-green-500/10' : 'border-red-500/30 bg-red-500/10'
-                    }`}>
-                      <p className={recResult.ok ? 'text-green-400' : 'text-red-400'}>
-                        {recResult.dryRun ? '[DRY RUN] ' : ''}
-                        ✓ {recResult.enviados} enviados · {recResult.errores} errores · {recResult.total} total
-                      </p>
-                    </div>
-                  )}
-
-                  {recLog.length > 0 && (
-                    <div className="bg-black/50 border border-zinc-800 rounded-xl p-4 font-mono text-xs text-zinc-400 max-h-64 overflow-y-auto space-y-1">
-                      {recLog.map((line, i) => (
-                        <p key={i} className={line.startsWith('→') ? 'text-zinc-300' : line.startsWith('⚠') ? 'text-yellow-400' : ''}>  {line}</p>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="mt-6 pt-4 border-t border-zinc-800">
-                    <p className="text-zinc-500 text-xs">⏰ Cron automático: todos los días a las 9:00am (hora Colombia)</p>
-                    <p className="text-zinc-500 text-xs mt-1">🔒 Requiere variable de entorno <code className="text-zinc-400">CRON_SECRET</code> y <code className="text-zinc-400">ADMIN_SECRET_KEY</code> en Vercel</p>
-                  </div>
-                </div>
+        {/* Tab: Recordatorios */}
+        {tab === 'recordatorios' && (
+          <div className="space-y-4">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+              <h3 className="text-white font-semibold mb-1">Recordatorios de cuotas</h3>
+              <p className="text-zinc-400 text-sm mb-6">Envía mensajes WhatsApp a compradores con cuotas que vencen en 3 días o mañana. El cron automático lo ejecuta cada día a las 9am hora Colombia.</p>
+              <div className="flex flex-wrap gap-3 mb-6">
+                <button disabled={recSending} onClick={async () => {
+                  setRecSending(true); setRecLog([]); setRecResult(null);
+                  try {
+                    const resp = await fetch('/api/recordatorios-cuotas?dry=1', { method:'POST', headers:{'Content-Type':'application/json','x-admin-key':token}, body:JSON.stringify({dry:true}) });
+                    const d = await resp.json();
+                    setRecResult(d); setRecLog(d.log||[]);
+                  } catch(e:any) { setRecLog(['Error: '+e.message]); } finally { setRecSending(false); }
+                }} className="px-4 py-2.5 rounded-xl border border-zinc-700 text-zinc-300 text-sm hover:border-zinc-500 transition-colors disabled:opacity-40">
+                  {recSending ? 'Procesando…' : '🔍 Simular (dry run)'}
+                </button>
+                <button disabled={recSending} onClick={async () => {
+                  if (!confirm('¿Enviar recordatorios WhatsApp reales ahora?')) return;
+                  setRecSending(true); setRecLog([]); setRecResult(null);
+                  try {
+                    const resp = await fetch('/api/recordatorios-cuotas', { method:'POST', headers:{'Content-Type':'application/json','x-admin-key':token}, body:JSON.stringify({}) });
+                    const d = await resp.json();
+                    setRecResult(d); setRecLog(d.log||[]);
+                  } catch(e:any) { setRecLog(['Error: '+e.message]); } finally { setRecSending(false); }
+                }} className="px-4 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-semibold transition-colors disabled:opacity-40">
+                  {recSending ? 'Enviando…' : '📲 Enviar ahora'}
+                </button>
               </div>
-            )}
-
-            {/* Tab: Registro Manual */}
-            {tab === 'manual' && <ManualTab token={token} />}
-
-            {tab === 'referidos' && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-semibold text-white">Códigos de Referido</h3>
-
-                {/* Crear código */}
-                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-                  <p className="text-xs uppercase tracking-widest text-zinc-500 mb-4">Nuevo Código</p>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-                    <div>
-                      <label className="block text-xs text-zinc-500 mb-1">Código *</label>
-                      <input
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm font-mono tracking-widest uppercase placeholder:text-zinc-600 outline-none focus:border-zinc-500"
-                        value={newCodigo.codigo}
-                        onChange={e => setNewCodigo(f => ({ ...f, codigo: e.target.value.toUpperCase().replace(/\s+/g,'-') }))}
-                        placeholder="AIRA-2026"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-zinc-500 mb-1">Descripción</label>
-                      <input
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm placeholder:text-zinc-600 outline-none focus:border-zinc-500"
-                        value={newCodigo.descripcion}
-                        onChange={e => setNewCodigo(f => ({ ...f, descripcion: e.target.value }))}
-                        placeholder="Ej: Código para equipo de ventas"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-zinc-500 mb-1">Usos máx.</label>
-                      <input
-                        type="number" min={1} max={999}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-zinc-500"
-                        value={newCodigo.usos_max}
-                        onChange={e => setNewCodigo(f => ({ ...f, usos_max: Number(e.target.value) }))}
-                      />
-                    </div>
-                  </div>
-                  <button
-                    disabled={codigoSaving || !newCodigo.codigo}
-                    onClick={async () => {
-                      setCodigoSaving(true);
-                      const r = await fetch('/api/referidos', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
-                        body: JSON.stringify(newCodigo),
-                      });
-                      const d = await r.json();
-                      if (d.ok) {
-                        setCodigos(cs => [d.codigo, ...cs]);
-                        setNewCodigo({ codigo:'', descripcion:'', usos_max:1 });
-                      } else { alert(d.error); }
-                      setCodigoSaving(false);
-                    }}
-                    className="px-5 py-2 rounded-lg bg-white text-black text-sm font-semibold disabled:opacity-40"
-                  >
-                    {codigoSaving ? 'Creando...' : '+ Crear Código'}
-                  </button>
+              {recResult && (
+                <div className={`rounded-xl border p-4 mb-4 text-sm ${recResult.ok?'border-green-500/30 bg-green-500/10':'border-red-500/30 bg-red-500/10'}`}>
+                  <p className={recResult.ok?'text-green-400':'text-red-400'}>{recResult.dryRun?'[DRY RUN] ':''} ✓ {recResult.enviados} enviados · {recResult.errores} errores · {recResult.total} total</p>
                 </div>
-
-                {/* Lista */}
-                <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-                  <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-800">
-                    <p className="text-xs uppercase tracking-widest text-zinc-500">Códigos registrados</p>
-                    <button onClick={async () => {
-                      const r = await fetch('/api/referidos', { headers: { 'x-admin-token': token } });
-                      const d = await r.json();
-                      setCodigos(d.codigos || []);
-                    }} className="text-xs text-zinc-500 hover:text-white transition">↻ Refrescar</button>
-                  </div>
-                  {codigos.length === 0
-                    ? <p className="text-center text-zinc-600 text-sm py-10">Sin códigos. Crea el primero arriba.</p>
-                    : (
-                      <table className="w-full text-sm">
-                        <thead><tr className="border-b border-zinc-800 text-left">
-                          {['Código','Descripción','Usos','Estado','Acciones'].map(h => (
-                            <th key={h} className="px-4 py-3 text-[10px] uppercase tracking-widest text-zinc-500 font-medium">{h}</th>
-                          ))}
-                        </tr></thead>
-                        <tbody>
-                          {codigos.map((cod: any) => (
-                            <tr key={cod.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition">
-                              <td className="px-4 py-3 font-mono text-white tracking-widest">{cod.codigo}</td>
-                              <td className="px-4 py-3 text-zinc-400 max-w-[200px] truncate">{cod.descripcion || '—'}</td>
-                              <td className="px-4 py-3">
-                                <span className={`font-mono text-sm ${cod.usos_actuales >= cod.usos_max ? 'text-red-400' : 'text-green-400'}`}>
-                                  {cod.usos_actuales}
-                                </span>
-                                <span className="text-zinc-600">/{cod.usos_max}</span>
-                              </td>
-                              <td className="px-4 py-3">
-                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cod.activo ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}>
-                                  {cod.activo ? 'Activo' : 'Inactivo'}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3">
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={async () => {
-                                      await fetch('/api/referidos', {
-                                        method: 'PUT',
-                                        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
-                                        body: JSON.stringify({ id: cod.id, activo: cod.activo ? 0 : 1 }),
-                                      });
-                                      setCodigos(cs => cs.map(c => c.id === cod.id ? { ...c, activo: cod.activo ? 0 : 1 } : c));
-                                    }}
-                                    className="text-xs text-zinc-500 hover:text-white transition"
-                                  >
-                                    {cod.activo ? 'Desactivar' : 'Activar'}
-                                  </button>
-                                  <button
-                                    onClick={async () => {
-                                      if (!confirm(`¿Eliminar código ${cod.codigo}?`)) return;
-                                      await fetch(`/api/referidos?id=${cod.id}`, {
-                                        method: 'DELETE', headers: { 'x-admin-token': token },
-                                      });
-                                      setCodigos(cs => cs.filter(c => c.id !== cod.id));
-                                    }}
-                                    className="text-xs text-red-500 hover:text-red-400 transition"
-                                  >
-                                    Eliminar
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )
-                  }
+              )}
+              {recLog.length > 0 && (
+                <div className="bg-black/50 border border-zinc-800 rounded-xl p-4 font-mono text-xs text-zinc-400 max-h-64 overflow-y-auto space-y-1">
+                  {recLog.map((line, i) => <p key={i} className={line.startsWith('→')?'text-zinc-300':line.startsWith('⚠')?'text-yellow-400':''}>{line}</p>)}
                 </div>
+              )}
+              <div className="mt-6 pt-4 border-t border-zinc-800">
+                <p className="text-zinc-500 text-xs">⏰ Cron automático: todos los días a las 9:00am (hora Colombia)</p>
+                <p className="text-zinc-500 text-xs mt-1">🔒 Requiere <code className="text-zinc-400">CRON_SECRET</code> y <code className="text-zinc-400">ADMIN_SECRET_KEY</code> en Vercel</p>
               </div>
-            )}
+            </div>
+          </div>
+        )}
+
+        {/* Tab: Registro Manual */}
+        {tab === 'manual' && <ManualTab token={token} />}
+
+        {/* Tab: Referidos */}
+        {tab === 'referidos' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-white">Códigos de Referido</h3>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+              <p className="text-xs uppercase tracking-widest text-zinc-500 mb-4">Nuevo Código</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                <div><label className="block text-xs text-zinc-500 mb-1">Código *</label><input className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm font-mono tracking-widest uppercase placeholder:text-zinc-600 outline-none focus:border-zinc-500" value={newCodigo.codigo} onChange={e=>setNewCodigo(f=>({...f,codigo:e.target.value.toUpperCase().replace(/\s+/g,'-')}))} placeholder="AIRA-2026" /></div>
+                <div><label className="block text-xs text-zinc-500 mb-1">Descripción</label><input className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm placeholder:text-zinc-600 outline-none focus:border-zinc-500" value={newCodigo.descripcion} onChange={e=>setNewCodigo(f=>({...f,descripcion:e.target.value}))} placeholder="Ej: Código para equipo de ventas" /></div>
+                <div><label className="block text-xs text-zinc-500 mb-1">Usos máx.</label><input type="number" min={1} max={999} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-zinc-500" value={newCodigo.usos_max} onChange={e=>setNewCodigo(f=>({...f,usos_max:Number(e.target.value)}))} /></div>
+              </div>
+              <button disabled={codigoSaving||!newCodigo.codigo} onClick={async () => {
+                setCodigoSaving(true);
+                const resp = await fetch('/api/referidos', { method:'POST', headers:{'Content-Type':'application/json','x-admin-token':token}, body:JSON.stringify(newCodigo) });
+                const d = await resp.json();
+                if (d.ok) { setCodigos(cs=>[d.codigo,...cs]); setNewCodigo({codigo:'',descripcion:'',usos_max:1}); } else { alert(d.error); }
+                setCodigoSaving(false);
+              }} className="px-5 py-2 rounded-lg bg-white text-black text-sm font-semibold disabled:opacity-40">
+                {codigoSaving?'Creando...':'+ Crear Código'}
+              </button>
+            </div>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-800">
+                <p className="text-xs uppercase tracking-widest text-zinc-500">Códigos registrados</p>
+                <button onClick={async()=>{ const resp=await fetch('/api/referidos',{headers:{'x-admin-token':token}}); const d=await resp.json(); setCodigos(d.codigos||[]); }} className="text-xs text-zinc-500 hover:text-white transition">↻ Refrescar</button>
+              </div>
+              {codigos.length===0
+                ? <p className="text-center text-zinc-600 text-sm py-10">Sin códigos. Crea el primero arriba.</p>
+                : <table className="w-full text-sm">
+                    <thead><tr className="border-b border-zinc-800 text-left">{['Código','Descripción','Usos','Estado','Acciones'].map(h=><th key={h} className="px-4 py-3 text-[10px] uppercase tracking-widest text-zinc-500 font-medium">{h}</th>)}</tr></thead>
+                    <tbody>{codigos.map((cod:any)=>(
+                      <tr key={cod.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition">
+                        <td className="px-4 py-3 font-mono text-white tracking-widest">{cod.codigo}</td>
+                        <td className="px-4 py-3 text-zinc-400 max-w-[200px] truncate">{cod.descripcion||'—'}</td>
+                        <td className="px-4 py-3"><span className={`font-mono text-sm ${cod.usos_actuales>=cod.usos_max?'text-red-400':'text-green-400'}`}>{cod.usos_actuales}</span><span className="text-zinc-600">/{cod.usos_max}</span></td>
+                        <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cod.activo?'bg-green-500/15 text-green-400':'bg-red-500/15 text-red-400'}`}>{cod.activo?'Activo':'Inactivo'}</span></td>
+                        <td className="px-4 py-3"><div className="flex gap-2">
+                          <button onClick={async()=>{ await fetch('/api/referidos',{method:'PUT',headers:{'Content-Type':'application/json','x-admin-token':token},body:JSON.stringify({id:cod.id,activo:cod.activo?0:1})}); setCodigos(cs=>cs.map(c=>c.id===cod.id?{...c,activo:cod.activo?0:1}:c)); }} className="text-xs text-zinc-500 hover:text-white transition">{cod.activo?'Desactivar':'Activar'}</button>
+                          <button onClick={async()=>{ if(!confirm(`¿Eliminar código ${cod.codigo}?`))return; await fetch(`/api/referidos?id=${cod.id}`,{method:'DELETE',headers:{'x-admin-token':token}}); setCodigos(cs=>cs.filter(c=>c.id!==cod.id)); }} className="text-xs text-red-500 hover:text-red-400 transition">Eliminar</button>
+                        </div></td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+              }
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
