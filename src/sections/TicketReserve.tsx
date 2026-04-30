@@ -1309,15 +1309,15 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                         </div>
                       </div>
 
-                      {/* Cantidad */}
-                      <div className="flex items-center justify-between border-t border-white/10 pt-4">
+                      {/* Cantidad — oculto para Creyentes (1 entrada fija) */}
+                      {selectedStageId !== 'creyentes' && <div className="flex items-center justify-between border-t border-white/10 pt-4">
                         <p className="font-mono-custom text-[9px] uppercase tracking-[0.22em] text-white/35">{accessType === 'package' ? 'Personas' : 'Boletas'}</p>
                         <div className="flex items-center gap-1 rounded-full border border-white/10 p-1">
                           <button className="w-8 h-8 rounded-full hover:bg-white/10 active:bg-white/20 flex items-center justify-center transition-colors" onClick={() => setQty(v => Math.max(1, v - 1))} aria-label="Reducir"><Minus className="w-3.5 h-3.5 text-white/60" /></button>
                           <span className="w-8 text-center font-mono-custom text-sm text-white">{qty}</span>
                           <button className="w-8 h-8 rounded-full hover:bg-white/10 active:bg-white/20 flex items-center justify-center transition-colors" onClick={() => setQty(v => Math.min(accessType === 'package' ? 7 : 8, v + 1))} aria-label="Aumentar"><Plus className="w-3.5 h-3.5 text-white/60" /></button>
                         </div>
-                      </div>
+                      </div>}
 
                       {/* Pass VIP */}
                       <div className="border-t border-white/10 pt-4">
