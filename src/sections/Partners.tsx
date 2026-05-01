@@ -329,13 +329,14 @@ export default function Partners() {
 
           <Reveal delay={150}>
             <div className="relative aspect-[4/5] rounded-3xl overflow-hidden border border-white/8 bg-black">
-              {/* Google Drive video embed */}
-              <iframe
-                src="https://drive.google.com/file/d/1UzkAGQgH_8v79z-rmb1igf0DnOzj3vi0/preview?autoplay=1&loop=1&controls=0"
-                className="w-full h-full"
-                allow="autoplay; fullscreen"
-                allowFullScreen
-                style={{ border: 'none' }}
+              {/* Video nativo — autoplay loop muted */}
+              <video
+                src="https://drive.google.com/uc?export=download&id=1UzkAGQgH_8v79z-rmb1igf0DnOzj3vi0"
+                className="w-full h-full object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
               />
               {/* Label overlay at bottom */}
               <div className="absolute bottom-0 left-0 right-0 pointer-events-none px-6 py-5"
