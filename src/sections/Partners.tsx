@@ -274,7 +274,7 @@ export default function Partners() {
             AIRA
           </h1>
           <p className="font-mono-custom text-xs md:text-sm uppercase tracking-[0.5em] text-white/50 mb-6">
-            Propuesta de Patrocinio Comercial
+            Propuesta de Alianza Estratégica
           </p>
           <p className="text-white/60 text-lg md:text-xl max-w-2xl leading-relaxed mb-12 font-light italic">
             "Su marca no necesita más visibilidad. Necesita el contexto correcto."
