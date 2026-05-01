@@ -277,7 +277,7 @@ export default function Partners() {
             Propuesta de Patrocinio Comercial
           </p>
           <p className="text-white/60 text-lg md:text-xl max-w-2xl leading-relaxed mb-12 font-light italic">
-            "Conectamos marcas visionarias con una audiencia cautiva de alto poder adquisitivo"
+            "Su marca no necesita más visibilidad. Necesita el contexto correcto."
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4">
@@ -302,15 +302,15 @@ export default function Partners() {
               <Label>El Respaldo Corporativo</Label>
               <h2 className="font-display text-5xl md:text-6xl text-white leading-none mb-6">Quiénes Somos</h2>
               <p className="text-white/50 text-lg leading-relaxed mb-8">
-                Detrás de AIRA Experience se encuentra <strong className="text-white">VIVE AIRA S.A.S.</strong>, una compañía concebida con una visión clara: redefinir los estándares del entretenimiento y el estilo de vida premium en Colombia.
+                VIVE AIRA S.A.S. no nació para llenar calendarios de eventos. Nació para demostrar que Colombia tiene el criterio, el talento y la visión para crear experiencias que compiten con cualquier referente global.
               </p>
             </Reveal>
 
             <div className="space-y-5">
               {[
-                { icon: <Users className="w-5 h-5"/>, title: 'Equipo Multidisciplinario', desc: 'Expertos en diseño corporativo, estrategias financieras, curaduría artística y logística de alto nivel.' },
-                { icon: <Briefcase className="w-5 h-5"/>, title: 'Estética & Precisión', desc: 'Operamos bajo una estética minimalista y profundamente profesional que refleja el lujo moderno.' },
-                { icon: <Shield className="w-5 h-5"/>, title: 'Respaldo Corporativo', desc: 'Garantizamos una ejecución impecable y un soporte sólido para nuestros inversionistas y aliados.' },
+                { icon: <Users className="w-5 h-5"/>, title: 'Equipo Multidisciplinario', desc: 'Cada detalle tiene un autor. Diseño, curaduría, logística y estrategia financiera trabajando como un solo organismo.' },
+                { icon: <Briefcase className="w-5 h-5"/>, title: 'Estética & Precisión', desc: 'No decoramos espacios. Componemos atmósferas donde cada elemento, incluyendo su marca, tiene una razón de ser.' },
+                { icon: <Shield className="w-5 h-5"/>, title: 'Respaldo Corporativo', desc: 'Detrás de cada experiencia, una estructura sólida que garantiza que nada se deja al azar.' },
               ].map((item, i) => (
                 <Reveal key={i} delay={i * 80}>
                   <div className="flex items-start gap-4 p-5 rounded-2xl border border-white/6 bg-white/[0.02] hover:border-aira-lime/20 transition-all">
