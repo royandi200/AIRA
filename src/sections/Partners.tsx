@@ -331,7 +331,7 @@ export default function Partners() {
             <div className="relative aspect-[4/5] rounded-3xl overflow-hidden border border-white/8 bg-black">
               {/* Video nativo — autoplay loop muted */}
               <video
-                src="https://drive.google.com/uc?export=download&id=1UzkAGQgH_8v79z-rmb1igf0DnOzj3vi0"
+                src="https://res.cloudinary.com/dqfpxf3zq/video/upload/v1777679736/PUSH_REDES_AIRA_1_vortl2.mov"
                 className="w-full h-full object-cover"
                 autoPlay
                 loop
