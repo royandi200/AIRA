@@ -452,9 +452,9 @@ export default function Partners() {
         {/* 3 días */}
         <div className="grid md:grid-cols-3 gap-6 mb-16">
           {[
-            { day: 'Día 1', title: 'Inmersión & Comunidad', desc: 'Bienvenida en el Lobby Stage. Tarde de Yacht Party en el Floating Stage. Noche de inmersión en el Beach Stage.' },
-            { day: 'Día 2', title: 'Equilibrio & Adrenalina', desc: 'Sesiones de meditación y deportes náuticos. Catarsis absoluta en el Main Stage a bordo del "Majestic", el yate más grande de agua dulce de Latinoamérica.' },
-            { day: 'Día 3', title: 'Wellness & Descubrimiento', desc: 'Cierre y recuperación. Relajación con Open Deck para descubrir las próximas promesas de la escena electrónica.' },
+            { day: 'Día 1', title: 'Inmersión & Comunidad', desc: 'Activación en el Lobby Stage, tarde de Yacht Party en el Floating Stage y noche de inmersión en el Beach Stage.' },
+            { day: 'Día 2', title: 'Equilibrio & Adrenalina', desc: 'Meditación y deportes náuticos. Al anochecer, catarsis absoluta a bordo del "Majestic", el yate más grande de Latinoamérica.' },
+            { day: 'Día 3', title: 'Wellness & Descubrimiento', desc: 'Recuperación integral y relajación. Cierre de experiencia con Open Deck: nuevos talentos y sonidos emergentes.' },
           ].map((d, i) => (
             <Reveal key={i} delay={i * 80}>
               <div className="relative p-8 rounded-3xl border border-white/8 bg-white/[0.02] hover:border-aira-lime/20 transition-all overflow-hidden group">
