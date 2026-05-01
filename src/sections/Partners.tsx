@@ -361,9 +361,9 @@ export default function Partners() {
               </p>
               <div className="space-y-4 mb-8">
                 {[
-                  { n: '01', title: 'Turismo', sub: 'Exploración & Asombro', desc: 'Locaciones icónicas y exclusividad absoluta en el embalse de Guatapé.' },
-                  { n: '02', title: 'Deportes', sub: 'Adrenalina', desc: 'Actividades náuticas y conexión física en el embalse.' },
-                  { n: '03', title: 'Wellness', sub: 'Relajación', desc: 'Mindfulness, sanación sonora y desconexión mental.' },
+                  { n: '01', title: 'Turismo', sub: 'Territorio & Asombro', desc: 'Guatapé no es el telón de fondo. Es el primer acto. Un entorno que dicta la luz, el ritmo y la temperatura de todo lo que sucede — y de cómo su marca es percibida.' },
+                  { n: '02', title: 'Deportes', sub: 'Movimiento & Presencia', desc: 'El agua como terreno. Actividades diseñadas para que el cuerpo entre en un estado de atención total. El momento en que una marca aparece aquí, no interrumpe — pertenece.' },
+                  { n: '03', title: 'Wellness', sub: 'Silencio & Integración', desc: 'El contrapeso exacto. Espacios donde la energía se asienta y el asistente está más receptivo, más presente — y más dispuesto a recordar.' },
                 ].map((p, i) => (
                   <Reveal key={i} delay={i * 80}>
                     <div className="flex items-start gap-5 p-5 rounded-2xl border border-white/6 hover:border-aira-lime/20 transition-all">
@@ -377,7 +377,7 @@ export default function Partners() {
                 ))}
               </div>
               <div className="p-6 rounded-2xl border-l-2 bg-white/[0.03]" style={{ borderColor: LIME }}>
-                <p className="text-white/70 italic leading-relaxed">"El lujo moderno es interactivo y multisensorial. La música electrónica curada actúa como la banda sonora de este viaje, todo envuelto en un confort de 5 estrellas."</p>
+                <p className="text-white/70 italic leading-relaxed">"Diseñamos para los que ya lo han visto todo — y aún buscan algo que los sorprenda."</p>
               </div>
             </Reveal>
 
