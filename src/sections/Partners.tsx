@@ -395,10 +395,10 @@ export default function Partners() {
       {/* ── ITINERARIO ── */}
       <section id="itinerario" className="py-28 md:py-36 px-6 max-w-7xl mx-auto">
         <Reveal>
-          <Label>Itinerario Maestro (3 Días)</Label>
+          <Label>Arquitectura de la Experiencia</Label>
           <h2 className="font-display text-5xl md:text-6xl text-white leading-none mb-4">Ruta de Inmersión</h2>
           <p className="text-white/40 text-lg max-w-2xl leading-relaxed mb-16">
-            Diseñado para garantizar múltiples puntos de contacto orgánicos entre los asistentes y las marcas patrocinadoras en Joinn Houtel.
+            Cada momento del itinerario fue construido con un criterio doble: que el asistente viva algo inolvidable, y que su marca aparezca exactamente donde la atención está.
           </p>
         </Reveal>
 
