@@ -331,13 +331,16 @@ export default function Partners() {
             <div className="relative aspect-[4/5] rounded-3xl overflow-hidden border border-white/8 bg-black">
               {/* Video nativo — autoplay loop muted */}
               <video
-                src="https://res.cloudinary.com/dqfpxf3zq/video/upload/v1777679736/PUSH_REDES_AIRA_1_vortl2.mov"
                 className="w-full h-full object-cover"
                 autoPlay
                 loop
                 muted
                 playsInline
-              />
+                preload="auto"
+              >
+                <source src="https://res.cloudinary.com/dqfpxf3zq/video/upload/f_mp4,q_auto,vc_h264/v1777679736/PUSH_REDES_AIRA_1_vortl2" type="video/mp4" />
+                <source src="https://res.cloudinary.com/dqfpxf3zq/video/upload/f_webm,q_auto/v1777679736/PUSH_REDES_AIRA_1_vortl2" type="video/webm" />
+              </video>
               {/* Label overlay at bottom */}
               <div className="absolute bottom-0 left-0 right-0 pointer-events-none px-6 py-5"
                 style={{ background: 'linear-gradient(to top, rgba(3,6,18,0.95), transparent)' }}>
