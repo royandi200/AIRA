@@ -329,18 +329,32 @@ export default function Partners() {
 
           <Reveal delay={150}>
             <div className="relative aspect-[4/5] rounded-3xl overflow-hidden border border-white/8 bg-black">
-              {/* Video nativo — autoplay loop muted */}
-              <video
-                className="w-full h-full object-cover"
-                autoPlay
-                loop
-                muted
-                playsInline
-                preload="auto"
-              >
-                <source src="https://res.cloudinary.com/dqfpxf3zq/video/upload/f_mp4,q_auto,vc_h264/v1777679736/PUSH_REDES_AIRA_1_vortl2" type="video/mp4" />
-                <source src="https://res.cloudinary.com/dqfpxf3zq/video/upload/f_webm,q_auto/v1777679736/PUSH_REDES_AIRA_1_vortl2" type="video/webm" />
-              </video>
+              {/* Video con toggle de sonido */}
+              {(() => {
+                // eslint-disable-next-line react-hooks/rules-of-hooks
+                const [muted, setMuted] = useState(true);
+                return (
+                  <>
+                    <video
+                      className="w-full h-full object-cover"
+                      autoPlay loop muted={muted} playsInline preload="auto"
+                    >
+                      <source src="https://res.cloudinary.com/dqfpxf3zq/video/upload/f_mp4,q_auto,vc_h264/v1777679736/PUSH_REDES_AIRA_1_vortl2" type="video/mp4" />
+                      <source src="https://res.cloudinary.com/dqfpxf3zq/video/upload/f_webm,q_auto/v1777679736/PUSH_REDES_AIRA_1_vortl2" type="video/webm" />
+                    </video>
+                    <button
+                      onClick={() => setMuted(m => !m)}
+                      className="absolute top-4 right-4 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full font-mono-custom text-[9px] uppercase tracking-widest transition-all hover:opacity-90"
+                      style={{ background:'rgba(0,0,0,0.55)', border:`1px solid ${muted ? 'rgba(255,255,255,0.15)' : LIME+'60'}`, color: muted ? 'rgba(255,255,255,0.5)' : LIME, backdropFilter:'blur(8px)' }}
+                    >
+                      {muted
+                        ? <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg> Sin sonido</>
+                        : <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Sonido</>
+                      }
+                    </button>
+                  </>
+                );
+              })()}
               {/* Label overlay at bottom */}
               <div className="absolute bottom-0 left-0 right-0 pointer-events-none px-6 py-5"
                 style={{ background: 'linear-gradient(to top, rgba(3,6,18,0.95), transparent)' }}>
