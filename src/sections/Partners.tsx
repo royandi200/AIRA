@@ -634,11 +634,11 @@ export default function Partners() {
 
               <div className="grid md:grid-cols-2 gap-8 mb-10">
                 <p className="text-white/50 text-base leading-relaxed">
-                  El patrocinio no se limita a los 3 días del evento. Nuestro plan de media garantiza una presencia sostenida a través de una campaña en tres fases: <strong className="text-white">4 meses de expectativa previa, cobertura en tiempo real, y 1 mes de amplificación posterior.</strong>
+                  El patrocinio no se limita a los 3 días del evento. Nuestro plan de media garantiza una presencia sostenida a través de una campaña en tres fases: <strong className="text-white">3 meses de expectativa previa, cobertura en tiempo real, y 1 mes de amplificación posterior.</strong>
                 </p>
                 <div className="space-y-3">
                   {[
-                    { label: 'Fase 1 — Pre', value: '4 Meses', active: false },
+                    { label: 'Fase 1 — Pre', value: '3 Meses', active: false },
                     { label: 'Fase 2 — Live', value: '3 Días', active: true },
                     { label: 'Fase 3 — Post', value: '1 Mes', active: false },
                   ].map((f, i) => (
