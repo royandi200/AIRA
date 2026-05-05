@@ -316,7 +316,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
     // ── PREMIUM ────────────────────────────────────────────────────────────
     {
       id: 4,
-      date: "2025.08.15",
+      date: "2026.08.15",
       time: "18:00",
       city: "GUATAPÉ",
       venue: "PAQUETE 3 DÍAS",
@@ -328,7 +328,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
     },
     {
       id: 9,
-      date: "2025.08.15",
+      date: "2026.08.15",
       time: "14:00",
       city: "GUATAPÉ",
       venue: "CABAÑA COMPLETA x7",
@@ -340,7 +340,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
     },
     {
       id: 7,
-      date: "2025.08.15",
+      date: "2026.08.15",
       time: "18:00",
       city: "GUATAPÉ",
       venue: "PASS VIP",
@@ -352,7 +352,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
     },
     {
       id: 8,
-      date: "2025.08.15",
+      date: "2026.08.15",
       time: "07:00",
       city: "MEDELLÍN",
       venue: "TRANSPORTE",
@@ -364,7 +364,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
     },
     {
       id: 5,
-      date: "2025.08.15",
+      date: "2026.08.15",
       time: "14:00",
       city: "GUATAPÉ",
       venue: "SUITE PRIVADA",
@@ -378,7 +378,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
     // ── POR DÍA ────────────────────────────────────────────────────────────
     {
       id: 1,
-      date: "2025.08.15",
+      date: "2026.08.15",
       time: "18:00",
       city: "GUATAPÉ",
       venue: "DÍA 1 — After Fiesta de Yates",
@@ -389,7 +389,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
     },
     {
       id: 2,
-      date: "2025.08.16",
+      date: "2026.08.16",
       time: "18:00",
       city: "GUATAPÉ",
       venue: "DÍA 2 — Fiesta Majestic & Stage Joinn",
@@ -400,7 +400,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
     },
     {
       id: 3,
-      date: "2025.08.17",
+      date: "2026.08.17",
       time: "18:00",
       city: "GUATAPÉ",
       venue: "DÍA 3 — Open Deck",
