@@ -62,7 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Auth: cron secret o admin key
   const cronSecret  = process.env.CRON_SECRET;
-  const adminToken  = process.env.ADMIN_TOKEN || 'aira-admin-2026';
+  const adminToken  = process.env.ADMIN_TOKEN;
   const authHeader  = req.headers['authorization'] || '';
   const adminHeader = req.headers['x-admin-key'] || req.headers['x-admin-token'] || '';
 

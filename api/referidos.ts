@@ -13,7 +13,7 @@ const pool = mysql.createPool({
   ssl:             { rejectUnauthorized: false },
 });
 
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'aira-admin-2026';
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -21,6 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,x-admin-token');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  if (!ADMIN_TOKEN) return res.status(500).json({ error: 'ADMIN_TOKEN no configurado' });
   const token = req.headers['x-admin-token'];
   if (token !== ADMIN_TOKEN) return res.status(401).json({ error: 'No autorizado' });
 

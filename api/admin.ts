@@ -15,8 +15,10 @@ const pool = mysql.createPool({
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Auth simple por header
+  const adminToken = process.env.ADMIN_TOKEN;
+  if (!adminToken) return res.status(500).json({ error: 'ADMIN_TOKEN no configurado en el servidor' });
   const token = req.headers['x-admin-token'];
-  if (token !== (process.env.ADMIN_TOKEN || 'aira-admin-2026')) {
+  if (token !== adminToken) {
     return res.status(401).json({ error: 'No autorizado' });
   }
 

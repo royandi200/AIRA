@@ -20,7 +20,7 @@ const pool = mysql.createPool({
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const key = req.headers['x-admin-key'] as string | undefined;
-  if (key !== (process.env.ADMIN_KEY || 'aira-admin-2026')) {
+  if (key !== (process.env.ADMIN_KEY)) {
     return res.status(401).json({ error: 'Sin autorización' });
   }
 

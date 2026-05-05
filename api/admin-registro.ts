@@ -10,8 +10,10 @@ const pool = mysql.createPool({
 });
 
 function auth(req: VercelRequest) {
+  const adminToken = process.env.ADMIN_TOKEN;
+  if (!adminToken) return false;
   const token = req.headers['x-admin-token'];
-  return token === (process.env.ADMIN_TOKEN || 'aira-admin-2026');
+  return token === adminToken;
 }
 
 function genRef() {
