@@ -32,6 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       nombre     VARCHAR(200) NOT NULL,
       cedula     VARCHAR(50)  NULL,
       movil      VARCHAR(30)  NULL,
+      email      VARCHAR(200) NULL,
       evento_id  INT UNSIGNED NULL,
       paquete    VARCHAR(100) NULL,
       monto_total     DECIMAL(12,2) NULL,
@@ -59,7 +60,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // POST — crear registro manual
   if (req.method === 'POST') {
     const {
-      nombre, cedula, movil, evento_id, paquete,
+      nombre, cedula, movil, email, evento_id, paquete,
       monto_total, monto_recibido, medio_pago, fecha_pago,
       notas,
     } = req.body as Record<string, any>;
@@ -76,6 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         nombre          VARCHAR(150) NOT NULL,
         cedula          VARCHAR(30)  NOT NULL,
         movil           VARCHAR(30),
+        email           VARCHAR(200),
         evento_id       INT UNSIGNED,
         monto_total     DECIMAL(12,2) DEFAULT 0,
         monto_recibido  DECIMAL(12,2) DEFAULT 0,
@@ -90,13 +92,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     await pool.query(`
       INSERT INTO manual_registros
-        (order_ref, nombre, cedula, movil, evento_id, paquete,
+        (order_ref, nombre, cedula, movil, email, evento_id, paquete,
          monto_total, monto_recibido, monto_pendiente,
          medio_pago, fecha_pago, notas)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
     `, [
       order_ref, nombre, cedula, movil || null,
-      evento_id || null, paquete || null,
+      email || null, evento_id || null, paquete || null,
       monto_total || 0, monto_recibido || 0, monto_pendiente,
       medio_pago || null,
       fecha_pago || null,

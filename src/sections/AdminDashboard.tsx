@@ -101,6 +101,7 @@ function ManualTab({ token }: { token: string }) {
           <div><label className={labelCls}>Nombre completo *</label><input className={inputCls} value={form.nombre} placeholder="Juan García" onChange={e=>setForm(f=>({...f,nombre:e.target.value}))}/></div>
           <div><label className={labelCls}>Cédula *</label><input className={inputCls} value={form.cedula} placeholder="1234567890" onChange={e=>setForm(f=>({...f,cedula:e.target.value}))}/></div>
           <div><label className={labelCls}>Móvil / WhatsApp</label><input className={inputCls} value={form.movil} placeholder="3001234567" onChange={e=>setForm(f=>({...f,movil:e.target.value}))}/></div>
+          <div><label className={labelCls}>Correo Electrónico</label><input type="email" className={inputCls} value={form.email} placeholder="correo@ejemplo.com" onChange={e=>setForm(f=>({...f,email:e.target.value}))}/></div>
           <div>
             <label className={labelCls}>Paquete / Servicio</label>
             <select className={inputCls} value={form.paquete} onChange={e=>{
@@ -146,7 +147,7 @@ function ManualTab({ token }: { token: string }) {
         : list.length === 0 ? <div className="py-10 text-center text-zinc-500 text-sm">Sin registros todavía</div>
         : <div className="overflow-x-auto"><table className="w-full text-sm min-w-[900px]">
             <thead><tr className="border-b border-zinc-800 text-left">
-              {['Ref','Nombre','Cédula','Móvil','Paquete','Total','Recibido','Pendiente','Medio','Fecha','Notas',''].map(h=>(
+              {['Ref','Nombre','Cédula','Móvil','Email','Paquete','Total','Recibido','Pendiente','Medio','Fecha','Notas',''].map(h=>(
                 <th key={h} className="px-4 py-3 text-[10px] uppercase tracking-widest text-zinc-500 font-semibold">{h}</th>
               ))}
             </tr></thead>
@@ -156,6 +157,7 @@ function ManualTab({ token }: { token: string }) {
                 <td className="px-4 py-3 text-white font-medium">{r.nombre}</td>
                 <td className="px-4 py-3 text-zinc-300 font-mono text-xs">{r.cedula}</td>
                 <td className="px-4 py-3 text-zinc-400 text-xs">{r.movil||'—'}</td>
+                <td className="px-4 py-3 text-zinc-400 text-xs">{r.email||'—'}</td>
                 <td className="px-4 py-3 text-xs"><span className="text-aira-lime/80 font-medium">{r.paquete||'—'}</span></td>
                 <td className="px-4 py-3 text-white tabular-nums text-xs">{fmtLocal(r.monto_total)}</td>
                 <td className="px-4 py-3 text-green-400 tabular-nums text-xs font-semibold">{fmtLocal(r.monto_recibido)}</td>
