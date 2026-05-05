@@ -30,12 +30,12 @@
 
     <!-- Custom Chat Button — oculta el nativo, muestra el nuestro -->
     <style>
-      /* Ocultar botón nativo de BuilderBot */
+      /* NO ocultamos el nativo — lo cubrimos con nuestro overlay */
+      /* Forzar posición del contenedor nativo */
       [class*="builderbot-button"],
       [id*="builderbot-button"],
-      button[data-builderbot],
       .bb-button-wrapper,
-      #bb-chat-button { display: none !important; }
+      #bb-chat-button { opacity: 0 !important; }
 
       /* Nuestro botón custom */
       #aira-chat-btn {
@@ -104,106 +104,63 @@
       #aira-chat-btn .avatar-wrap { position: relative; flex-shrink: 0; }
     </style>
 
-    <button id="aira-chat-btn" onclick="document.querySelector('[data-builderbot-chat]') && window.__bb_open ? window.__bb_open() : document.querySelectorAll('[class*=builderbot],[id*=builderbot],[class*=bb-],[id*=bb-]').forEach(el=>{ if(el.tagName==='BUTTON'||el.role==='button') el.click(); })" aria-label="Hablar con Luna">
-      <div class="chat-bubble">
-        Pregúntame algo 👋
-        <span>Luna · asistente AIRA</span>
+    <!-- Wrapper que contiene el visual Y el botón nativo encima -->
+    <div id="aira-chat-wrap" style="position:fixed;bottom:28px;right:24px;z-index:9999;display:flex;align-items:center;gap:0;pointer-events:none;">
+      <!-- Visual decorativo (no clickeable) -->
+      <div style="display:flex;align-items:center;gap:0;pointer-events:none;animation:chatPulse 3s ease-in-out infinite;">
+        <div class="chat-bubble" style="pointer-events:none;">
+          Sé todo sobre AIRA ✨
+          <span>Luna · asistente AIRA</span>
+        </div>
+        <div class="avatar-wrap" style="pointer-events:none;">
+          <img class="chat-avatar"
+            src="https://res.cloudinary.com/dqfpxf3zq/image/upload/f_auto,q_auto,w_120/Ver_fotos_recientes_6_zdeq7j"
+            alt="Luna"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+          />
+          <div style="display:none;width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#e1fe52,#c8e022);align-items:center;justify-content:center;font-weight:900;font-size:20px;color:#0a0f1e;border:2px solid #e1fe52;">L</div>
+          <div class="online-dot"></div>
+        </div>
       </div>
-      <div class="avatar-wrap">
-        <img class="chat-avatar"
-          src="https://res.cloudinary.com/dqfpxf3zq/image/upload/f_auto,q_auto,w_120/Ver_fotos_recientes_6_zdeq7j"
-          alt="Luna - Asistente AIRA"
-          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
-        />
-        <div style="display:none;width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#e1fe52,#c8e022);align-items:center;justify-content:center;font-weight:900;font-size:20px;color:#0a0f1e;border:2px solid #e1fe52;">L</div>
-        <div class="online-dot"></div>
-      </div>
-    </button>
+    </div>
 
     <script>
       (function() {
-        var nativeBtn = null;
+        function positionOverlay() {
+          var wrap = document.getElementById('aira-chat-wrap');
+          if (!wrap) return;
 
-        function findAndHideNative() {
-          // Busca TODOS los botones en el DOM y encuentra el de BuilderBot
-          var all = document.querySelectorAll('button, [role="button"]');
-          for (var i = 0; i < all.length; i++) {
-            var el = all[i];
-            var cls = (el.className || '').toString();
-            var id  = (el.id || '').toString();
-            var par = el.parentElement;
-            var parCls = par ? (par.className || '').toString() : '';
-            var parId  = par ? (par.id  || '').toString() : '';
-            if (
-              cls.includes('builderbot') || id.includes('builderbot') ||
-              cls.includes('bb-') || id.includes('bb-') ||
-              parCls.includes('builderbot') || parId.includes('builderbot') ||
-              el.getAttribute('data-builderbot') !== null
-            ) {
-              nativeBtn = el;
-              // Ocultar el botón nativo y su contenedor
-              el.style.setProperty('display', 'none', 'important');
-              el.style.setProperty('visibility', 'hidden', 'important');
-              el.style.setProperty('opacity', '0', 'important');
-              el.style.setProperty('pointer-events', 'none', 'important');
-              if (par && par !== document.body) {
-                par.style.setProperty('display', 'none', 'important');
-              }
-              break;
-            }
-          }
-
-          // También ocultar por shadow DOM / iframes del SDK
-          document.querySelectorAll('*').forEach(function(el) {
+          // Buscar botón nativo
+          var nativeBtn = null;
+          document.querySelectorAll('button, [role="button"]').forEach(function(el) {
             var cls = (el.className || '').toString();
             var id  = (el.id  || '').toString();
-            if (
-              cls.includes('builderbot') || id.includes('builderbot') ||
-              cls.includes('bb-chat') || id.includes('bb-chat')
-            ) {
-              if (el.tagName !== 'SCRIPT') {
-                el.style.setProperty('display', 'none', 'important');
-              }
+            if (cls.includes('builderbot') || id.includes('builderbot') ||
+                cls.includes('bb-') || id.includes('bb-')) {
+              nativeBtn = el;
             }
           });
+
+          if (nativeBtn) {
+            // Hacer el botón nativo transparente pero ENCIMA de nuestro visual
+            nativeBtn.style.position = 'fixed';
+            nativeBtn.style.bottom   = '28px';
+            nativeBtn.style.right    = '24px';
+            nativeBtn.style.zIndex   = '10000';
+            nativeBtn.style.width    = '280px';
+            nativeBtn.style.height   = '66px';
+            nativeBtn.style.opacity  = '0';
+            nativeBtn.style.cursor   = 'pointer';
+            nativeBtn.style.borderRadius = '40px';
+            // Mostrar nuestro visual debajo
+            wrap.style.pointerEvents = 'none';
+          }
         }
 
-        // Conectar nuestro botón
-        function connectBtn() {
-          var btn = document.getElementById('aira-chat-btn');
-          if (!btn) return;
-          btn.onclick = function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            if (nativeBtn) {
-              // Restaurar brevemente para hacer click
-              nativeBtn.style.removeProperty('display');
-              nativeBtn.style.removeProperty('visibility');
-              nativeBtn.style.removeProperty('opacity');
-              nativeBtn.style.removeProperty('pointer-events');
-              nativeBtn.click();
-              // Volver a ocultar
-              setTimeout(function() {
-                nativeBtn.style.setProperty('display', 'none', 'important');
-                nativeBtn.style.setProperty('visibility', 'hidden', 'important');
-                nativeBtn.style.setProperty('opacity', '0', 'important');
-                nativeBtn.style.setProperty('pointer-events', 'none', 'important');
-              }, 100);
-            }
-          };
-        }
-
-        // Observer para detectar cuando BuilderBot inyecta su botón
-        var observer = new MutationObserver(function() {
-          findAndHideNative();
-        });
+        var observer = new MutationObserver(positionOverlay);
         observer.observe(document.body, { childList: true, subtree: true });
-
-        // También intentar en varios momentos
-        [500, 1000, 2000, 4000].forEach(function(t) {
-          setTimeout(function() { findAndHideNative(); connectBtn(); }, t);
-        });
-        window.addEventListener('load', function() { findAndHideNative(); connectBtn(); });
+        [500,1000,2000,3000,5000].forEach(function(t){ setTimeout(positionOverlay,t); });
+        window.addEventListener('load', positionOverlay);
       })();
     </script>
   </body>
