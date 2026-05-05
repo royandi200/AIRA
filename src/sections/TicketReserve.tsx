@@ -42,7 +42,7 @@ const DAYS = [
 // Fechas reales de cada etapa — ajustar según calendario del evento
 const STAGE_DATES: Record<string, { start: Date; end: Date }> = {
   creyentes: { start: new Date('2026-04-15'), end: new Date('2026-05-10') },
-  referidos:  { start: new Date('2026-04-15'), end: new Date('2026-05-05') },
+  referidos:  { start: new Date('2026-04-15'), end: new Date('2026-08-15') },
   primera:    { start: new Date('2026-05-05'), end: new Date('2026-06-05') },
   segunda:    { start: new Date('2026-06-05'), end: new Date('2026-07-05') },
   tercera:    { start: new Date('2026-07-05'), end: new Date('2026-08-15') },
@@ -1227,8 +1227,8 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                     <div className="mt-5">
                       <PassVipBanner addPassVip={addPassVip} setAddPassVip={setAddPassVip} qty={qty} passVipPrice={passVipPrice} />
                     </div>
-                    {/* Código referido */}
-                    {isReferidos && !creyentesOtpOpen && (
+                    {/* Código referido — visible para todas las etapas cuando no hay OTP de creyentes */}
+                    {selectedStageId && selectedStageId !== 'creyentes' && !creyentesOtpOpen && (
                       <div className="mt-4 rounded-xl border border-amber-400/40 bg-amber-400/5 p-3">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0"/>
@@ -1245,8 +1245,8 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                           }`}
                         />
                         {codigoError && <p className="text-xs text-red-400 mt-1">{codigoError}</p>}
-                  {codigoChecking && <p className="text-xs text-white/40 mt-1">Verificando código...</p>}
-                  {codigoValid && <p className="text-xs text-aira-lime mt-1">✓ Código válido</p>}
+                        {codigoChecking && <p className="text-xs text-white/40 mt-1">Verificando código...</p>}
+                        {codigoValid && <p className="text-xs text-aira-lime mt-1">✓ Código válido</p>}
                         <p className="text-[10px] text-white/30 mt-1">Ingresa el código que te compartió tu referido.</p>
                       </div>
                     )}
@@ -1254,11 +1254,12 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
                     <div className="mt-5 flex items-center justify-between gap-3">
                       <button className="px-5 py-2.5 rounded-full border border-white/10 text-white/70 text-sm hover:bg-white/5 transition-colors" onClick={() => { setAccessType(null); setStep(1); }}>Volver</button>
                       <button
-                        disabled={!selectedStageId || (isReferidos && !codigoValid)}
+                        disabled={!selectedStageId || (isReferidos && !codigoValid) || (selectedStageId !== 'creyentes' && codigoRef.length > 0 && !codigoValid)}
                         className="px-6 py-2.5 rounded-full bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] hover:bg-white active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                         onClick={() => {
                           if (!selectedStageId) return;
                           if (isReferidos && !codigoValid) { setCodigoError('Ingresa un código válido'); return; }
+                          if (codigoRef.length > 0 && !codigoValid) { setCodigoError('Código inválido — verifica e intenta de nuevo'); return; }
                           setCodigoError(''); setStep(3);
                         }}
                       >Continuar</button>
