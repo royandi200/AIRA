@@ -121,41 +121,89 @@
     </button>
 
     <script>
-      // Conectar nuestro botón al chat de BuilderBot cuando cargue
       (function() {
-        function connectBtn() {
-          const btn = document.getElementById('aira-chat-btn');
-          if (!btn) return;
-          // Buscar botón nativo de BuilderBot para hacer proxy del click
-          btn.onclick = function() {
-            // Intenta encontrar el botón nativo oculto y hacer click
-            const selectors = [
-              '[class*="builderbot"] button',
-              '[id*="builderbot"] button',
-              'button[class*="bb-"]',
-              '#bb-chat-button',
-              '[data-testid="chat-button"]',
-            ];
-            let found = false;
-            for (const sel of selectors) {
-              const el = document.querySelector(sel);
-              if (el) { el.click(); found = true; break; }
+        var nativeBtn = null;
+
+        function findAndHideNative() {
+          // Busca TODOS los botones en el DOM y encuentra el de BuilderBot
+          var all = document.querySelectorAll('button, [role="button"]');
+          for (var i = 0; i < all.length; i++) {
+            var el = all[i];
+            var cls = (el.className || '').toString();
+            var id  = (el.id || '').toString();
+            var par = el.parentElement;
+            var parCls = par ? (par.className || '').toString() : '';
+            var parId  = par ? (par.id  || '').toString() : '';
+            if (
+              cls.includes('builderbot') || id.includes('builderbot') ||
+              cls.includes('bb-') || id.includes('bb-') ||
+              parCls.includes('builderbot') || parId.includes('builderbot') ||
+              el.getAttribute('data-builderbot') !== null
+            ) {
+              nativeBtn = el;
+              // Ocultar el botón nativo y su contenedor
+              el.style.setProperty('display', 'none', 'important');
+              el.style.setProperty('visibility', 'hidden', 'important');
+              el.style.setProperty('opacity', '0', 'important');
+              el.style.setProperty('pointer-events', 'none', 'important');
+              if (par && par !== document.body) {
+                par.style.setProperty('display', 'none', 'important');
+              }
+              break;
             }
-            if (!found) {
-              // Fallback: simular click en cualquier elemento del SDK
-              document.querySelectorAll('*').forEach(el => {
-                const cls = el.className || '';
-                if (typeof cls === 'string' && (cls.includes('builderbot') || cls.includes('bb-chat'))) {
-                  el.click();
-                }
-              });
+          }
+
+          // También ocultar por shadow DOM / iframes del SDK
+          document.querySelectorAll('*').forEach(function(el) {
+            var cls = (el.className || '').toString();
+            var id  = (el.id  || '').toString();
+            if (
+              cls.includes('builderbot') || id.includes('builderbot') ||
+              cls.includes('bb-chat') || id.includes('bb-chat')
+            ) {
+              if (el.tagName !== 'SCRIPT') {
+                el.style.setProperty('display', 'none', 'important');
+              }
+            }
+          });
+        }
+
+        // Conectar nuestro botón
+        function connectBtn() {
+          var btn = document.getElementById('aira-chat-btn');
+          if (!btn) return;
+          btn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (nativeBtn) {
+              // Restaurar brevemente para hacer click
+              nativeBtn.style.removeProperty('display');
+              nativeBtn.style.removeProperty('visibility');
+              nativeBtn.style.removeProperty('opacity');
+              nativeBtn.style.removeProperty('pointer-events');
+              nativeBtn.click();
+              // Volver a ocultar
+              setTimeout(function() {
+                nativeBtn.style.setProperty('display', 'none', 'important');
+                nativeBtn.style.setProperty('visibility', 'hidden', 'important');
+                nativeBtn.style.setProperty('opacity', '0', 'important');
+                nativeBtn.style.setProperty('pointer-events', 'none', 'important');
+              }, 100);
             }
           };
         }
-        // Intentar varios momentos para asegurarse que el SDK cargó
-        setTimeout(connectBtn, 1000);
-        setTimeout(connectBtn, 3000);
-        window.addEventListener('load', connectBtn);
+
+        // Observer para detectar cuando BuilderBot inyecta su botón
+        var observer = new MutationObserver(function() {
+          findAndHideNative();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        // También intentar en varios momentos
+        [500, 1000, 2000, 4000].forEach(function(t) {
+          setTimeout(function() { findAndHideNative(); connectBtn(); }, t);
+        });
+        window.addEventListener('load', function() { findAndHideNative(); connectBtn(); });
       })();
     </script>
   </body>
