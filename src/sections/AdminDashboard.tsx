@@ -77,7 +77,7 @@ function ManualTab({ token }: { token: string }) {
       const d = await r.json();
       if (d.ok) {
         setMsg({text:`✓ Registrado: ${d.order_ref}`, ok:true});
-        setForm({ nombre:'', cedula:'', movil:'', paquete:'', monto_total:'', monto_recibido:'', medio_pago:'Efectivo', fecha_pago: new Date().toISOString().slice(0,10), notas:'' });
+        setForm({ nombre:'', cedula:'', movil:'', email:'', paquete:'', monto_total:'', monto_recibido:'', medio_pago:'Efectivo', fecha_pago: new Date().toISOString().slice(0,10), notas:'' });
         fetchList();
       } else { setMsg({text: d.error || 'Error', ok:false}); }
     } finally { setSaving(false); }
