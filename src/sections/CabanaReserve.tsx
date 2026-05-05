@@ -13,7 +13,7 @@ interface CabanaReserveProps {
 
 // ── Etapas de precio (misma lógica que TicketReserve) ──────────────────────
 const STAGE_DATES: Record<string, { start: Date; end: Date }> = {
-  creyentes: { start: new Date('2026-04-15'), end: new Date('2026-05-05') },
+  creyentes: { start: new Date('2026-04-15'), end: new Date('2026-05-10') },
   referidos:  { start: new Date('2026-04-15'), end: new Date('2026-05-05') },
   primera:    { start: new Date('2026-05-05'), end: new Date('2026-06-05') },
   segunda:    { start: new Date('2026-06-05'), end: new Date('2026-07-05') },
@@ -28,7 +28,7 @@ function isStagePast(id: string): boolean {
 }
 
 const CABANA_STAGES = [
-  { id: 'creyentes', label: 'Creyentes',  price: 4_200_000, slots: 2,  dates: '15 ABR – 5 MAY', locked: true  },
+  { id: 'creyentes', label: 'Creyentes',  price: 4_200_000, slots: 2,  dates: '15 ABR – 10 MAY', locked: true  },
   { id: 'referidos', label: 'Referidos',  price: 4_600_000, slots: 2,  dates: '15 ABR – 5 MAY', locked: false },
   { id: 'primera',   label: '1ª Etapa',   price: 4_900_000, slots: 3,  dates: '5 MAY – 5 JUN',  locked: false },
   { id: 'segunda',   label: '2ª Etapa',   price: 5_200_000, slots: 3,  dates: '5 JUN – 5 JUL',  locked: false },

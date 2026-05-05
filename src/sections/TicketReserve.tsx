@@ -41,7 +41,7 @@ const DAYS = [
 
 // Fechas reales de cada etapa — ajustar según calendario del evento
 const STAGE_DATES: Record<string, { start: Date; end: Date }> = {
-  creyentes: { start: new Date('2026-04-15'), end: new Date('2026-05-05') },
+  creyentes: { start: new Date('2026-04-15'), end: new Date('2026-05-10') },
   referidos:  { start: new Date('2026-04-15'), end: new Date('2026-05-05') },
   primera:    { start: new Date('2026-05-05'), end: new Date('2026-06-05') },
   segunda:    { start: new Date('2026-06-05'), end: new Date('2026-07-05') },
@@ -57,7 +57,7 @@ function isStagePast(id: string): boolean {
 }
 
 const STAGES = [
-  { id: 'creyentes', label: 'Creyentes', price: 590_000,   slots: 35, dates: '15 ABR – 5 MAY', locked: true  },
+  { id: 'creyentes', label: 'Creyentes', price: 590_000,   slots: 35, dates: '15 ABR – 10 MAY', locked: true  },
   { id: 'referidos', label: 'Referidos', price: 690_000,   slots: 35, dates: '15 ABR – 5 MAY', locked: false },
   { id: 'primera',   label: '1ª Etapa',  price: 790_000,   slots: 28, dates: '5 MAY – 5 JUN',  locked: false },
   { id: 'segunda',   label: '2ª Etapa',  price: 890_000,   slots: 28, dates: '5 JUN – 5 JUL',  locked: false },
