@@ -45,7 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const [recentOrders]: any = await pool.query(
         `SELECT o.id, o.order_ref, o.total, o.status, o.payment_mode,
-                o.reserved_until, o.created_at,
+                o.reserved_until, o.created_at, o.codigo_referido,
                 u.name AS customer_name, u.email AS customer_email
          FROM orders o
          LEFT JOIN users u ON u.id = o.user_id

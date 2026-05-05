@@ -207,14 +207,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const orderRef      = await generateOrderRef(conn);
     const reservedUntil = new Date(Date.now() + 10 * 60 * 1000);
 
+    const codigoRefFinal = codigoReferido ? String(codigoReferido).toUpperCase().trim() : null;
     const [orderResult]: any = await conn.query(
       `INSERT INTO orders
          (order_ref, user_id, event_id, subtotal, service_fee, pass_vip_total,
-          transport_total, total, payment_mode, reserved_until, add_pass_vip, add_transport)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+          transport_total, total, payment_mode, reserved_until, add_pass_vip, add_transport,
+          codigo_referido)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [orderRef, user.id, dbEventId, subtotal, serviceFee, passVipTotal,
        transportTotal, total, paymentMode, reservedUntil,
-       addPassVip ? 1 : 0, addTransport ? 1 : 0]
+       addPassVip ? 1 : 0, addTransport ? 1 : 0,
+       codigoRefFinal]
     );
     const orderId = orderResult.insertId;
 

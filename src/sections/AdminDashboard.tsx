@@ -15,7 +15,7 @@ interface Overview {
     reserved_qty: number; price: number;
   }>;
   recentOrders: Array<{
-    id: number; order_ref: string; total: number; status: string;
+    id: number; order_ref: string; total: number; status: string; codigo_referido?: string;
     payment_mode: string; reserved_until: string; created_at: string;
     customer_name: string; customer_email: string;
     qr_token?: string;
@@ -362,7 +362,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-zinc-800">
-                        {['Ref', 'Cliente', 'Total', 'Modo', 'Estado', 'Fecha', 'Boleta'].map(h => (
+                        {['Ref', 'Cliente', 'Total', 'Modo', 'Estado', 'Referido', 'Fecha', 'Boleta'].map(h => (
                           <th key={h} className="text-left text-zinc-500 text-xs uppercase tracking-widest px-4 py-3 font-medium">{h}</th>
                         ))}
                       </tr>
@@ -381,6 +381,11 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                             <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor[o.status] ?? 'bg-zinc-700 text-zinc-300'}`}>
                               {o.status}
                             </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            {o.codigo_referido
+                              ? <span className="font-mono text-[10px] px-2 py-0.5 rounded border border-amber-400/30 bg-amber-400/10 text-amber-400">{o.codigo_referido}</span>
+                              : <span className="text-zinc-700 text-xs">—</span>}
                           </td>
                           <td className="px-4 py-3 text-zinc-500 text-xs tabular-nums">
                             {new Date(o.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
