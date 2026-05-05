@@ -48,7 +48,7 @@ const PAQUETES = [
 ];
 
 function ManualTab({ token }: { token: string }) {
-  const [form, setForm] = useState({ nombre:'', cedula:'', movil:'', paquete:'', monto_total:'', monto_recibido:'', medio_pago:'Efectivo', fecha_pago: new Date().toISOString().slice(0,10), notas:'' });
+  const [form, setForm] = useState({ nombre:'', cedula:'', movil:'', email:'', paquete:'', monto_total:'', monto_recibido:'', medio_pago:'Efectivo', fecha_pago: new Date().toISOString().slice(0,10), notas:'' });
   const [list,    setList]    = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving,  setSaving]  = useState(false);
