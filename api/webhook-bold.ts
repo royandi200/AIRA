@@ -84,8 +84,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const isNumeric = /^\d+$/.test(String(orderRef));
     const [[order]]: any = await conn.query(
       isNumeric
-        ? 'SELECT id, status, payment_mode, qr_token FROM orders WHERE id = ?'
-        : 'SELECT id, status, payment_mode, qr_token FROM orders WHERE order_ref = ?',
+        ? 'SELECT id, status, payment_mode, qr_token, codigo_referido FROM orders WHERE id = ?'
+        : 'SELECT id, status, payment_mode, qr_token, codigo_referido FROM orders WHERE order_ref = ?',
       [orderRef]
     );
 
@@ -112,6 +112,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           `UPDATE ticket_types SET sold_qty = sold_qty + ?, reserved_qty = GREATEST(0, reserved_qty - ?) WHERE id = ?`,
           [item.quantity, item.quantity, item.ticket_type_id]
         );
+      }
+
+      // ── Descontar uso del código referido SOLO al confirmar pago ─────────
+      // El código ya fue validado y guardado en orders.codigo_referido al
+      // crear la orden. Aquí lo consumimos una sola vez (solo si aún no estaba
+      // pagada, para evitar doble descuento en callbacks duplicados de Bold).
+      if (!alreadyPaid && order.codigo_referido) {
+        try {
+          await conn.query(
+            `UPDATE codigos_referido
+             SET usos_actuales = usos_actuales + 1
+             WHERE codigo = ? AND usos_actuales < usos_max`,
+            [order.codigo_referido]
+          );
+          console.log(`[webhook-bold] 🎟️  Uso descontado al código referido: ${order.codigo_referido}`);
+        } catch (refErr: any) {
+          // No bloquear el pago si falla el descuento del referido
+          console.warn('[webhook-bold] No se pudo descontar uso referido:', refErr.message);
+        }
       }
 
       if (isAbono) {
