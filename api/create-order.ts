@@ -139,8 +139,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     addPassVip = false, addTransport = false, transportPassengers = 0,
     total: frontendTotal,
     abonoPlan: abonoPlanId,
-    codigoReferido,  // código de referido si aplica
-    // ✅ FIX: recibir amountToCharge del frontend (cuota en modo abono, total en modo full)
+    codigoReferido,
     amountToCharge: frontendAmountToCharge,
     primerPago: frontendPrimerPago,
   } = body;
@@ -159,20 +158,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
     const [[user]]: any = await conn.query('SELECT id FROM users WHERE email = ?', [email]);
 
-    // ── Validar y consumir código referido ───────────────────────────────────
-    if (codigoReferido) {
-      const codigoUp = String(codigoReferido).toUpperCase().trim();
+    // ── Validar código referido (SIN consumir usos) ──────────────────────────
+    // El descuento de usos_actuales ocurre SOLO cuando el pago se confirma
+    // (status = paid) en el webhook de Bold (api/bold-webhook.ts).
+    // Aquí solo validamos que el código existe, está activo y tiene cupos.
+    const codigoRefFinal = codigoReferido ? String(codigoReferido).toUpperCase().trim() : null;
+    if (codigoRefFinal) {
       const [[refRow]]: any = await conn.query(
-        `SELECT * FROM codigos_referido WHERE codigo = ? LIMIT 1`, [codigoUp]
+        `SELECT id, activo, usos_actuales, usos_max FROM codigos_referido WHERE codigo = ? LIMIT 1`,
+        [codigoRefFinal]
       );
       if (!refRow || !refRow.activo || refRow.usos_actuales >= refRow.usos_max) {
         await conn.rollback();
         return res.status(400).json({ error: 'Código de referido inválido o agotado' });
       }
-      await conn.query(
-        `UPDATE codigos_referido SET usos_actuales = usos_actuales + 1 WHERE id = ?`,
-        [refRow.id]
-      );
+      // ✅ NO se hace UPDATE usos_actuales aquí.
+      // Se registra en orders.codigo_referido y se descontará al confirmar el pago.
     }
 
     let subtotal = 0;
@@ -198,7 +199,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const serviceFee     = frontendTotal ? 0 : Math.round(subtotal * 0.05);
     const total          = frontendTotal ?? (subtotal + serviceFee + passVipTotal + transportTotal);
 
-    // ✅ FIX: el monto que Bold cobra es la cuota (primerPago), no el total completo
     const amountToCharge: number =
       frontendAmountToCharge ??
       frontendPrimerPago ??
@@ -207,7 +207,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const orderRef      = await generateOrderRef(conn);
     const reservedUntil = new Date(Date.now() + 10 * 60 * 1000);
 
-    const codigoRefFinal = codigoReferido ? String(codigoReferido).toUpperCase().trim() : null;
     const [orderResult]: any = await conn.query(
       `INSERT INTO orders
          (order_ref, user_id, event_id, subtotal, service_fee, pass_vip_total,
@@ -263,7 +262,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     await conn.commit();
 
-    // ── Bold payment link ────────────────────────────────────────────────────────
+    // ── Bold payment link ────────────────────────────────────────────────────
     let eventName = 'Evento';
     try {
       const [[ev]]: any = await pool.query('SELECT name FROM events WHERE id = ?', [dbEventId]);
@@ -276,7 +275,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let paymentUrl: string | null = null;
     try {
-      // ✅ FIX: Bold recibe amountToCharge (cuota) no el total completo
       paymentUrl = await createBoldPaymentLink({
         orderId, orderRef,
         amount: amountToCharge,
