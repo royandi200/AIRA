@@ -24,7 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
 
-    // ── 1. Buscar primero en registros MANUALES (AIRA-M-…) ─────────────────
+    // ── 1. Registros MANUALES (AIRA-M-…) ────────────────────────────────────
     if (ref.startsWith('AIRA-M-')) {
       const [[manual]]: any = await pool.query(
         `SELECT id, order_ref, nombre, email, movil, paquete,
@@ -41,22 +41,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(403).send(errorPage('Acceso denegado', 'El token no es válido para esta boleta.'));
       }
 
+      const montoPendiente = Number(manual.monto_pendiente) || 0;
+
       const html = generateTicketHTML({
-        orderRef:   manual.order_ref,
-        name:       manual.nombre,
-        email:      manual.email || '',
-        eventLabel: manual.paquete || 'AIRA Experience',
-        days:       '15–17 AGO',
-        isVip:      String(manual.paquete || '').toLowerCase().includes('vip'),
-        total:      Number(manual.monto_total),
-        qrToken:    manual.qr_token,
+        orderRef:       manual.order_ref,
+        name:           manual.nombre,
+        email:          manual.email || '',
+        eventLabel:     manual.paquete || 'AIRA Experience',
+        days:           '15–17 AGO',
+        isVip:          String(manual.paquete || '').toLowerCase().includes('vip'),
+        total:          Number(manual.monto_total),
+        qrToken:        manual.qr_token,
+        montoPendiente, // ← banner amarillo si > 0
       });
 
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       return res.status(200).send(html);
     }
 
-    // ── 2. Buscar en orders normales (Bold / online) ────────────────────────
+    // ── 2. Orders normales (Bold / online) ──────────────────────────────────
     const [[order]]: any = await pool.query(
       `SELECT o.id, o.order_ref, o.status, o.payment_mode, o.total,
               o.qr_token, o.add_pass_vip,
@@ -69,7 +72,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!order) return res.status(404).send(errorPage('Orden no encontrada', 'La referencia ingresada no existe.'));
 
-    // ── BOLETA QR (pago completo) ────────────────────────────────────
+    // ── BOLETA QR (pago completo) ────────────────────────────────────────────
     if (order.status === 'paid' && order.qr_token) {
       if (token && token !== order.qr_token) {
         return res.status(403).send(errorPage('Acceso denegado', 'El token no es válido para esta boleta.'));
@@ -91,24 +94,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ? items.map((i: any) => i.ticket_name).filter(Boolean).join(' + ')
         : 'AIRA Experience';
 
-      const isVip = Boolean(order.add_pass_vip);
-
       const html = generateTicketHTML({
         orderRef:   order.order_ref,
         name:       order.name,
         email:      order.email,
         eventLabel,
         days:       '15–17 AGO',
-        isVip,
+        isVip:      Boolean(order.add_pass_vip),
         total:      Number(order.total),
         qrToken:    order.qr_token,
+        // montoPendiente no aplica para Bold (ya está paid)
       });
 
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       return res.status(200).send(html);
     }
 
-    // ── COMPROBANTE RESERVA (abono) ──────────────────────────────
+    // ── COMPROBANTE RESERVA (abono) ──────────────────────────────────────────
     if (order.payment_mode === 'abono') {
       let cuotasPagadas = 1;
       let cuotasTotal   = 2;
@@ -146,16 +148,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         : 'AIRA Experience';
 
       const html = generateReservaHTML({
-        orderRef:        order.order_ref,
-        name:            order.name,
-        email:           order.email,
+        orderRef:       order.order_ref,
+        name:           order.name,
+        email:          order.email,
         eventLabel,
-        days:            '15–17 AGO',
-        total:           Number(order.total),
+        days:           '15–17 AGO',
+        total:          Number(order.total),
         cuotasPagadas,
         cuotasTotal,
         montoPagado,
-        saldoPendiente:  Number(order.total) - montoPagado,
+        saldoPendiente: Number(order.total) - montoPagado,
         proximaFecha,
       });
 

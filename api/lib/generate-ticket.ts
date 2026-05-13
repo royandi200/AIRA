@@ -15,11 +15,12 @@ interface TicketData {
   orderRef: string;
   name: string;
   email: string;
-  eventLabel: string;  // e.g. "Día 1 · Yacht Party" or "Paquete 3D/2N · Suite AIRA"
-  days: string;        // e.g. "15 AGO" or "15–17 AGO"
+  eventLabel: string;
+  days: string;
   isVip: boolean;
   total: number;
   qrToken: string;
+  montoPendiente?: number; // opcional: muestra banner si > 0
 }
 
 interface ReservaData {
@@ -36,10 +37,20 @@ interface ReservaData {
   proximaFecha: string;
 }
 
-/** Genera el HTML de la boleta QR (pago completo) */
+/** Genera el HTML de la boleta QR (pago completo o parcial con banner) */
 export function generateTicketHTML(data: TicketData): string {
   const BASE = 'https://www.viveaira.live';
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${BASE}/validate?token=${data.qrToken}`)}&bgcolor=030612&color=e1fe52&margin=12`;
+  const hasPendiente = typeof data.montoPendiente === 'number' && data.montoPendiente > 0;
+
+  const pendienteBanner = hasPendiente ? `
+  <div class="pending-banner">
+    <div class="pending-icon">⚠️</div>
+    <div class="pending-text">
+      <div class="pending-title">Saldo pendiente: ${fmt(data.montoPendiente!)}</div>
+      <div class="pending-sub">Esta boleta es válida. Recuerda completar tu pago para confirmar tu acceso total.</div>
+    </div>
+  </div>` : '';
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -68,6 +79,10 @@ export function generateTicketHTML(data: TicketData): string {
   .footer{background:#080e0a;padding:16px 28px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #1e2a1a}
   .order-ref{font-size:11px;color:#2d4d2a;font-family:monospace;letter-spacing:.1em}
   .total{font-size:14px;font-weight:700;color:#e1fe52}
+  .pending-banner{display:flex;align-items:flex-start;gap:12px;background:#2a1f00;border:1px solid #f5a62340;border-radius:14px;padding:14px 16px;margin-bottom:20px}
+  .pending-icon{font-size:20px;flex-shrink:0;margin-top:1px}
+  .pending-title{font-size:13px;font-weight:700;color:#f5a623;margin-bottom:3px}
+  .pending-sub{font-size:11px;color:#a07030;line-height:1.5}
   ${data.isVip ? '.vip-badge{background:#e1fe52;color:#030612;font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;padding:3px 10px;border-radius:999px;display:inline-block;margin-bottom:12px}' : ''}
 </style>
 </head>
@@ -87,6 +102,7 @@ export function generateTicketHTML(data: TicketData): string {
       <div class="field"><div class="field-label">Correo</div><div class="field-value" style="font-size:11px">${data.email}</div></div>
       <div class="field"><div class="field-label">Tipo</div><div class="field-value">${data.isVip ? 'VIP ⭐' : 'General'}</div></div>
     </div>
+    ${pendienteBanner}
     <div class="qr-wrap">
       <img class="qr-img" src="${qrUrl}" alt="QR de acceso"/>
       <div class="qr-hint">Muestra este QR en la entrada</div>
