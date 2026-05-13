@@ -23,6 +23,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!ref) return res.status(400).send('<h2>ref requerido</h2>');
 
   try {
+
+    // ── 1. Buscar primero en registros MANUALES (AIRA-M-…) ─────────────────
+    if (ref.startsWith('AIRA-M-')) {
+      const [[manual]]: any = await pool.query(
+        `SELECT id, order_ref, nombre, email, movil, paquete,
+                monto_total, monto_recibido, monto_pendiente, qr_token
+         FROM manual_registros WHERE order_ref = ?`,
+        [ref]
+      );
+
+      if (!manual) return res.status(404).send(errorPage('Orden no encontrada', 'La referencia ingresada no existe.'));
+
+      if (!manual.qr_token) return res.status(400).send(errorPage('Boleta no disponible', 'La boleta aún no ha sido generada para este registro.'));
+
+      if (token && token !== manual.qr_token) {
+        return res.status(403).send(errorPage('Acceso denegado', 'El token no es válido para esta boleta.'));
+      }
+
+      const html = generateTicketHTML({
+        orderRef:   manual.order_ref,
+        name:       manual.nombre,
+        email:      manual.email || '',
+        eventLabel: manual.paquete || 'AIRA Experience',
+        days:       '15–17 AGO',
+        isVip:      String(manual.paquete || '').toLowerCase().includes('vip'),
+        total:      Number(manual.monto_total),
+        qrToken:    manual.qr_token,
+      });
+
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.status(200).send(html);
+    }
+
+    // ── 2. Buscar en orders normales (Bold / online) ────────────────────────
     const [[order]]: any = await pool.query(
       `SELECT o.id, o.order_ref, o.status, o.payment_mode, o.total,
               o.qr_token, o.add_pass_vip,
@@ -41,7 +75,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(403).send(errorPage('Acceso denegado', 'El token no es válido para esta boleta.'));
       }
 
-      // Query defensivo: sólo columnas seguras
       let items: any[] = [];
       try {
         const [rows]: any = await pool.query(
@@ -52,7 +85,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           [order.id]
         );
         items = rows || [];
-      } catch { /* tabla o columna faltante — fallback */ }
+      } catch { /* fallback */ }
 
       const eventLabel = items.length > 0
         ? items.map((i: any) => i.ticket_name).filter(Boolean).join(' + ')
