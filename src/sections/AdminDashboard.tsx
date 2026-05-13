@@ -41,7 +41,7 @@ const PAQUETES = [
   { label: 'Paquete 3D · 3ª Etapa',            priceLabel: '$1.000.000', price: '1000000',  cat: '3 días' },
   { label: 'Pass VIP',                          priceLabel: '$450.000',   price: '450000',   cat: 'add-on' },
   { label: 'Transporte',                        priceLabel: '$180.000',   price: '180000',   cat: 'add-on' },
-  { label: 'Suite Privada',                     priceLabel: '$2.200.000', price: '2200000',  cat: 'add-on' },
+  { label: 'Suite Privada',                     priceLabel: '$2.500.000', price: '2500000',  cat: 'add-on' },
   { label: 'DÍA 1 — After Fiesta de Yates',    priceLabel: '$80.000',    price: '80000',    cat: 'daily'  },
   { label: 'DÍA 2 — Fiesta Majestic & Stage Joinn', priceLabel: '$150.000', price: '150000', cat: 'daily' },
   { label: 'DÍA 3 — Open Deck',                priceLabel: '$50.000',    price: '50000',    cat: 'daily'  },
