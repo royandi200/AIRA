@@ -74,7 +74,7 @@ export default function PoliticasModal({ open, onClose, initialTab = 'terminos' 
               <Section title="3. Política de devoluciones — Decisión del comprador">
                 <p><strong className="text-white/80">No asistencia:</strong> AIRA no realiza reembolsos cuando el comprador decide no asistir, independientemente del motivo. Las entradas no son transferibles salvo autorización expresa del organizador.</p>
                 <p><strong className="text-white/80">Error en la compra:</strong> Si el comprador seleccionó un producto incorrecto, puede contactar al equipo dentro de las 24 horas siguientes a la compra. Pasado ese tiempo, no se admiten cambios ni devoluciones.</p>
-                <p><strong className="text-white/80">Retracto:</strong> De acuerdo con el Estatuto del Consumidor (Ley 1480/2011), el derecho de retracto no aplica a entradas para espectáculos públicos con fecha determinada.</p>
+                <p><strong className="text-white/80">Retracto:</strong> Si compraste en línea, tienes 5 días hábiles desde la compra para retractarte sin penalidad, siempre que el evento no haya ocurrido (Ley 1480/2011, Art. 47). Ver sección 5.</p>
               </Section>
 
               <Section title="4. Fuerza mayor y caso fortuito">
@@ -82,11 +82,16 @@ export default function PoliticasModal({ open, onClose, initialTab = 'terminos' 
                 <p>En estos casos, AIRA procurará ofrecer una alternativa razonable (nueva fecha, crédito para futuros eventos) como gesto de buena voluntad, sin que esto constituya una obligación legal.</p>
               </Section>
 
-              <Section title="5. Procedimiento para solicitar devolución">
+              <Section title="5. Derecho de retracto (Ley 1480/2011, Art. 47)">
+                <p>Si realizaste tu compra en línea (a distancia), tienes derecho a retractarte dentro de los <strong className="text-white/80">5 días hábiles siguientes a la fecha de compra o abono</strong>, siempre que el evento aún no haya ocurrido. No necesitas justificación ni pagas penalidad alguna.</p>
+                <p>Para ejercerlo, sigue el procedimiento del punto 6. De proceder, AIRA tiene hasta 30 días calendario para devolver el valor completo pagado.</p>
+              </Section>
+
+              <Section title="6. Procedimiento para solicitar devolución">
                 <p>1. Envía un correo a <strong className="text-white/70">info@viveaira.live</strong> con el asunto: "DEVOLUCIÓN – [Número de reserva]"</p>
                 <p>2. Incluye: nombre completo, número de documento, número de reserva y motivo de la solicitud.</p>
                 <p>3. AIRA responderá dentro de los 3 días hábiles siguientes para informar si procede la devolución.</p>
-                <p>4. De proceder, el reembolso se efectuará en el mismo medio de pago original en un plazo de hasta 15 días hábiles. No se realizan devoluciones en efectivo (SAGRILAFT).</p>
+                <p>4. De proceder, el reembolso se efectuará en el mismo medio de pago original en un plazo de hasta 30 días calendario para retracto, o hasta 15 días hábiles para los demás casos. No se realizan devoluciones en efectivo (SAGRILAFT).</p>
               </Section>
 
               <Section title="6. Comportamiento y acceso al evento">
