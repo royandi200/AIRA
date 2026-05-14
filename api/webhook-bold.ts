@@ -115,9 +115,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       // ── Descontar uso del código referido SOLO al confirmar pago ─────────
-      // El código ya fue validado y guardado en orders.codigo_referido al
-      // crear la orden. Aquí lo consumimos una sola vez (solo si aún no estaba
-      // pagada, para evitar doble descuento en callbacks duplicados de Bold).
       if (!alreadyPaid && order.codigo_referido) {
         try {
           await conn.query(
@@ -128,7 +125,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           );
           console.log(`[webhook-bold] 🎟️  Uso descontado al código referido: ${order.codigo_referido}`);
         } catch (refErr: any) {
-          // No bloquear el pago si falla el descuento del referido
           console.warn('[webhook-bold] No se pudo descontar uso referido:', refErr.message);
         }
       }
@@ -158,6 +154,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           [orderId]
         );
 
+        // ── Recalcular monto_pendiente igual que registros manuales ──────────
+        const [[saldoRow]]: any = await conn.query(
+          'SELECT COALESCE(SUM(amount), 0) as pendiente FROM abono_payments WHERE order_id = ? AND paid_at IS NULL',
+          [orderId]
+        );
+        const nuevoPendiente = Number(saldoRow?.pendiente ?? 0);
+        try {
+          await conn.query(
+            'UPDATE orders SET monto_pendiente = ? WHERE id = ?',
+            [nuevoPendiente, orderId]
+          );
+          console.log(`[webhook-bold] 💰 monto_pendiente actualizado: ${nuevoPendiente} — orden ${orderId}`);
+        } catch (mpErr: any) {
+          console.warn('[webhook-bold] No se pudo actualizar monto_pendiente:', mpErr.message);
+        }
+
         if (pendientes?.cnt > 0) {
           // Aún quedan cuotas → comprobante de reserva SIN QR
           const [[fullOrder]]: any = await conn.query(
@@ -182,7 +194,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               cuotasPagadas:  pagadas.cnt,
               cuotasTotal:    totalCuotas.cnt,
               montoPagado,
-              saldoPendiente: Number(fullOrder.total) - montoPagado,
+              saldoPendiente: nuevoPendiente,
               proximaFecha:   proxima?.due_date ? new Date(proxima.due_date).toLocaleDateString('es-CO') : '—',
             });
             console.log(`[webhook-bold] 📋 Reserva enviada — ${fullOrder.order_ref} (${pagadas.cnt}/${totalCuotas.cnt})`);
