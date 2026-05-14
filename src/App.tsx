@@ -152,6 +152,7 @@ function App() {
         onOpenAddOn={(t) => setAddOnType(t)}
       />
       <Footer onOpenPoliticas={(tab) => { setPoliticasTab(tab); setIsPoliticasOpen(true) }} onOpenMisReservas={() => setIsMisReservasOpen(true)} />
+      <PoliticasModal open={isPoliticasOpen} onClose={() => setIsPoliticasOpen(false)} initialTab={politicasTab}/>
 
       <TicketReserve
         isOpen={isReserveOpen}
