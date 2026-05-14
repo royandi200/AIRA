@@ -13,6 +13,7 @@ import Footer from './sections/Footer';
 import AdminDashboard from './sections/AdminDashboard';
 import MisReservas from './sections/MisReservas';
 import AddOnModal  from './sections/AddOnModal';
+import PoliticasModal from './sections/PoliticasModal';
 
 function App() {
   useLenis();
@@ -28,6 +29,8 @@ function App() {
   const [isAdminOpen,   setIsAdminOpen]     = useState(
     () => window.location.hash === '#admin'
   );
+  const [politicasTab, setPoliticasTab] = useState<'terminos'|'privacidad'>('terminos');
+  const [isPoliticasOpen, setIsPoliticasOpen] = useState(false);
 
   useEffect(() => {
     if (siteConfig.title) document.title = siteConfig.title;
@@ -148,7 +151,7 @@ function App() {
         onOpenMisReservas={() => setIsMisReservasOpen(true)}
         onOpenAddOn={(t) => setAddOnType(t)}
       />
-      <Footer onOpenMisReservas={() => setIsMisReservasOpen(true)} />
+      <Footer onOpenPoliticas={(tab) => { setPoliticasTab(tab); setIsPoliticasOpen(true) }} onOpenMisReservas={() => setIsMisReservasOpen(true)} />
 
       <TicketReserve
         isOpen={isReserveOpen}

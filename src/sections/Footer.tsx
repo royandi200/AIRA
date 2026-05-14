@@ -13,7 +13,7 @@ const SOCIAL_ICON_MAP = {
   music: Music2,
 };
 
-const Footer = ({ onOpenMisReservas }: { onOpenMisReservas?: () => void }) => {
+const Footer = ({ onOpenMisReservas, onOpenPoliticas }: { onOpenMisReservas?: () => void; onOpenPoliticas?: (tab: "terminos"|"privacidad") => void }) => {
   if (!footerConfig.brandName && !footerConfig.heroTitle && footerConfig.socialLinks.length === 0) {
     return null;
   }
@@ -256,9 +256,10 @@ const Footer = ({ onOpenMisReservas }: { onOpenMisReservas?: () => void }) => {
             </p>
             <div className="flex gap-6">
               {footerConfig.bottomLinks.map((link) => (
-                <a key={link} href="#" className="text-xs text-white/30 hover:text-white/60 transition-colors">
+                <button key={link} onClick={() => onOpenPoliticas?.(link.includes("Privacidad") ? "privacidad" : "terminos")}
+                  className="text-xs text-white/30 hover:text-white/60 transition-colors cursor-pointer">
                   {link}
-                </a>
+                </button>
               ))}
             </div>
           </div>
