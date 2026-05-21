@@ -144,7 +144,6 @@ export interface GalleryImage {
   videoUrl?: string;
   videoType?: 'vimeo' | 'youtube' | 'external';
   transition?: 'morphing' | 'zoom';
-  // Experience detail fields
   subtitle?: string;
   description?: string;
   detail?: string;
@@ -274,9 +273,9 @@ export interface TourDate {
   venue: string;
   status: "on-sale" | "sold-out" | "coming-soon";
   image: string;
-  category: "premium" | "daily";  // premium = destacado, daily = por día
-  description?: string;           // texto corto descriptivo
-  price?: string;                 // precio visible en la card
+  category: "premium" | "daily";
+  description?: string;
+  price?: string;
 }
 
 export interface TourStatusLabels {
@@ -313,7 +312,6 @@ export const tourScheduleConfig: TourScheduleConfig = {
     default: "RESERVAR",
   },
   tourDates: [
-    // ── PREMIUM ────────────────────────────────────────────────────────────
     {
       id: 4,
       date: "2026.08.15",
@@ -374,8 +372,6 @@ export const tourScheduleConfig: TourScheduleConfig = {
       description: "Alojamiento premium en el embalse. 3 noches.",
       price: "$ 2.500.000",
     },
-
-    // ── POR DÍA ────────────────────────────────────────────────────────────
     {
       id: 1,
       date: "2026.08.15",

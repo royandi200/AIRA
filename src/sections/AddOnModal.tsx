@@ -71,12 +71,10 @@ export default function AddOnModal({ isOpen, onClose, type }: AddOnModalProps) {
   const [error,    setError]    = useState<string | null>(null);
   const [step,     setStep]     = useState<'detail' | 'form'>('detail');
 
-  // Reset on open
   useEffect(() => {
     if (isOpen) { setStep('detail'); setError(null); setQty(1); setLocalPh(''); setCc('57'); setPhone(''); }
   }, [isOpen, type]);
 
-  // Lenis stop + interceptar wheel para scroll interno
   useEffect(() => {
     const lenis = (window as any).__lenis;
     if (!isOpen) { lenis?.start(); return; }
@@ -159,11 +157,9 @@ export default function AddOnModal({ isOpen, onClose, type }: AddOnModalProps) {
         style={{ background: '#08101f', borderColor: cfg.colorBorder }}
         onClick={e => e.stopPropagation()}>
 
-        {/* Glow */}
         <div className="absolute inset-0 pointer-events-none"
           style={{ background: `radial-gradient(ellipse at top,${cfg.colorLight},transparent 60%)` }}/>
 
-        {/* Header */}
         <div className="relative flex items-center justify-between px-6 py-5 border-b border-white/8">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center"
@@ -181,15 +177,12 @@ export default function AddOnModal({ isOpen, onClose, type }: AddOnModalProps) {
           </button>
         </div>
 
-        {/* Body */}
         <div id="addon-modal-body" className="relative flex-1 overflow-y-auto px-6 py-5 space-y-5">
 
           {step === 'detail' ? (
             <>
-              {/* Subtitle */}
               <p className="text-white/55 text-sm leading-relaxed">{cfg.subtitle}</p>
 
-              {/* Features */}
               <div className="space-y-2">
                 {cfg.features.map((f, i) => (
                   <div key={i} className="flex items-center gap-2.5">
@@ -199,7 +192,6 @@ export default function AddOnModal({ isOpen, onClose, type }: AddOnModalProps) {
                 ))}
               </div>
 
-              {/* Qty selector */}
               <div>
                 <p className="font-mono-custom text-[9px] uppercase tracking-[0.25em] text-white/35 mb-2">Cantidad</p>
                 <div className="flex items-center gap-4">
@@ -216,7 +208,6 @@ export default function AddOnModal({ isOpen, onClose, type }: AddOnModalProps) {
                 </div>
               </div>
 
-              {/* Payment plan */}
               <div>
                 <p className="font-mono-custom text-[9px] uppercase tracking-[0.25em] text-white/35 mb-2">Forma de pago</p>
                 <div className="space-y-2">
@@ -248,7 +239,6 @@ export default function AddOnModal({ isOpen, onClose, type }: AddOnModalProps) {
                 </div>
               </div>
 
-              {/* CTA */}
               <button onClick={() => setStep('form')}
                 className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-display text-sm uppercase tracking-[0.2em] transition-all active:scale-[0.97]"
                 style={{ background: cfg.color, color: '#08101f' }}>
@@ -257,7 +247,6 @@ export default function AddOnModal({ isOpen, onClose, type }: AddOnModalProps) {
             </>
           ) : (
             <>
-              {/* Summary */}
               <div className="flex items-center justify-between px-4 py-3 rounded-xl border border-white/8 bg-white/3">
                 <div>
                   <p className="text-sm font-semibold text-white/80">{cfg.title} × {qty}</p>
@@ -268,7 +257,6 @@ export default function AddOnModal({ isOpen, onClose, type }: AddOnModalProps) {
                 </p>
               </div>
 
-              {/* Form */}
               <div className="space-y-3">
                 <p className="font-mono-custom text-[9px] uppercase tracking-[0.28em] text-white/35 mb-1">Datos del comprador</p>
                 <div>
@@ -338,7 +326,6 @@ export default function AddOnModal({ isOpen, onClose, type }: AddOnModalProps) {
           )}
         </div>
 
-        {/* Footer */}
         <p className="relative shrink-0 text-center font-mono-custom text-[8px] uppercase tracking-[0.2em] text-white/20 py-3 border-t border-white/6">
           Pago seguro · PSE · Tarjeta · Nequi · Daviplata
         </p>
