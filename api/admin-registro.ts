@@ -23,7 +23,6 @@ function genRef() {
 }
 
 async function ensureTables(conn: mysql.Pool | mysql.PoolConnection) {
-  // Tabla principal de registros manuales
   await conn.query(`
     CREATE TABLE IF NOT EXISTS manual_registros (
       id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -46,14 +45,13 @@ async function ensureTables(conn: mysql.Pool | mysql.PoolConnection) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
-  // Agregar columnas nuevas si la tabla ya existe (idempotente)
   const alterCols = [
     `ALTER TABLE manual_registros ADD COLUMN IF NOT EXISTS codigo_referido VARCHAR(50) NULL`,
     `ALTER TABLE manual_registros ADD COLUMN IF NOT EXISTS qr_token        VARCHAR(40) NULL`,
+    `ALTER TABLE manual_registros ADD COLUMN IF NOT EXISTS updated_at      TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP`,
   ];
   for (const sql of alterCols) await conn.query(sql).catch(() => {});
 
-  // Tabla de historial de abonos
   await conn.query(`
     CREATE TABLE IF NOT EXISTS manual_abonos (
       id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -69,7 +67,6 @@ async function ensureTables(conn: mysql.Pool | mysql.PoolConnection) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
-  // Tabla de comisiones para promotores
   await conn.query(`
     CREATE TABLE IF NOT EXISTS manual_comisiones (
       id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -92,7 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   await ensureTables(pool);
 
-  // ── GET — listar registros con sus abonos y comisiones ──────────────────
+  // ── GET — listar registros con sus abonos ─────────────────────────────
   if (req.method === 'GET') {
     const [rows]: any = await pool.query(`
       SELECT mr.*,
@@ -105,7 +102,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       LIMIT 200
     `);
 
-    // Adjuntar abonos de cada registro
     for (const row of rows) {
       const [abonos]: any = await pool.query(
         'SELECT * FROM manual_abonos WHERE manual_id = ? ORDER BY created_at ASC',
@@ -117,7 +113,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.json({ ok: true, registros: rows });
   }
 
-  // ── POST — crear registro manual inicial ────────────────────────────────
+  // ── POST — crear registro manual inicial ──────────────────────────────
   if (req.method === 'POST') {
     const {
       nombre, cedula, movil, email, evento_id, paquete,
@@ -128,7 +124,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!nombre || !cedula)
       return res.status(400).json({ error: 'Nombre y cédula son obligatorios' });
 
-    // Validar código referido si se envió
     let codigoRef: string | null = null;
     if (codigo_referido) {
       const cod = String(codigo_referido).toUpperCase().trim();
@@ -143,8 +138,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       codigoRef = cod;
     }
 
-    const montoTotal    = Number(monto_total)    || 0;
-    const montoRecibido = Number(monto_recibido) || 0;
+    const montoTotal     = Number(monto_total)    || 0;
+    const montoRecibido  = Number(monto_recibido) || 0;
     const montoPendiente = montoTotal - montoRecibido;
     const order_ref = genRef();
 
@@ -171,7 +166,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'SELECT id FROM manual_registros WHERE order_ref = ?', [order_ref]
       );
 
-      // Registrar primer abono si hubo monto recibido
       if (montoRecibido > 0) {
         await conn.query(`
           INSERT INTO manual_abonos (manual_id, order_ref, monto, medio_pago, fecha_pago, notas)
@@ -180,7 +174,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             medio_pago || null, fecha_pago || null, 'Pago inicial']);
       }
 
-      // Registrar comision del promotor (5% sobre monto recibido)
       if (codigoRef && montoRecibido > 0) {
         const comision = Math.round(montoRecibido * 0.05 * 100) / 100;
         await conn.query(`
@@ -189,7 +182,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           VALUES (?,?,?,?,5.00,?)
         `, [inserted.id, order_ref, codigoRef, montoRecibido, comision]);
 
-        // Descontar uso del código
         await conn.query(
           `UPDATE codigos_referido
            SET usos_actuales = usos_actuales + 1
@@ -209,7 +201,72 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // ── PATCH — registrar abono adicional sobre un registro existente ────────
+  // ── PUT — editar campos de un registro existente ──────────────────────
+  if (req.method === 'PUT') {
+    const { id } = req.query;
+    if (!id) return res.status(400).json({ error: 'Falta el parámetro id' });
+
+    const {
+      nombre, cedula, movil, email, paquete,
+      monto_total, monto_recibido, medio_pago, fecha_pago,
+      notas, codigo_referido,
+    } = req.body as Record<string, any>;
+
+    if (!nombre || !cedula)
+      return res.status(400).json({ error: 'Nombre y cédula son obligatorios' });
+
+    const montoTotal     = Number(monto_total)    || 0;
+    const montoRecibido  = Number(monto_recibido) || 0;
+    const montoPendiente = Math.max(0, montoTotal - montoRecibido);
+
+    const codigoRef = codigo_referido
+      ? String(codigo_referido).toUpperCase().trim() || null
+      : null;
+
+    try {
+      const [result]: any = await pool.query(`
+        UPDATE manual_registros
+        SET nombre          = ?,
+            cedula          = ?,
+            movil           = ?,
+            email           = ?,
+            paquete         = ?,
+            monto_total     = ?,
+            monto_recibido  = ?,
+            monto_pendiente = ?,
+            medio_pago      = ?,
+            fecha_pago      = ?,
+            notas           = ?,
+            codigo_referido = ?,
+            updated_at      = NOW()
+        WHERE id = ?
+      `, [
+        nombre,
+        cedula,
+        movil       || null,
+        email       || null,
+        paquete     || null,
+        montoTotal,
+        montoRecibido,
+        montoPendiente,
+        medio_pago  || null,
+        fecha_pago  || null,
+        notas       || null,
+        codigoRef,
+        id,
+      ]);
+
+      if (result.affectedRows === 0)
+        return res.status(404).json({ error: 'Registro no encontrado' });
+
+      return res.json({ ok: true, monto_pendiente: montoPendiente });
+
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // ── PATCH — registrar abono adicional ─────────────────────────────────
   if (req.method === 'PATCH') {
     const { order_ref, monto, medio_pago, fecha_pago, notas } =
       req.body as Record<string, any>;
@@ -233,14 +290,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       await conn.beginTransaction();
 
-      // Insertar abono en historial
       await conn.query(`
         INSERT INTO manual_abonos (manual_id, order_ref, monto, medio_pago, fecha_pago, notas)
         VALUES (?,?,?,?,?,?)
       `, [reg.id, order_ref, montoAbono,
           medio_pago || null, fecha_pago || null, notas || null]);
 
-      // Actualizar montos del registro
       await conn.query(`
         UPDATE manual_registros
         SET monto_recibido  = ?,
@@ -249,12 +304,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         WHERE id = ?
       `, [nuevoRecibido, nuevoPendiente, reg.id]);
 
-      // Agregar columna updated_at si no existe
-      await conn.query(
-        `ALTER TABLE manual_registros ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP`
-      ).catch(() => {});
-
-      // Comision 5% sobre este abono si el registro tiene codigo referido
       let comision_generada = 0;
       if (reg.codigo_referido) {
         comision_generada = Math.round(montoAbono * 0.05 * 100) / 100;
@@ -285,7 +334,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // ── DELETE — eliminar registro ───────────────────────────────────────────
+  // ── DELETE — eliminar registro ─────────────────────────────────────────
   if (req.method === 'DELETE') {
     const { id } = req.query;
     await pool.query('DELETE FROM manual_registros WHERE id=?', [id]);
