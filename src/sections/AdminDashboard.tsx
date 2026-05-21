@@ -40,7 +40,7 @@ const PAQUETES = [
   { label: 'Paquete 3D · 1ª Etapa',            priceLabel: '$829.500',   price: '829500',   cat: '3 días' },
   { label: 'Paquete 3D · 2ª Etapa',            priceLabel: '$934.500',   price: '934500',   cat: '3 días' },
   { label: 'Paquete 3D · 3ª Etapa',            priceLabel: '$1.050.000', price: '1050000',  cat: '3 días' },
-  { label: 'Pass VIP',                          priceLabel: '$472.500',   price: '472500',   cat: 'add-on' },
+  { label: 'Pass VIP',                          priceLabel: '$367.500',   price: '367500',   cat: 'add-on' },
   { label: 'Transporte',                        priceLabel: '$189.000',   price: '189000',   cat: 'add-on' },
   { label: 'Suite Privada',                     priceLabel: '$2.625.000', price: '2625000',  cat: 'add-on' },
   { label: 'DÍA 1 — After Fiesta de Yates',    priceLabel: '$84.000',    price: '84000',    cat: 'daily'  },
@@ -131,7 +131,7 @@ function AbonoModal({ reg, token, onClose, onDone }: {
             <label className={labelCls}>Medio de Pago</label>
             <select className={inputCls} value={form.medio_pago} onChange={e => setForm(f => ({ ...f, medio_pago: e.target.value }))}>
               {['Efectivo', 'Transferencia', 'Nequi', 'Daviplata', 'Tarjeta', 'Bold', 'Otro'].map(m =>
-                <option key={m} value={m} style={{ background: '#18181b' }}>{m}</option>
+                <option key={m} value={m} style={{background:'#18181b'}}>{m}</option>
               )}
             </select>
           </div>
