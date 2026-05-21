@@ -33,18 +33,19 @@ const statusColor: Record<string, string> = {
 };
 
 // ─── Manual Registration Tab ─────────────────────────────────────────────────
+// Todos los precios incluyen el 5% adicional (precio base * 1.05)
 const PAQUETES = [
-  { label: 'Paquete 3D · Creyentes',          priceLabel: '$590.000',   price: '590000',   cat: '3 días' },
-  { label: 'Paquete 3D · Referidos',           priceLabel: '$690.000',   price: '690000',   cat: '3 días' },
-  { label: 'Paquete 3D · 1ª Etapa',            priceLabel: '$790.000',   price: '790000',   cat: '3 días' },
-  { label: 'Paquete 3D · 2ª Etapa',            priceLabel: '$890.000',   price: '890000',   cat: '3 días' },
-  { label: 'Paquete 3D · 3ª Etapa',            priceLabel: '$1.000.000', price: '1000000',  cat: '3 días' },
-  { label: 'Pass VIP',                          priceLabel: '$450.000',   price: '450000',   cat: 'add-on' },
-  { label: 'Transporte',                        priceLabel: '$180.000',   price: '180000',   cat: 'add-on' },
-  { label: 'Suite Privada',                     priceLabel: '$2.500.000', price: '2500000',  cat: 'add-on' },
-  { label: 'DÍA 1 — After Fiesta de Yates',    priceLabel: '$80.000',    price: '80000',    cat: 'daily'  },
-  { label: 'DÍA 2 — Fiesta Majestic & Stage Joinn', priceLabel: '$150.000', price: '150000', cat: 'daily' },
-  { label: 'DÍA 3 — Open Deck',                priceLabel: '$50.000',    price: '50000',    cat: 'daily'  },
+  { label: 'Paquete 3D · Creyentes',          priceLabel: '$619.500',   price: '619500',   cat: '3 días' },
+  { label: 'Paquete 3D · Referidos',           priceLabel: '$724.500',   price: '724500',   cat: '3 días' },
+  { label: 'Paquete 3D · 1ª Etapa',            priceLabel: '$829.500',   price: '829500',   cat: '3 días' },
+  { label: 'Paquete 3D · 2ª Etapa',            priceLabel: '$934.500',   price: '934500',   cat: '3 días' },
+  { label: 'Paquete 3D · 3ª Etapa',            priceLabel: '$1.050.000', price: '1050000',  cat: '3 días' },
+  { label: 'Pass VIP',                          priceLabel: '$472.500',   price: '472500',   cat: 'add-on' },
+  { label: 'Transporte',                        priceLabel: '$189.000',   price: '189000',   cat: 'add-on' },
+  { label: 'Suite Privada',                     priceLabel: '$2.625.000', price: '2625000',  cat: 'add-on' },
+  { label: 'DÍA 1 — After Fiesta de Yates',    priceLabel: '$84.000',    price: '84000',    cat: 'daily'  },
+  { label: 'DÍA 2 — Fiesta Majestic & Stage Joinn', priceLabel: '$157.500', price: '157500', cat: 'daily' },
+  { label: 'DÍA 3 — Open Deck',                priceLabel: '$52.500',    price: '52500',    cat: 'daily'  },
 ];
 
 // ─── Modal Registrar Abono ────────────────────────────────────────────────────
@@ -162,6 +163,158 @@ function AbonoModal({ reg, token, onClose, onDone }: {
   );
 }
 
+// ─── Modal Editar Registro ────────────────────────────────────────────────────
+function EditarModal({ reg, token, onClose, onDone }: {
+  reg: any; token: string; onClose: () => void; onDone: () => void;
+}) {
+  const [form, setForm] = useState({
+    nombre:          reg.nombre        || '',
+    cedula:          reg.cedula        || '',
+    movil:           reg.movil         || '',
+    email:           reg.email         || '',
+    paquete:         reg.paquete       || '',
+    monto_total:     String(reg.monto_total    ?? ''),
+    monto_recibido:  String(reg.monto_recibido ?? ''),
+    medio_pago:      reg.medio_pago    || 'Efectivo',
+    fecha_pago:      reg.fecha_pago    ? reg.fecha_pago.slice(0, 10) : new Date().toISOString().slice(0, 10),
+    notas:           reg.notas         || '',
+    codigo_referido: reg.codigo_referido || '',
+  });
+  const [saving, setSaving] = useState(false);
+  const [msg,    setMsg]    = useState<{ text: string; ok: boolean } | null>(null);
+
+  const fmtLocal = (n: any) => n != null ? Number(n).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }) : '—';
+
+  const submit = async () => {
+    if (!form.nombre || !form.cedula) { setMsg({ text: 'Nombre y cédula obligatorios', ok: false }); return; }
+    setSaving(true); setMsg(null);
+    try {
+      const r = await fetch(`/api/admin-registro?id=${reg.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+        body: JSON.stringify({
+          ...form,
+          paquete: form.paquete || undefined,
+          codigo_referido: form.codigo_referido.trim().toUpperCase() || undefined,
+        }),
+      });
+      const d = await r.json();
+      if (d.ok) {
+        setMsg({ text: '✓ Registro actualizado correctamente', ok: true });
+        setTimeout(() => { onDone(); onClose(); }, 1200);
+      } else { setMsg({ text: d.error || 'Error al actualizar', ok: false }); }
+    } finally { setSaving(false); }
+  };
+
+  const inputCls = "w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-zinc-500 transition-colors";
+  const labelCls = "block text-[10px] uppercase tracking-widest text-zinc-500 mb-1 font-semibold";
+
+  return (
+    <div className="fixed inset-0 z-[300] bg-black/80 flex items-center justify-center p-4 overflow-y-auto" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl my-8">
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <h3 className="text-white font-bold text-base">Editar Registro</h3>
+            <p className="text-zinc-500 text-xs mt-0.5 font-mono">{reg.order_ref}</p>
+          </div>
+          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors mt-1">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className={labelCls}>Nombre completo *</label>
+            <input className={inputCls} value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} />
+          </div>
+          <div>
+            <label className={labelCls}>Cédula *</label>
+            <input className={inputCls} value={form.cedula} onChange={e => setForm(f => ({ ...f, cedula: e.target.value }))} />
+          </div>
+          <div>
+            <label className={labelCls}>Móvil / WhatsApp</label>
+            <input className={inputCls} value={form.movil} onChange={e => setForm(f => ({ ...f, movil: e.target.value }))} />
+          </div>
+          <div>
+            <label className={labelCls}>Correo Electrónico</label>
+            <input type="email" className={inputCls} value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelCls}>Paquete / Servicio</label>
+            <select className={inputCls} value={form.paquete} onChange={e => {
+              const opt = PAQUETES.find(p => p.label === e.target.value);
+              setForm(f => ({ ...f, paquete: e.target.value, monto_total: opt?.price || f.monto_total }));
+            }}>
+              <option value="" style={{ background: '#18181b' }}>— Seleccionar —</option>
+              <optgroup label="Paquete 3 Días" style={{ background: '#18181b' }}>
+                {PAQUETES.filter(p => p.cat === '3 días').map(p => <option key={p.label} value={p.label} style={{ background: '#18181b' }}>{p.label} · {p.priceLabel}</option>)}
+              </optgroup>
+              <optgroup label="Add-ons" style={{ background: '#18181b' }}>
+                {PAQUETES.filter(p => p.cat === 'add-on').map(p => <option key={p.label} value={p.label} style={{ background: '#18181b' }}>{p.label} · {p.priceLabel}</option>)}
+              </optgroup>
+              <optgroup label="Por día" style={{ background: '#18181b' }}>
+                {PAQUETES.filter(p => p.cat === 'daily').map(p => <option key={p.label} value={p.label} style={{ background: '#18181b' }}>{p.label} · {p.priceLabel}</option>)}
+              </optgroup>
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Código Referido</label>
+            <input className={`${inputCls} font-mono tracking-widest uppercase`}
+              value={form.codigo_referido}
+              onChange={e => setForm(f => ({ ...f, codigo_referido: e.target.value.toUpperCase().replace(/\s+/g, '-') }))} />
+          </div>
+          <div>
+            <label className={labelCls}>Medio de Pago</label>
+            <select className={inputCls} value={form.medio_pago} onChange={e => setForm(f => ({ ...f, medio_pago: e.target.value }))}>
+              {['Efectivo', 'Transferencia', 'Nequi', 'Daviplata', 'Tarjeta', 'Bold', 'Otro'].map(m =>
+                <option key={m} value={m} style={{ background: '#18181b' }}>{m}</option>
+              )}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Monto Total ($)</label>
+            <input type="number" className={inputCls} value={form.monto_total}
+              onChange={e => setForm(f => ({ ...f, monto_total: e.target.value }))} />
+          </div>
+          <div>
+            <label className={labelCls}>Monto Recibido ($)</label>
+            <input type="number" className={inputCls} value={form.monto_recibido}
+              onChange={e => setForm(f => ({ ...f, monto_recibido: e.target.value }))} />
+          </div>
+          <div>
+            <label className={labelCls}>Monto Pendiente</label>
+            <div className={`${inputCls} text-yellow-400 font-semibold`}>
+              {form.monto_total ? fmtLocal(Number(form.monto_total) - Number(form.monto_recibido || 0)) : '—'}
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>Fecha de Pago</label>
+            <input type="date" className={inputCls} value={form.fecha_pago}
+              onChange={e => setForm(f => ({ ...f, fecha_pago: e.target.value }))} />
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelCls}>Notas</label>
+            <input className={inputCls} value={form.notas} placeholder="Observaciones..."
+              onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} />
+          </div>
+        </div>
+
+        {msg && <p className={`mb-3 text-sm font-semibold ${msg.ok ? 'text-green-400' : 'text-red-400'}`}>{msg.text}</p>}
+
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-3 rounded-xl border border-zinc-700 text-zinc-400 text-sm hover:text-white transition-colors">
+            Cancelar
+          </button>
+          <button onClick={submit} disabled={saving}
+            className="flex-1 py-3 rounded-xl bg-white text-black text-sm font-bold hover:bg-zinc-200 transition-colors disabled:opacity-50">
+            {saving ? 'Guardando…' : '✓ Guardar Cambios'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ManualTab({ token }: { token: string }) {
   const emptyForm = { nombre: '', cedula: '', movil: '', email: '', paquete: '', monto_total: '', monto_recibido: '', medio_pago: 'Efectivo', fecha_pago: new Date().toISOString().slice(0, 10), notas: '', codigo_referido: '' };
   const [form,    setForm]    = useState(emptyForm);
@@ -171,6 +324,7 @@ function ManualTab({ token }: { token: string }) {
   const [msg,     setMsg]     = useState<{ text: string; ok: boolean } | null>(null);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [abonoModal, setAbonoModal] = useState<any | null>(null);
+  const [editModal,  setEditModal]  = useState<any | null>(null);
   const [copied, setCopied]   = useState<string | null>(null);
   const [genLoading, setGenLoading] = useState<string | null>(null);
 
@@ -256,6 +410,9 @@ function ManualTab({ token }: { token: string }) {
     <div className="space-y-6">
       {abonoModal && (
         <AbonoModal reg={abonoModal} token={token} onClose={() => setAbonoModal(null)} onDone={fetchList} />
+      )}
+      {editModal && (
+        <EditarModal reg={editModal} token={token} onClose={() => setEditModal(null)} onDone={fetchList} />
       )}
 
       {/* ── Formulario nuevo registro ── */}
@@ -397,6 +554,13 @@ function ManualTab({ token }: { token: string }) {
                               Abonar
                             </button>
                           )}
+
+                          {/* Editar */}
+                          <button onClick={() => setEditModal(r)}
+                            className="flex items-center gap-1 text-xs text-zinc-400 hover:text-blue-400 transition-colors px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                            Editar
+                          </button>
 
                           {/* Eliminar */}
                           <button onClick={() => del(r.id)} className="text-zinc-700 hover:text-red-400 transition-colors text-xs px-2 py-1">
