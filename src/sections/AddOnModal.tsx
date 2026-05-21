@@ -12,7 +12,7 @@ const CONFIG = {
     icon:        <Star className="w-6 h-6"/>,
     title:       'Pass VIP',
     subtitle:    'Acceso exclusivo VIP en todos los escenarios AIRA',
-    price:       450_000,
+    price:       350_000,
     color:       '#f59e0b',
     colorLight:  'rgba(245,158,11,0.12)',
     colorBorder: 'rgba(245,158,11,0.25)',
@@ -116,24 +116,20 @@ export default function AddOnModal({ isOpen, onClose, type }: AddOnModalProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          // Datos del comprador — mismo formato que TicketReserve
           name:  nombre.trim(),
           email: email.trim(),
           phone: phone.trim(),
           docType:   'CC',
           docNumber: null,
-          // Evento y ticket
           eventId:     1,
           accessType:  'package',
           ticketLabel: cfg.title,
           qty,
           basePrice:   cfg.price,
           total:       totalAmt,
-          // Add-ons no aplican
           addPassVip:       false,
           addTransport:     false,
           transportPassengers: 0,
-          // Pago
           paymentMode:        isAbono ? 'abono' : 'full',
           abonoPlan:          isAbono ? planId  : null,
           amountToCharge:     isAbono ? primerPago : totalAmt,
@@ -272,7 +268,7 @@ export default function AddOnModal({ isOpen, onClose, type }: AddOnModalProps) {
                 </p>
               </div>
 
-              {/* Form — mismo estilo que TicketReserve */}
+              {/* Form */}
               <div className="space-y-3">
                 <p className="font-mono-custom text-[9px] uppercase tracking-[0.28em] text-white/35 mb-1">Datos del comprador</p>
                 <div>

@@ -114,7 +114,7 @@ export const albumCubeConfig: AlbumCubeConfig = {
       subtitle: "UPGRADE",
       description: "Acceso exclusivo al Yate VIP, Zona VIP en Majestic y Zona VIP en Stage Joinn. La experiencia AIRA en su máxima expresión.",
       tag: "3 DÍAS",
-      price: "$450.000",
+      price: "$350.000",
       image: `${CLD}/majestic4_wzvhpd`,
     },
   ],
@@ -348,7 +348,7 @@ export const tourScheduleConfig: TourScheduleConfig = {
       image: `${CLD}/majestic4_wzvhpd`,
       category: "premium",
       description: "Zona VIP exclusiva en todos los escenarios.",
-      price: "$ 450.000",
+      price: "$ 350.000",
     },
     {
       id: 8,
