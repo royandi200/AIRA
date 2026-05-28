@@ -7,6 +7,8 @@ interface Overview {
   revenue: {
     total_revenue: number; paid_revenue: number;
     total_orders: number; paid_orders: number;
+    manual_registros: number; manual_recibido: number; manual_pendiente: number;
+    recaudado_total: number; ordenes_total: number;
     pending_orders: number; cancelled_orders: number;
   };
   tickets: Array<{
@@ -738,16 +740,16 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
             {/* KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
               {[
-                { label: 'Recaudado',      value: fmt(r?.paid_revenue ?? 0),    sub: 'pagos aprobados' },
-                { label: 'Total generado', value: fmt(r?.total_revenue ?? 0),   sub: 'todas las órdenes' },
-                { label: 'Órdenes total',  value: String(r?.total_orders ?? 0), sub: 'creadas' },
-                { label: 'Pagadas',        value: String(r?.paid_orders ?? 0),  sub: 'aprobadas Bold' },
-                { label: 'Pendientes',     value: String(r?.pending_orders ?? 0), sub: 'sin pagar' },
-                { label: 'Canceladas',     value: String(r?.cancelled_orders ?? 0), sub: 'rechazadas' },
+                { label: 'Total recaudado',   value: fmt(r?.recaudado_total ?? 0),       sub: 'Bold + manual', highlight: true },
+                { label: 'Bold confirmado',   value: fmt(r?.paid_revenue ?? 0),          sub: `${r?.paid_orders ?? 0} órdenes` },
+                { label: 'Manual recibido',   value: fmt(r?.manual_recibido ?? 0),        sub: `${r?.manual_registros ?? 0} registros` },
+                { label: 'Pendiente manual',  value: fmt(r?.manual_pendiente ?? 0),       sub: 'por cobrar' },
+                { label: 'Personas totales',  value: String(r?.ordenes_total ?? 0),       sub: 'Bold + manual' },
+                { label: 'Bold pendientes',   value: String(r?.pending_orders ?? 0),      sub: 'sin pagar' },
               ].map(kpi => (
-                <div key={kpi.label} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+                <div key={kpi.label} className={`rounded-xl p-4 border ${(kpi as any).highlight ? 'bg-aira-lime/10 border-aira-lime/30' : 'bg-zinc-900 border-zinc-800'}`}>
                   <p className="text-zinc-500 text-xs uppercase tracking-widest mb-1">{kpi.label}</p>
-                  <p className="text-white text-xl font-bold tabular-nums">{kpi.value}</p>
+                  <p className={`text-xl font-bold tabular-nums ${(kpi as any).highlight ? 'text-aira-lime' : 'text-white'}`}>{kpi.value}</p>
                   <p className="text-zinc-600 text-xs mt-0.5">{kpi.sub}</p>
                 </div>
               ))}
