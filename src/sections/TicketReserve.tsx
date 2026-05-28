@@ -30,7 +30,7 @@ const PASS_VIP_PRICES: Record<AccessType, number> = {
   day1: 100_000,
   day2: 150_000,
   day3: 100_000,
-  package: 450_000,
+  package: 350_000,
 };
 
 const DAYS = [
@@ -925,7 +925,7 @@ const TicketReserve = ({ isOpen, selectedEvent, onClose }: TicketReserveProps) =
 
   const selectedStage = useMemo(() => STAGES.find(s => s.id === selectedStageId) ?? null, [selectedStageId]);
   const selectedDay   = useMemo(() => DAYS.find(d => d.id === accessType) ?? null, [accessType]);
-  const passVipPrice  = accessType ? PASS_VIP_PRICES[accessType] : 450_000;
+  const passVipPrice  = accessType ? PASS_VIP_PRICES[accessType] : 350_000;
 
   const basePrice = useMemo(() => {
     if (accessType === 'day1') return 100_000 * qty;
