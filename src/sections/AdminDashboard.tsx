@@ -867,7 +867,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                           <p className="text-white font-semibold text-sm">{t.name}</p>
                           <p className="text-zinc-500 text-xs capitalize mt-0.5">{t.access_type}</p>
                         </div>
-                        <span className="text-zinc-400 text-sm tabular-nums">{fmt(t.price)}</span>
+
                       </div>
                       <div className="h-2 bg-zinc-800 rounded-full overflow-hidden flex mb-3">
                         <div className="bg-emerald-500 h-full transition-all" style={{ width: `${soldPct}%` }} />
