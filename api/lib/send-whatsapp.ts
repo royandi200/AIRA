@@ -1,6 +1,6 @@
 // ── WhatsApp via BuilderBot ───────────────────────────────────────────────────
-const BB_URL    = 'https://app.builderbot.cloud/api/v2/74ec6e16-19e3-46ff-bb0c-96e5a05fe5d9/messages';
-const BB_APIKEY = process.env.BUILDERBOT_APIKEY || 'bb-5d2c154a-2668-4076-a65a-8c6247ae97ea';
+const BB_URL    = 'https://app.builderbot.cloud/api/v2/db9e5f53-cc03-4262-ad69-4097ee2d15f0/messages';
+const BB_APIKEY = process.env.BUILDERBOT_APIKEY || 'bb-53ce55a9-fe8a-4189-a839-10222f6d1b1a';
 
 function normalizePhone(phone: string): string {
   const clean = phone.replace(/\D/g, '');
