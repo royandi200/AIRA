@@ -1,5 +1,5 @@
 // ── BuilderBot Config ────────────────────────────────────────────────────────
-const BB_URL    = 'https://app.builderbot.cloud/api/v2/f19bc71c-a140-4caf-af9a-714ae61c23a5/messages';
+const BB_URL    = 'https://app.builderbot.cloud/api/v2/74ec6e16-19e3-46ff-bb0c-96e5a05fe5d9/messages';
 const BB_APIKEY = process.env.BUILDERBOT_APIKEY || 'bb-5d2c154a-2668-4076-a65a-8c6247ae97ea';
 
 // ── OTP Utils ────────────────────────────────────────────────────────────────
