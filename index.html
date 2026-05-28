@@ -16,50 +16,7 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-
-    <!-- BuilderBot Chat Widget — Vive AIRA -->
-    <script
-      src="https://cdn.builderbot.cloud/sdk.umd.js"
-      data-builderbot-chat
-      data-id="74ec6e16-19e3-46ff-bb0c-96e5a05fe5d9"
-      data-company="Vive AIRA"
-      data-avatar-initials="VA"
-      data-theme-config='{"colors":{"primary":"#e1fe52","accent":"#e1fe52","sendButton":"#e1fe52","sendButtonHover":"#c8e022","text":"#F2F2F2","textSecondary":"#A6ADB8","background":"#0e1421","backgroundChat":"#111827","userMessageBg":"rgba(225,254,82,0.1)","userMessageText":"#e1fe52","agentMessageBg":"#1a2235","agentMessageText":"#F2F2F2","border":"#1f2d45","hover":"rgba(225,254,82,0.08)","timestamp":"#6B7280","icon":"#A6ADB8","inputBackground":"#0a1020","inputPlaceholder":"#6B7280"},"spacing":{"borderRadius":"4px","messageBorderRadius":"6px"}}'
-    ></script>
-
-    <!-- Decoración del botón de chat: anillo + burbuja CTA -->
-    <style>
-      #bb-ring { 
-        position:fixed; bottom:16px; right:16px; z-index:9998;
-        pointer-events:none;  /* transparente a clicks — pasan al botón nativo */
-        display:flex; align-items:flex-end; gap:8px;
-      }
-      #bb-ring .bb-cta {
-        background:#e1fe52; color:#0a0f1e;
-        font-family:'Inter',system-ui,sans-serif;
-        font-size:11px; font-weight:700; line-height:1.3;
-        padding:6px 12px; border-radius:20px 20px 0 20px;
-        white-space:nowrap; box-shadow:0 4px 16px rgba(225,254,82,0.3);
-        margin-bottom:16px;
-        animation:ctaFloat 3s ease-in-out infinite;
-      }
-      #bb-ring .bb-cta span { display:block; font-size:9px; font-weight:500; opacity:0.6; margin-top:1px; }
-      #bb-ring .bb-circle {
-        width:62px; height:62px; border-radius:50%;
-        border:2px solid #e1fe52;
-        box-shadow:0 0 0 5px rgba(225,254,82,0.15), 0 0 20px rgba(225,254,82,0.2);
-        animation:ringPulse 2.5s ease-in-out infinite;
-      }
-      @keyframes ctaFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
-      @keyframes ringPulse {
-        0%,100%{ box-shadow:0 0 0 5px rgba(225,254,82,0.15),0 0 20px rgba(225,254,82,0.2); }
-        50%    { box-shadow:0 0 0 8px rgba(225,254,82,0.08),0 0 32px rgba(225,254,82,0.35); }
-      }
-    </style>
-    <div id="bb-ring">
-      <div class="bb-cta">Sé todo sobre AIRA ✨<span>Luna · asistente AIRA</span></div>
-      <div class="bb-circle"></div>
+    <script type="module" src="/src/main.tsx"></script>      <div class="bb-circle"></div>
     </div>
 
   </body>
