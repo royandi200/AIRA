@@ -858,28 +858,61 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
             {tab === 'tickets' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {data.tickets.map(t => {
-                  const total = t.available_qty;
-                  const free  = Math.max(0, total - t.sold_qty - t.reserved_qty);
-                  const soldPct = total > 0 ? (t.sold_qty / total) * 100 : 0;
-                  const resPct  = total > 0 ? (t.reserved_qty / total) * 100 : 0;
+                  const total     = t.available_qty;
+                  const manual    = (t as any).manual_activos ?? 0;
+                  const libres    = (t as any).libres_real ?? Math.max(0, total - t.sold_qty - t.reserved_qty - manual);
+                  const soldPct   = total > 0 ? (t.sold_qty   / total) * 100 : 0;
+                  const resPct    = total > 0 ? (t.reserved_qty/ total) * 100 : 0;
+                  const manPct    = total > 0 ? (manual        / total) * 100 : 0;
+                  const libresPct = total > 0 ? (libres        / total) * 100 : 0;
+                  const urgente   = libres <= 5;
                   return (
-                    <div key={t.name} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-                      <div className="flex items-start justify-between mb-4">
+                    <div key={t.name} className={`rounded-2xl p-5 border ${urgente ? 'bg-red-950/30 border-red-500/30' : 'bg-zinc-900 border-zinc-800'}`}>
+                      {/* Header */}
+                      <div className="flex items-start justify-between mb-1">
                         <div>
                           <p className="text-white font-semibold text-sm">{t.name}</p>
-                          <p className="text-zinc-500 text-xs capitalize mt-0.5">{t.access_type}</p>
+                          <p className="text-zinc-500 text-xs capitalize">{t.access_type}</p>
                         </div>
+                        <div className="text-right">
+                          <p className={`text-lg font-black tabular-nums ${urgente ? 'text-red-400' : 'text-aira-lime'}`}>{libres}</p>
+                          <p className="text-zinc-500 text-[10px]">de {total} libres</p>
+                        </div>
+                      </div>
 
+                      {/* Barra de progreso tricolor */}
+                      <div className="h-3 bg-zinc-800 rounded-full overflow-hidden flex my-3">
+                        <div className="bg-emerald-500 h-full transition-all" title={`Bold: ${t.sold_qty}`}    style={{ width: `${soldPct}%` }} />
+                        <div className="bg-amber-400  h-full transition-all" title={`Reservados: ${t.reserved_qty}`} style={{ width: `${resPct}%` }} />
+                        <div className="bg-violet-500 h-full transition-all" title={`Manual: ${manual}`}       style={{ width: `${manPct}%` }} />
+                        <div className="bg-zinc-600   h-full transition-all" title={`Libres: ${libres}`}       style={{ width: `${libresPct}%` }} />
                       </div>
-                      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden flex mb-3">
-                        <div className="bg-emerald-500 h-full transition-all" style={{ width: `${soldPct}%` }} />
-                        <div className="bg-amber-400 h-full transition-all" style={{ width: `${resPct}%` }} />
+
+                      {/* Leyenda */}
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                          <span className="text-zinc-400">Bold: <b className="text-white">{t.sold_qty}</b></span>
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-amber-400" />
+                          <span className="text-zinc-400">Reservados: <b className="text-white">{t.reserved_qty}</b></span>
+                        </span>
+                        {manual > 0 && (
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-violet-500" />
+                            <span className="text-zinc-400">Manuales: <b className="text-white">{manual}</b></span>
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-zinc-600" />
+                          <span className={`text-zinc-400`}>Libres: <b className={urgente ? 'text-red-400' : 'text-white'}>{libres}</b></span>
+                        </span>
                       </div>
-                      <div className="flex gap-4 text-xs">
-                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /><span className="text-zinc-400">Vendidos: <b className="text-white">{t.sold_qty}</b></span></span>
-                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /><span className="text-zinc-400">Reservados: <b className="text-white">{t.reserved_qty}</b></span></span>
-                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-zinc-600 inline-block" /><span className="text-zinc-400">Libres: <b className="text-white">{free}</b></span></span>
-                      </div>
+
+                      {urgente && (
+                        <p className="mt-2 text-[10px] text-red-400 font-semibold">⚠ Quedan pocos cupos</p>
+                      )}
                     </div>
                   );
                 })}
