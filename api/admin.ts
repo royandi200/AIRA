@@ -74,23 +74,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
          FROM ticket_types tt ORDER BY tt.id`
       );
 
-      // Manuales activos agrupados por paquete (nombre del ticket_type)
-      const [manualByPaquete]: any = await pool.query(
-        `SELECT paquete, COUNT(*) AS manual_activos
-         FROM manual_registros
-         WHERE paquete IS NOT NULL
-         GROUP BY paquete`
+      // Manuales activos — total y por categoría
+      // Mapeo: paquetes del admin → access_type de ticket_types
+      // Paquetes 3D (Creyentes/Referidos/1ª/2ª/3ª Etapa) → 'package'
+      // Pass VIP, Transporte, Suite → 'addon'  
+      // DÍA 1/2/3 → 'day1'/'day2'/'day3'
+      const PAQUETE_MAP: Record<string, string> = {
+        'Paquete 3D · Creyentes':               'package',
+        'Paquete 3D · Referidos':               'package',
+        'Paquete 3D · 1ª Etapa':               'package',
+        'Paquete 3D · 2ª Etapa':               'package',
+        'Paquete 3D · 3ª Etapa':               'package',
+        'Pass VIP':                              'addon',
+        'Transporte':                            'addon',
+        'Suite Privada':                         'addon',
+        'DÍA 1 — After Fiesta de Yates':        'day1',
+        'DÍA 2 — Fiesta Majestic & Stage Joinn':'day2',
+        'DÍA 3 — Open Deck':                    'day3',
+      };
+
+      const [manualAll]: any = await pool.query(
+        `SELECT paquete, COUNT(*) AS cnt FROM manual_registros GROUP BY paquete`
       );
 
-      // Mapa paquete → count
-      const manualMap: Record<string, number> = {};
-      for (const row of manualByPaquete) {
-        manualMap[row.paquete] = Number(row.manual_activos);
+      // Agrupa por access_type
+      const manualByType: Record<string, number> = {};
+      for (const row of manualAll) {
+        const at = PAQUETE_MAP[row.paquete] ?? row.paquete;
+        manualByType[at] = (manualByType[at] ?? 0) + Number(row.cnt);
       }
 
       // Enriquecer tickets con manual_activos y libres reales
       const ticketsEnriquecidos = tickets.map((t: any) => {
-        const manual_activos = manualMap[t.name] ?? 0;
+        const manual_activos = manualByType[t.access_type] ?? 0;
         const libres_real    = Math.max(0, t.available_qty - t.sold_qty - t.reserved_qty - manual_activos);
         return { ...t, manual_activos, libres_real };
       });
