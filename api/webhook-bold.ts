@@ -5,6 +5,9 @@ import { createHmac } from 'crypto';
 import { generateQRToken } from './lib/generate-ticket.js';
 import { sendTicketWhatsApp, sendReservaWhatsApp } from './lib/send-whatsapp.js';
 
+// ── Desactivar el body-parser de Vercel para leer el raw body ──────────────
+export const config = { api: { bodyParser: false } };
+
 const pool = mysql.createPool({
   host:               process.env.DB_HOST,
   user:               process.env.DB_USER,
@@ -16,15 +19,35 @@ const pool = mysql.createPool({
   ssl:                { rejectUnauthorized: false },
 });
 
-function verifySignature(req: VercelRequest, rawBody: string): boolean {
-  const signature = req.headers['x-bold-signature'] as string | undefined;
+/** Lee el body completo como Buffer y retorna el string crudo + el objeto parseado */
+async function readRawBody(req: VercelRequest): Promise<{ raw: string; parsed: Record<string, any> }> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk: Buffer) => chunks.push(chunk));
+    req.on('end', () => {
+      const raw = Buffer.concat(chunks).toString('utf8');
+      try {
+        resolve({ raw, parsed: JSON.parse(raw) });
+      } catch {
+        resolve({ raw, parsed: {} });
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
+function verifySignature(signature: string | undefined, rawBody: string): boolean {
   if (!signature) {
     console.warn('[webhook-bold] sin header x-bold-signature — aceptando (modo test)');
     return true;
   }
   const secret   = process.env.BOLD_WEBHOOK_SECRET || process.env.BOLD_API_KEY || '';
   const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
-  return signature === expected;
+  const ok = signature === expected;
+  if (!ok) {
+    console.warn(`[webhook-bold] firma inválida | recibida: ${signature} | esperada: ${expected}`);
+  }
+  return ok;
 }
 
 async function sendQRTicket(conn: any, orderId: number, orderRef: string): Promise<void> {
@@ -54,27 +77,33 @@ async function sendQRTicket(conn: any, orderId: number, orderRef: string): Promi
   console.log(`[webhook-bold] ✅ QR generado y enviado a ${fullOrder.phone} — ${fullOrder.order_ref}`);
 }
 
+// Todos los valores que Bold puede enviar como "pago aprobado"
+const PAID_STATUSES     = new Set(['APPROVED', 'COMPLETED', 'SUCCESS', 'PAID', 'approved', 'completed', 'success', 'paid']);
+const CANCELLED_STATUSES = new Set(['REJECTED', 'FAILED', 'CANCELLED', 'rejected', 'failed', 'cancelled']);
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const rawBody = JSON.stringify(req.body);
-  if (!verifySignature(req, rawBody)) {
-    console.warn('[webhook-bold] firma inválida');
+  // Leer raw body ANTES de parsear
+  const { raw: rawBody, parsed: payload } = await readRawBody(req);
+
+  const signature = req.headers['x-bold-signature'] as string | undefined;
+  if (!verifySignature(signature, rawBody)) {
     return res.status(401).json({ error: 'Firma inválida' });
   }
 
-  const payload       = req.body as Record<string, any>;
   const orderRef      = payload.order_id ?? payload.reference ?? payload.metadata?.order_ref ?? null;
-  const boldStatus    = payload.status ?? payload.payment_status ?? payload.transaction_status ?? '';
+  const boldStatus    = String(payload.status ?? payload.payment_status ?? payload.transaction_status ?? '');
   const transactionId = payload.transaction_id ?? payload.id ?? null;
 
   console.log('[webhook-bold] payload:', JSON.stringify(payload).substring(0, 600));
+  console.log(`[webhook-bold] boldStatus recibido: "${boldStatus}" | orderRef: "${orderRef}"`);
 
   if (!orderRef) return res.status(400).json({ error: 'order_ref requerido' });
 
   const newStatus =
-    boldStatus === 'APPROVED' ? 'paid'
-    : ['REJECTED', 'FAILED', 'CANCELLED'].includes(boldStatus) ? 'cancelled'
+    PAID_STATUSES.has(boldStatus)      ? 'paid'
+    : CANCELLED_STATUSES.has(boldStatus) ? 'cancelled'
     : 'pending';
 
   const conn = await pool.getConnection();
