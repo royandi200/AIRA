@@ -325,7 +325,7 @@ export default function Promotor() {
   const filtered=regs.filter(r=>!search||r.nombre?.toLowerCase().includes(search.toLowerCase())||r.movil?.includes(search)||r.cedula?.includes(search))
 
   return (
-    <div className="h-screen bg-[#030d06] flex flex-col" style={{fontFamily:"'Inter',sans-serif"}}>
+    <div className="bg-[#030d06] flex flex-col" style={{fontFamily:"'Inter',sans-serif",height:"100dvh",maxHeight:"100dvh"}}>
 
       {/* Header */}
       <div className="bg-[#030d06]/95 backdrop-blur-md border-b border-white/[0.06] px-4 py-3 flex items-center justify-between shrink-0">
@@ -378,7 +378,7 @@ export default function Promotor() {
             </div>
 
             {/* List */}
-            <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2.5">
+            <div className="flex-1 overflow-y-auto px-4 pb-24 space-y-2.5">
               {loading&&<p className="text-center text-white/25 py-10 text-sm">Cargando…</p>}
               {!loading&&filtered.length===0&&(
                 <div className="text-center py-12">
@@ -399,17 +399,18 @@ export default function Promotor() {
         )}
       </div>
 
-      {/* Tab bar */}
-      <div className="shrink-0 bg-[#030d06] border-t border-white/[0.06] grid grid-cols-2 safe-area-bottom" style={{paddingBottom:'env(safe-area-inset-bottom)'}}>
+      {/* Tab bar — fixed bottom, always visible */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#030d06]/95 backdrop-blur-md border-t border-white/[0.06] grid grid-cols-2"
+        style={{paddingBottom:'env(safe-area-inset-bottom,0px)'}}>
         {[
-          {id:'ventas',  label:'Ventas',  icon:<LayoutList className="w-5 h-5"/>},
-          {id:'nuevo',   label:'Nuevo',   icon:<UserPlus className="w-5 h-5"/>},
+          {id:'ventas', label:'Ventas', icon:<LayoutList className="w-5 h-5"/>},
+          {id:'nuevo',  label:'Nuevo',  icon:<UserPlus className="w-5 h-5"/>},
         ].map(t=>(
           <button key={t.id} onClick={()=>setTab(t.id as any)}
-            className={`flex flex-col items-center gap-1 py-3.5 transition-all ${tab===t.id?'text-aira-lime':'text-white/25'}`}>
+            className={`relative flex flex-col items-center gap-1 py-3.5 transition-all active:opacity-70 ${tab===t.id?'text-aira-lime':'text-white/30'}`}>
             {t.icon}
             <span className="text-[10px] font-bold uppercase tracking-wider">{t.label}</span>
-            {tab===t.id&&<div className="absolute bottom-0 w-8 h-0.5 bg-aira-lime rounded-full"/>}
+            {tab===t.id&&<div className="absolute bottom-0 inset-x-0 h-0.5 bg-aira-lime rounded-full"/>}
           </button>
         ))}
       </div>
