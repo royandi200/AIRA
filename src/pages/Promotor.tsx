@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { CheckCircle2, ChevronRight, X, Plus, Search, Send, Copy, LogOut, Users, DollarSign, ClipboardList, MessageCircle } from 'lucide-react'
+import { CheckCircle2, ChevronRight, X, Plus, Search, Copy, LogOut, Users, DollarSign, ClipboardList, MessageCircle } from 'lucide-react'
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const TOKEN_KEY = 'aira_promotor_token'
@@ -315,7 +315,7 @@ export default function Promotor() {
   const [search, setSearch] = useState('')
   const [showNew,setShowNew]= useState(false)
   const [abonoReg,setAbonoReg]=useState<any>(null)
-  const [tab,    setTab]    = useState<'registros'|'stats'>('registros')
+  // tab removed
 
   const stats = {
     total:     regs.length,
