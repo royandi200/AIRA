@@ -14,6 +14,7 @@ import AdminDashboard from './sections/AdminDashboard';
 import MisReservas from './sections/MisReservas';
 import AddOnModal  from './sections/AddOnModal';
 import PoliticasModal from './sections/PoliticasModal';
+import Promotor from './pages/Promotor';
 
 function App() {
   useLenis();
