@@ -980,6 +980,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                 <div><label className="block text-xs text-zinc-500 mb-1">Código *</label><input className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm font-mono tracking-widest uppercase placeholder:text-zinc-600 outline-none focus:border-zinc-500" value={newCodigo.codigo} onChange={e => setNewCodigo(f => ({ ...f, codigo: e.target.value.toUpperCase().replace(/\s+/g, '-') }))} placeholder="AIRA-2026" /></div>
                 <div><label className="block text-xs text-zinc-500 mb-1">Descripción</label><input className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm placeholder:text-zinc-600 outline-none focus:border-zinc-500" value={newCodigo.descripcion} onChange={e => setNewCodigo(f => ({ ...f, descripcion: e.target.value }))} placeholder="Ej: Código para equipo de ventas" /></div>
                 <div><label className="block text-xs text-zinc-500 mb-1">Usos máx.</label><input type="number" min={1} max={999} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-zinc-500" value={newCodigo.usos_max} onChange={e => setNewCodigo(f => ({ ...f, usos_max: Number(e.target.value) }))} /></div>
+                <div><label className="block text-xs text-zinc-500 mb-1">Clave Promotor</label><input className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm placeholder:text-zinc-600 outline-none focus:border-zinc-500" value={newCodigo.clave} onChange={e => setNewCodigo(f => ({ ...f, clave: e.target.value }))} placeholder="Clave para /promotor" /></div>
               </div>
               <button disabled={codigoSaving || !newCodigo.codigo} onClick={async () => {
                 setCodigoSaving(true);
@@ -999,11 +1000,20 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
               {codigos.length === 0
                 ? <p className="text-center text-zinc-600 text-sm py-10">Sin códigos. Crea el primero arriba.</p>
                 : <table className="w-full text-sm">
-                    <thead><tr className="border-b border-zinc-800 text-left">{['Código', 'Descripción', 'Usos', 'Estado', 'Acciones'].map(h => <th key={h} className="px-4 py-3 text-[10px] uppercase tracking-widest text-zinc-500 font-medium">{h}</th>)}</tr></thead>
+                    <thead><tr className="border-b border-zinc-800 text-left">{['Código', 'Descripción', 'Usos', 'Clave', 'Estado', 'Acciones'].map(h => <th key={h} className="px-4 py-3 text-[10px] uppercase tracking-widest text-zinc-500 font-medium">{h}</th>)}</tr></thead>
                     <tbody>{codigos.map((cod: any) => (
                       <tr key={cod.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition">
                         <td className="px-4 py-3 font-mono text-white tracking-widest">{cod.codigo}</td>
                         <td className="px-4 py-3 text-zinc-400 max-w-[200px] truncate">{cod.descripcion || '—'}</td>
+                        <td className="px-4 py-3">
+                          <input defaultValue={cod.clave||''} placeholder="sin clave"
+                            className="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white font-mono w-28 outline-none"
+                            onBlur={async e => {
+                              const clave = e.target.value.trim()
+                              await fetch('/api/referidos', { method: 'PUT', headers: {'Content-Type':'application/json','x-admin-token':token}, body: JSON.stringify({id:cod.id, clave}) })
+                            }}
+                          />
+                        </td>
                         <td className="px-4 py-3"><span className={`font-mono text-sm ${cod.usos_actuales >= cod.usos_max ? 'text-red-400' : 'text-green-400'}`}>{cod.usos_actuales}</span><span className="text-zinc-600">/{cod.usos_max}</span></td>
                         <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cod.activo ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}>{cod.activo ? 'Activo' : 'Inactivo'}</span></td>
                         <td className="px-4 py-3"><div className="flex gap-2">

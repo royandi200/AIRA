@@ -55,13 +55,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // POST — crear
     if (req.method === 'POST') {
-      const { codigo, descripcion, tipo, usos_max } = req.body || {};
+      const { codigo, descripcion, tipo, usos_max, clave } = req.body || {};
       if (!codigo) return res.status(400).json({ error: 'El código es requerido' });
       const cod = String(codigo).toUpperCase().trim().replace(/\s+/g, '-');
       try {
         await pool.query(
-          'INSERT INTO codigos_referido (codigo, descripcion, tipo, usos_max) VALUES (?,?,?,?)',
-          [cod, descripcion || null, tipo || 'referidos', Number(usos_max) || 1]
+          'INSERT INTO codigos_referido (codigo, descripcion, tipo, usos_max, clave) VALUES (?,?,?,?,?)',
+          [cod, descripcion || null, tipo || 'referidos', Number(usos_max) || 1, clave || null]
         );
         const [[created]]: any = await pool.query(
           'SELECT * FROM codigos_referido WHERE codigo = ?', [cod]
@@ -75,13 +75,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // PUT — editar
     if (req.method === 'PUT') {
-      const { id, activo, usos_max, descripcion } = req.body || {};
+      const { id, activo, usos_max, descripcion, clave } = req.body || {};
       if (!id) return res.status(400).json({ error: 'Falta id' });
       const sets: string[] = [];
       const vals: any[]    = [];
       if (activo    !== undefined) { sets.push('activo=?');      vals.push(activo); }
       if (usos_max  !== undefined) { sets.push('usos_max=?');    vals.push(usos_max); }
       if (descripcion!==undefined) { sets.push('descripcion=?'); vals.push(descripcion); }
+      if (clave!==undefined)       { sets.push('clave=?');       vals.push(clave||null); }
       if (sets.length) {
         vals.push(id);
         await pool.query(`UPDATE codigos_referido SET ${sets.join(',')} WHERE id=?`, vals);
