@@ -140,6 +140,8 @@ function App() {
     if (audioRef.current) audioRef.current.muted = muted;
   }, [muted]);
 
+  if (window.location.pathname === '/promotor') return <Promotor />
+
   return (
     <main className="relative w-full min-h-screen bg-void-black overflow-x-hidden">
       <Hero />
