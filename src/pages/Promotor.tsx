@@ -25,10 +25,13 @@ const fmtAny = (n: any) => fmt(Number(n) || 0)
 function LoginScreen({ onLogin }: { onLogin:(t:string)=>void }) {
   const [clave,setClave]=useState(''); const [error,setError]=useState(''); const [loading,setLoading]=useState(false)
   const submit = async () => {
+    if (!clave.trim()) return
     setLoading(true); setError('')
-    const r = await fetch('/api/admin-auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:clave})})
-    const d = await r.json()
-    if (d.token){localStorage.setItem(TOKEN_KEY,d.token);onLogin(d.token)} else setError('Clave incorrecta')
+    // Verificar clave haciendo un fetch real al API (mismo patrón que admin)
+    const r = await fetch('/api/admin-registro', { headers: { 'x-admin-token': clave.trim() } })
+    if (r.status === 401) { setError('Clave incorrecta'); setLoading(false); return }
+    localStorage.setItem(TOKEN_KEY, clave.trim())
+    onLogin(clave.trim())
     setLoading(false)
   }
   return (
