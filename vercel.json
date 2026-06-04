@@ -7,6 +7,10 @@
   },
   "rewrites": [
     {
+      "source": "/api/promotor-auth",
+      "destination": "/api/promotor-auth.ts"
+    },
+    {
       "source": "/api/send-wa",
       "destination": "/api/send-wa.ts"
     },

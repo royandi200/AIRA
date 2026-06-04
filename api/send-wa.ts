@@ -5,8 +5,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).end()
 
   const adminToken = process.env.ADMIN_TOKEN
-  const token = req.headers['x-admin-token']
-  if (!adminToken || token !== adminToken)
+  const token = req.headers['x-admin-token'] || req.headers['x-promotor-token']
+  const isAdmin = adminToken && token === adminToken
+  const isPromotor = typeof token === 'string' && token.startsWith('REF:')
+  if (!isAdmin && !isPromotor)
     return res.status(401).json({ error: 'No autorizado' })
 
   const { phone, message } = req.body
