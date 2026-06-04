@@ -986,7 +986,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                 setCodigoSaving(true);
                 const resp = await fetch('/api/referidos', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-token': token }, body: JSON.stringify(newCodigo) });
                 const d = await resp.json();
-                if (d.ok) { setCodigos(cs => [d.codigo, ...cs]); setNewCodigo({ codigo: '', descripcion: '', usos_max: 1 }); } else { alert(d.error); }
+                if (d.ok) { setCodigos(cs => [d.codigo, ...cs]); setNewCodigo({ codigo: '', descripcion: '', usos_max: 1, clave: '' }); } else { alert(d.error); }
                 setCodigoSaving(false);
               }} className="px-5 py-2 rounded-lg bg-white text-black text-sm font-semibold disabled:opacity-40">
                 {codigoSaving ? 'Creando...' : '+ Crear Código'}
