@@ -7,17 +7,8 @@ const DESC_KEY   = 'aira_promotor_desc'
 const BASE_URL   = 'https://www.viveaira.live'
 
 const PAQUETES = [
-  { label:'Paquete 3D · Creyentes',                price:619500,  cat:'3 días' },
-  { label:'Paquete 3D · Referidos',                 price:724500,  cat:'3 días' },
-  { label:'Paquete 3D · 1ª Etapa',                 price:829500,  cat:'3 días' },
-  { label:'Paquete 3D · 2ª Etapa',                 price:934500,  cat:'3 días' },
-  { label:'Paquete 3D · 3ª Etapa',                 price:1050000, cat:'3 días' },
-  { label:'Pass VIP',                               price:367500,  cat:'add-on' },
-  { label:'Transporte',                             price:189000,  cat:'add-on' },
-  { label:'Suite Privada',                          price:2625000, cat:'add-on' },
-  { label:'DÍA 1 — After Fiesta de Yates',          price:84000,   cat:'diario' },
-  { label:'DÍA 2 — Fiesta Majestic & Stage Joinn',  price:157500,  cat:'diario' },
-  { label:'DÍA 3 — Open Deck',                      price:52500,   cat:'diario' },
+  { label:'Paquete 3D · Referidos',  price:724500,  cat:'paquete' },
+  { label:'Cabaña AIRA · 8va Etapa', price:4830000, cat:'cabaña'  },
 ]
 const MEDIOS = ['Efectivo','Nequi','Daviplata','Transferencia','Bold','Otro']
 const fmt    = (n:number) => `$${n.toLocaleString('es-CO')}`
@@ -186,7 +177,7 @@ function RegCard({r,token,onRefresh}:{r:any;token:string;onRefresh:()=>void}) {
 
 // ── Nuevo Registro form ───────────────────────────────────────────────────────
 function NuevoRegistro({token,codigo,onDone}:{token:string;codigo:string;onDone:()=>void}) {
-  const empty={nombre:'',cedula:'',movil:'',email:'',paquete:PAQUETES[2].label,monto_total:String(PAQUETES[2].price),monto_recibido:'',medio_pago:'Efectivo',fecha_pago:new Date().toISOString().slice(0,10),notas:'',codigo_referido:codigo}
+  const empty={nombre:'',cedula:'',movil:'',email:'',paquete:PAQUETES[0].label,monto_total:String(PAQUETES[0].price),monto_recibido:'',medio_pago:'Efectivo',fecha_pago:new Date().toISOString().slice(0,10),notas:'',codigo_referido:codigo}
   const [form,setForm]=useState(empty);const [saving,setSaving]=useState(false);const [done,setDone]=useState<any>(null)
   const [sending,setSending]=useState(false)
   const f=(k:keyof typeof empty)=>(e:React.ChangeEvent<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>)=>setForm(p=>({...p,[k]:e.target.value}))

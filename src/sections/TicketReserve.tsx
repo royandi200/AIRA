@@ -43,7 +43,7 @@ const DAYS = [
 const STAGE_DATES: Record<string, { start: Date; end: Date }> = {
   creyentes: { start: new Date('2026-04-15'), end: new Date('2026-06-04') },
   referidos:  { start: new Date('2026-04-15'), end: new Date('2026-06-04') },
-  primera:    { start: new Date('2026-05-05'), end: new Date('2026-07-05') },
+  primera:    { start: new Date('2026-05-05'), end: new Date('2026-06-04T23:59:59-05:00') },
   segunda:    { start: new Date('2026-06-05'), end: new Date('2026-07-05') },
   tercera:    { start: new Date('2026-07-05'), end: new Date('2026-08-15') },
 };
@@ -59,7 +59,7 @@ function isStagePast(id: string): boolean {
 const STAGES = [
   { id: 'creyentes', label: 'Creyentes', price: 590_000,   slots: 35, dates: '15 ABR – 4 JUN', locked: true  },
   { id: 'referidos', label: 'Referidos', price: 690_000,   slots: 35, dates: '15 ABR – 4 JUN', locked: false },
-  { id: 'primera',   label: '1ª Etapa',  price: 790_000,   slots: 28, dates: '5 MAY – 5 JUL',  locked: false },
+  { id: 'primera',   label: '1ª Etapa',  price: 790_000,   slots: 28, dates: '5 MAY – 4 JUN',  locked: false },
   { id: 'segunda',   label: '2ª Etapa',  price: 890_000,   slots: 28, dates: '5 JUN – 5 JUL',  locked: false },
   { id: 'tercera',   label: '3ª Etapa',  price: 1_000_000, slots: 7,  dates: '5 JUL – 15 AGO', locked: false, urgent: true },
 ];
