@@ -83,7 +83,7 @@ function RegCard({r,token,onRefresh}:{r:any;token:string;onRefresh:()=>void}) {
     const url=`${BASE_URL}/boleta/${r.order_ref}`
     const msg=`✅ *Registro AIRA*\n\nHola *${r.nombre}* 🎉\nPaquete: *${r.paquete||'AIRA 2026'}*\nAbono: *${fmtAny(r.monto_recibido)}*\nPendiente: *${fmtAny(r.monto_pendiente)}*\n\n📲 Tu comprobante:\n${url}\n\n📍 *AIRA Experience · Guatapé · Ago 2026*`
     await fetch('/api/send-wa',{method:'POST',headers:{'Content-Type':'application/json','x-promotor-token':token},body:JSON.stringify({phone:r.movil,message:msg})})
-    setSending(false);setSent(true);setTimeout(()=>setSent(false),3000)
+    setSending(false);setSent(true);setTimeout(()=>setSent(false),5000)
   }
 
   const saveAbono=async()=>{
@@ -143,7 +143,7 @@ function RegCard({r,token,onRefresh}:{r:any;token:string;onRefresh:()=>void}) {
         <div className="border-t border-white/[0.06] p-4 bg-white/[0.02]">
           {abonoOk?(
             <div className="flex items-center gap-2 text-green-400 text-sm font-bold py-1">
-              <CheckCircle2 className="w-4 h-4"/>Abono guardado · WA enviado
+              <CheckCircle2 className="w-4 h-4"/>¡Abono guardado! WA enviado ✓
             </div>
           ):(
             <div className="space-y-3">
@@ -180,6 +180,7 @@ function NuevoRegistro({token,codigo,onDone}:{token:string;codigo:string;onDone:
   const empty={nombre:'',cedula:'',movil:'',email:'',paquete:PAQUETES[0].label,monto_total:String(PAQUETES[0].price),monto_recibido:'',medio_pago:'Efectivo',fecha_pago:new Date().toISOString().slice(0,10),notas:'',codigo_referido:codigo}
   const [form,setForm]=useState(empty);const [saving,setSaving]=useState(false);const [done,setDone]=useState<any>(null)
   const [sending,setSending]=useState(false)
+  const [waOk,setWaOk]=useState(false)
   const f=(k:keyof typeof empty)=>(e:React.ChangeEvent<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>)=>setForm(p=>({...p,[k]:e.target.value}))
   const pendiente=(Number(form.monto_total)||0)-(Number(form.monto_recibido)||0)
 
@@ -197,7 +198,7 @@ function NuevoRegistro({token,codigo,onDone}:{token:string;codigo:string;onDone:
     const url=`${BASE_URL}/boleta/${done.order_ref}`
     const msg=`✅ *Registro AIRA confirmado*\n\nHola *${done.nombre}* 🎉\nPaquete: *${done.paquete||'AIRA 2026'}*\nAbono: *${fmtAny(done.monto_recibido)}*\nPendiente: *${fmtAny(done.monto_pendiente)}*\n\n📲 Tu comprobante:\n${url}\n\n📍 *AIRA Experience · Guatapé · Ago 2026*`
     await fetch('/api/send-wa',{method:'POST',headers:{'Content-Type':'application/json','x-promotor-token':token},body:JSON.stringify({phone:form.movil,message:msg})})
-    setSending(false);alert('✅ Enviado por WhatsApp')
+    setSending(false);setWaOk(true)
   }
 
   if(done) return (
@@ -215,10 +216,18 @@ function NuevoRegistro({token,codigo,onDone}:{token:string;codigo:string;onDone:
           <div className="flex justify-between"><span className="text-white/40">Ref.</span><span className="text-white font-mono text-xs">{done.order_ref}</span></div>
         </div>
         <div className="space-y-2.5">
-          <button onClick={sendWA} disabled={sending}
-            className="w-full py-4 rounded-2xl bg-[#25D366] text-white font-black flex items-center justify-center gap-2 active:scale-95 disabled:opacity-40 text-sm">
-            <MessageCircle className="w-4 h-4"/>{sending?'Enviando…':'Enviar comprobante por WhatsApp'}
-          </button>
+          {waOk ? (
+            <div className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 text-sm font-black"
+              style={{background:'rgba(34,197,94,0.12)',border:'1px solid rgba(34,197,94,0.3)',color:'#22c55e'}}>
+              <CheckCircle2 className="w-4 h-4"/>¡Mensaje enviado por WhatsApp!
+            </div>
+          ) : (
+            <button onClick={sendWA} disabled={sending}
+              className="w-full py-4 rounded-2xl text-white font-black flex items-center justify-center gap-2 active:scale-95 disabled:opacity-40 text-sm transition-all"
+              style={{background:sending?'rgba(37,211,102,0.4)':'#25D366'}}>
+              <MessageCircle className="w-4 h-4"/>{sending?'Enviando…':'Enviar comprobante por WhatsApp'}
+            </button>
+          )}
           <button onClick={()=>navigator.clipboard.writeText(`${BASE_URL}/boleta/${done.order_ref}`).then(()=>alert('URL copiada'))}
             className="w-full py-3 rounded-2xl bg-white/5 border border-white/10 text-white/50 text-sm flex items-center justify-center gap-2 active:scale-95">
             <Copy className="w-4 h-4"/>Copiar URL comprobante
