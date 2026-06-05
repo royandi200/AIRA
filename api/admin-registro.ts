@@ -147,6 +147,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const montoRecibido  = Number(monto_recibido) || 0;
     const montoPendiente = montoTotal - montoRecibido;
     const order_ref = genRef();
+    const qr_token  = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
 
     const conn = await pool.getConnection();
     try {
@@ -156,15 +157,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         INSERT INTO manual_registros
           (order_ref, nombre, cedula, movil, email, evento_id, paquete,
            monto_total, monto_recibido, monto_pendiente,
-           medio_pago, fecha_pago, notas, codigo_referido)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+           medio_pago, fecha_pago, notas, codigo_referido, qr_token)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       `, [
         order_ref, nombre, cedula,
         movil || null, email || null,
         evento_id || null, paquete || null,
         montoTotal, montoRecibido, montoPendiente,
         medio_pago || null, fecha_pago || null,
-        notas || null, codigoRef,
+        notas || null, codigoRef, qr_token,
       ]);
 
       const [[inserted]]: any = await conn.query(
@@ -196,7 +197,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       await conn.commit();
-      return res.json({ ok: true, order_ref, monto_pendiente: montoPendiente });
+      return res.json({ ok: true, order_ref, qr_token, nombre, paquete: paquete||null, monto_recibido: montoRecibido, monto_pendiente: montoPendiente });
 
     } catch (err: any) {
       await conn.rollback();
