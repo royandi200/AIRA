@@ -292,6 +292,16 @@ function NuevoRegistro({token,codigo,onDone}:{token:string;codigo:string;onDone:
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Promotor() {
+  // Reducir volumen de audio del sitio al 20% cuando está en /promotor
+  useEffect(() => {
+    const audios = document.querySelectorAll('audio')
+    audios.forEach(a => { a.volume = 0.2 })
+    return () => {
+      // Restaurar al salir
+      audios.forEach(a => { a.volume = 0.55 })
+    }
+  }, [])
+
   const [token,  setToken] =useState(()=>localStorage.getItem(TOKEN_KEY)||'')
   const [codigo,setCodigo] =useState(()=>localStorage.getItem(CODIGO_KEY)||'')
   const [desc,   setDesc]  =useState(()=>localStorage.getItem(DESC_KEY)||'')
