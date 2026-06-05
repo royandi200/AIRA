@@ -7,8 +7,8 @@ const DESC_KEY   = 'aira_promotor_desc'
 const BASE_URL   = 'https://www.viveaira.live'
 
 const PAQUETES = [
-  { label:'Paquete 3D · Referidos',  price:724500,  cat:'paquete' },
-  { label:'Cabaña AIRA · 8va Etapa', price:4830000, cat:'cabaña'  },
+  { label:'3D Referidos',     price:724500  },
+  { label:'Cabaña 3D Octava', price:4830000 },
 ]
 const MEDIOS = ['Efectivo','Nequi','Daviplata','Transferencia','Bold','Otro']
 const fmt    = (n:number) => `$${n.toLocaleString('es-CO')}`
@@ -246,9 +246,7 @@ function NuevoRegistro({token,codigo,onDone}:{token:string;codigo:string;onDone:
         <div>
           <p className="text-[9px] uppercase tracking-[0.2em] text-white/25 font-bold mb-3">Paquete</p>
           <select className={iCls} value={form.paquete} onChange={e=>{const o=PAQUETES.find(p=>p.label===e.target.value);setForm(p=>({...p,paquete:e.target.value,monto_total:String(o?.price||p.monto_total)}))}}>
-            <optgroup label="Paquete 3 Días">{PAQUETES.filter(p=>p.cat==='3 días').map(p=><option key={p.label} value={p.label}>{p.label} · {fmt(p.price)}</option>)}</optgroup>
-            <optgroup label="Add-ons">{PAQUETES.filter(p=>p.cat==='add-on').map(p=><option key={p.label} value={p.label}>{p.label} · {fmt(p.price)}</option>)}</optgroup>
-            <optgroup label="Boletería diaria">{PAQUETES.filter(p=>p.cat==='diario').map(p=><option key={p.label} value={p.label}>{p.label} · {fmt(p.price)}</option>)}</optgroup>
+            {PAQUETES.map(p=><option key={p.label} value={p.label}>{p.label} · {fmt(p.price)}</option>)}
           </select>
         </div>
 
