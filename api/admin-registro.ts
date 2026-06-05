@@ -13,7 +13,12 @@ const pool = mysql.createPool({
 function auth(req: VercelRequest) {
   const adminToken = process.env.ADMIN_TOKEN;
   if (!adminToken) return false;
-  return req.headers['x-admin-token'] === adminToken;
+  const adminHeader    = req.headers['x-admin-token'];
+  const promotorHeader = req.headers['x-promotor-token'];
+  if (adminHeader === adminToken) return true;
+  // Promotor token: 'REF:CODIGO' — válido para operaciones de registro
+  if (typeof promotorHeader === 'string' && promotorHeader.startsWith('REF:')) return true;
+  return false;
 }
 
 function genRef() {
