@@ -307,6 +307,7 @@ export default function Promotor() {
   const [loading,setLoading]=useState(false)
   const [search, setSearch]=useState('')
   const [tab,    setTab]   =useState<'ventas'|'nuevo'>('ventas')
+  const [showQR,  setShowQR]  =useState(false)
 
   const stats={
     total:     regs.length,
