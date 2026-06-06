@@ -412,6 +412,43 @@ export default function Promotor() {
         )}
       </div>
 
+      {/* QR Modal */}
+      {showQR&&(
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-5"
+          style={{background:'rgba(0,0,0,0.85)',backdropFilter:'blur(12px)'}}
+          onClick={()=>setShowQR(false)}>
+          <div className="relative w-full max-w-sm rounded-3xl overflow-hidden border border-aira-lime/20"
+            style={{background:'#0a0f0a',boxShadow:'0 0 60px rgba(225,254,82,0.15)'}}
+            onClick={e=>e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+              <div>
+                <p className="text-[9px] uppercase tracking-[0.25em] text-aira-lime/60 font-mono">AIRA Experience</p>
+                <h3 className="text-white font-black text-base leading-none mt-0.5">Código QR</h3>
+              </div>
+              <button onClick={()=>setShowQR(false)} className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                <X className="w-4 h-4 text-white/50"/>
+              </button>
+            </div>
+            <div className="p-6 flex flex-col items-center gap-4">
+              <div className="rounded-2xl overflow-hidden border-2 border-aira-lime/20 bg-white p-3"
+                style={{boxShadow:'0 0 30px rgba(225,254,82,0.1)'}}>
+                <img src="https://raw.githubusercontent.com/royandi200/AIRA/main/public/images/QR.jpeg"
+                  alt="QR AIRA" className="w-64 h-64 object-contain"/>
+              </div>
+              <p className="text-white/35 text-xs text-center leading-relaxed">
+                Comparte este QR para que los asistentes<br/>accedan a su comprobante de registro
+              </p>
+            </div>
+            <div className="px-5 pb-5">
+              <button onClick={()=>setShowQR(false)}
+                className="w-full py-3.5 rounded-2xl bg-aira-lime text-black font-black text-sm active:scale-95 transition-all">
+                ← Volver
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tab bar — fixed bottom, always visible */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#030d06]/95 backdrop-blur-md border-t border-white/[0.06] grid grid-cols-2"
         style={{paddingBottom:'env(safe-area-inset-bottom,0px)'}}>
