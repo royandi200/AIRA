@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { CheckCircle2, ChevronRight, X, Plus, Search, Copy, LogOut, Users, DollarSign, ClipboardList, MessageCircle, LayoutList, UserPlus, RefreshCw } from 'lucide-react'
+import { CheckCircle2, ChevronRight, X, Plus, Search, Copy, LogOut, Users, DollarSign, ClipboardList, MessageCircle, LayoutList, UserPlus, RefreshCw, QrCode } from 'lucide-react'
 
 const TOKEN_KEY  = 'aira_promotor_token'
 const CODIGO_KEY = 'aira_promotor_codigo'
@@ -348,6 +348,10 @@ export default function Promotor() {
           <button onClick={fetchRegs} disabled={loading}
             className="w-9 h-9 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
             <RefreshCw className={`w-3.5 h-3.5 text-white/35 ${loading?'animate-spin':''}`}/>
+          </button>
+          <button onClick={()=>setShowQR(true)}
+            className="w-9 h-9 rounded-full bg-aira-lime/15 border border-aira-lime/30 flex items-center justify-center">
+            <QrCode className="w-3.5 h-3.5 text-aira-lime"/>
           </button>
           <button onClick={logout} className="w-9 h-9 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
             <LogOut className="w-3.5 h-3.5 text-white/35"/>
