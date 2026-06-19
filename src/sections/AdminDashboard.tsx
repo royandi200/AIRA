@@ -48,6 +48,11 @@ const PAQUETES = [
   { label: 'DÍA 1 — After Fiesta de Yates',    priceLabel: '$84.000',    price: '84000',    cat: 'daily'  },
   { label: 'DÍA 2 — Fiesta Majestic & Stage Joinn', priceLabel: '$157.500', price: '157500', cat: 'daily' },
   { label: 'DÍA 3 — Open Deck',                priceLabel: '$52.500',    price: '52500',    cat: 'daily'  },
+  { label: 'Cabaña Completa · Creyentes',      priceLabel: '$4.410.000', price: '4410000',  cat: 'cabana' },
+  { label: 'Cabaña Completa · Referidos',      priceLabel: '$4.830.000', price: '4830000',  cat: 'cabana' },
+  { label: 'Cabaña Completa · 1ª Etapa',       priceLabel: '$5.145.000', price: '5145000',  cat: 'cabana' },
+  { label: 'Cabaña Completa · 2ª Etapa',       priceLabel: '$5.460.000', price: '5460000',  cat: 'cabana' },
+  { label: 'Cabaña Completa · 3ª Etapa',       priceLabel: '$5.775.000', price: '5775000',  cat: 'cabana' },
 ];
 
 // ─── Modal Registrar Abono ────────────────────────────────────────────────────
@@ -257,6 +262,9 @@ function EditarModal({ reg, token, onClose, onDone }: {
               <optgroup label="Por día" style={{ background: '#18181b' }}>
                 {PAQUETES.filter(p => p.cat === 'daily').map(p => <option key={p.label} value={p.label} style={{ background: '#18181b' }}>{p.label} · {p.priceLabel}</option>)}
               </optgroup>
+              <optgroup label="Cabaña Completa" style={{ background: '#18181b' }}>
+                {PAQUETES.filter(p => p.cat === 'cabana').map(p => <option key={p.label} value={p.label} style={{ background: '#18181b' }}>{p.label} · {p.priceLabel}</option>)}
+              </optgroup>
             </select>
           </div>
           <div>
@@ -440,6 +448,9 @@ function ManualTab({ token }: { token: string }) {
               </optgroup>
               <optgroup label="Por día" style={{ background: '#18181b' }}>
                 {PAQUETES.filter(p => p.cat === 'daily').map(p => <option key={p.label} value={p.label} style={{ background: '#18181b' }}>{p.label} · {p.priceLabel}</option>)}
+              </optgroup>
+              <optgroup label="Cabaña Completa" style={{ background: '#18181b' }}>
+                {PAQUETES.filter(p => p.cat === 'cabana').map(p => <option key={p.label} value={p.label} style={{ background: '#18181b' }}>{p.label} · {p.priceLabel}</option>)}
               </optgroup>
             </select>
           </div>
