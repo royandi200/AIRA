@@ -8,7 +8,7 @@ const BASE_URL   = 'https://www.viveaira.live'
 
 const PAQUETES = [
   { label:'3D Referidos',     price:724500  },
-  { label:'Cabaña 3D Octava', price:4830000 },
+  { label:'Cabaña 3D Octava', price:5200000 },
 ]
 const MEDIOS = ['Efectivo','Nequi','Daviplata','Transferencia','Bold','Otro']
 const fmt    = (n:number) => `$${n.toLocaleString('es-CO')}`
