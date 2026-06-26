@@ -7,7 +7,7 @@ const DESC_KEY   = 'aira_promotor_desc'
 const BASE_URL   = 'https://www.viveaira.live'
 
 const PAQUETES = [
-  { label:'3D Referidos',     price:724500  },
+  { label:'3D Referidos',     price:850000  },
   { label:'Cabaña 3D Octava', price:5200000 },
 ]
 const MEDIOS = ['Efectivo','Nequi','Daviplata','Transferencia','Bold','Otro']
