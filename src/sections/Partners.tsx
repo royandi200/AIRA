@@ -16,7 +16,8 @@ const LIME  = '#e1fe52';
 const DARK  = '#00164c';
 const BLACK = '#030612';
 
-const WHATSAPP_URL  = 'https://wa.me/573003062259';
+const WHATSAPP_URL  = 'https://wa.me/573204936158';
+const MAILTO_URL    = 'mailto:gerencia@viveaira.co';
 const INSTAGRAM_URL = 'https://instagram.com/viveaira';
 const WEBSITE_URL   = 'https://www.viveaira.live';
 
@@ -294,7 +295,47 @@ export default function Partners() {
         </div>
       </section>
 
-      {/* ── QUIÉNES SOMOS ── */}
+      {/* ── MAGNITUD DEL EVENTO ── */}
+      <section className="py-16 md:py-20 px-6 border-y border-white/8" style={{ background: 'rgba(255,255,255,0.02)' }}>
+        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-6">
+          {[
+            { value: '1.000–1.500', label: 'Asistentes rotando por escenarios' },
+            { value: '150', label: 'Huéspedes VIP · 72h continuas en Joinn Houtel' },
+            { value: '3 días', label: 'Formato Destination Event' },
+            { value: '30+', label: 'Artistas nacionales e internacionales' },
+          ].map((s, i) => (
+            <Reveal key={i} delay={i * 80} className="text-center md:text-left">
+              <div className="font-display text-4xl md:text-5xl mb-2" style={{ color: LIME }}>{s.value}</div>
+              <p className="text-white/45 text-xs md:text-sm leading-snug">{s.label}</p>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      {/* ── PERFIL DE AUDIENCIA ── */}
+      <section className="py-24 md:py-32 px-6 max-w-7xl mx-auto">
+        <Reveal className="mb-14 text-center max-w-2xl mx-auto">
+          <Label>Audience Snapshot</Label>
+          <h2 className="font-display text-3xl md:text-5xl text-white mt-4">Quién asiste a AÏRA</h2>
+        </Reveal>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {[
+            { icon: <Target className="w-5 h-5"/>, title: '25 – 45 años', desc: 'Adultos contemporáneos. No es un evento para adolescentes.' },
+            { icon: <Building2 className="w-5 h-5"/>, title: 'Estratos 5 y 6', desc: 'Nivel socioeconómico medio-alto y alto.' },
+            { icon: <Briefcase className="w-5 h-5"/>, title: 'Tomadores de decisión', desc: 'Líderes de opinión, consumidores de experiencias premium.' },
+            { icon: <Waves className="w-5 h-5"/>, title: 'Afinidades', desc: 'Bienestar, hotelería boutique, gastronomía, Progressive & Tech House.' },
+          ].map((c, i) => (
+            <Reveal key={i} delay={i * 90}
+              className="p-7 rounded-3xl border border-white/8 bg-white/[0.03] hover:border-aira-lime/30 transition-all duration-500">
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-5" style={{ background: `${LIME}15`, color: LIME }}>
+                {c.icon}
+              </div>
+              <h3 className="font-display text-xl text-white mb-2">{c.title}</h3>
+              <p className="text-white/45 text-sm leading-relaxed">{c.desc}</p>
+            </Reveal>
+          ))}
+        </div>
+      </section>
       <section id="resumen" className="py-28 md:py-36 px-6 max-w-7xl mx-auto">
         <div className="grid md:grid-cols-2 gap-16 items-center">
           <div>
@@ -695,6 +736,57 @@ export default function Partners() {
           </div>
         </Reveal>
 
+        {/* ── PROPUESTA COMERCIAL ── */}
+        <Reveal className="mb-20">
+          <div className="text-center mb-12">
+            <Label>Propuesta Comercial</Label>
+            <h3 className="font-display text-3xl md:text-5xl text-white mt-4">Niveles de Inversión</h3>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {[
+              { name: 'Diamond Sponsor', price: '$40M – $50M', unit: 'COP',
+                items: ['Naming del evento', 'Presencia estelar en Yate Majestic', '2 cabañas VIP incluidas'] },
+              { name: 'Stage Presenter', price: '$20M – $25M', unit: 'COP',
+                items: ['Naming de 1 escenario secundario', 'Branding dominante', '1 suite/cabaña'] },
+              { name: 'Experience Partner', price: '$10M – $15M', unit: 'COP',
+                items: ['Patrocinio de 1 actividad', 'Sampling directo con asistentes'] },
+              { name: 'Brand Placement', price: '$5M – $8M', unit: 'COP',
+                items: ['Presencia física en zonas comunes', 'Exhibición de producto'] },
+            ].map((tier, i) => (
+              <div key={i}
+                className="flex flex-col p-7 rounded-3xl border border-white/8 bg-white/[0.03] hover:border-aira-lime/30 hover:bg-white/[0.05] transition-all duration-500">
+                <p className="font-mono-custom text-[10px] uppercase tracking-widest mb-4" style={{ color: LIME }}>{tier.name}</p>
+                <div className="mb-6">
+                  <span className="font-display text-3xl text-white">{tier.price}</span>
+                  <span className="text-white/35 text-xs ml-1">{tier.unit}</span>
+                </div>
+                <div className="border-t border-white/8 pt-4 space-y-2.5 flex-1">
+                  {tier.items.map((it, j) => (
+                    <div key={j} className="flex items-start gap-2.5">
+                      <div className="w-1 h-1 rounded-full mt-2 shrink-0" style={{ background: LIME }}/>
+                      <p className="text-sm text-white/55 leading-snug">{it}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-white/40 text-sm italic mt-8">
+            Construimos propuestas a la medida de los objetivos específicos de su marca.
+          </p>
+          <div className="flex flex-wrap justify-center items-center gap-4 mt-8">
+            <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 px-8 py-4 font-display text-sm uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95"
+              style={{ background: LIME, color: DARK }}>
+              Hablemos de su participación <ArrowRight className="w-4 h-4"/>
+            </a>
+            <a href={MAILTO_URL}
+              className="font-mono-custom text-xs uppercase tracking-widest text-white/40 hover:text-white transition-colors">
+              o escríbanos por correo
+            </a>
+          </div>
+        </Reveal>
+
         {/* CTA final */}
         <Reveal>
           <div className="relative rounded-3xl overflow-hidden p-12 md:p-20 text-center group cursor-pointer border border-white/8 hover:border-aira-lime/30 transition-all"
@@ -720,7 +812,7 @@ export default function Partners() {
                 </a>
               </div>
               <p className="font-mono-custom text-[10px] uppercase tracking-widest text-white/25">
-                Manuel Franco · Representante Comercial · 300 306 2259
+                Alexander Sánchez Bedoya · Gerencia VIVE AIRA S.A.S. · gerencia@viveaira.co · 320 493 6158
               </p>
             </div>
           </div>
