@@ -4,8 +4,7 @@ import {
   ArrowRight, Users, Target, MapPin, Anchor,
   Menu, X, Shield, Calendar,
   Waves, Building2, Briefcase,
-  Video, Star, Headphones, Globe, Instagram,
-  ExternalLink,
+  Video, Globe, Instagram,
 } from 'lucide-react';
 
 // ─── Global styles
@@ -60,9 +59,8 @@ function Navbar() {
 
   const links = [
     { href: '#resumen',      label: 'Resumen' },
-    { href: '#ecosistema',   label: 'Ecosistema' },
     { href: '#itinerario',   label: 'Itinerario' },
-    { href: '#aliados',      label: 'Aliados' },
+    { href: '#difusion',     label: 'Alcance' },
     { href: '#patrocinios',  label: 'Patrocinios' },
   ];
 
@@ -209,35 +207,7 @@ function TierCard({ letter, title, focus, contribution, benefits, delay = 0 }: {
 }
 
 // ─── Ally card ────────────────────────────────────────────────────────────────
-function AllyGroup({ category, items }: { category: string; items: { name: string; link?: string; img?: string }[] }) {
-  return (
-    <div className="p-6 rounded-2xl border border-white/8 bg-white/[0.02] hover:border-white/15 transition-all">
-      <p className="font-mono-custom text-[9px] uppercase tracking-[0.35em] text-white/30 mb-4 pb-3 border-b border-white/8">
-        {category}
-      </p>
-      <ul className="space-y-3">
-        {items.map((item, i) => (
-          <li key={i}>
-            {item.link && item.img ? (
-              <ImageHover src={item.img} href={item.link} className="flex items-center justify-between text-sm text-white/50 hover:text-aira-lime transition-colors w-full">
-                <span>{item.name}</span>
-                <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'inherit' }}/>
-              </ImageHover>
-            ) : item.link ? (
-              <a href={item.link} target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-between text-sm text-white/50 hover:text-aira-lime transition-colors">
-                {item.name}
-                <ExternalLink className="w-3 h-3"/>
-              </a>
-            ) : (
-              <span className="text-sm text-white/50">{item.name}</span>
-            )}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
+// ─── Ecosistema/Aliados eliminados — ver sección "Alcance y Difusión" ────────
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function Partners() {
@@ -287,7 +257,7 @@ export default function Partners() {
               style={{ background: LIME, color: DARK }}>
               Ver oportunidades <ArrowRight className="w-4 h-4"/>
             </a>
-            <a href="#ecosistema"
+            <a href="#resumen"
               className="flex items-center gap-2 px-8 py-4 border border-white/20 text-white font-display text-sm uppercase tracking-[0.2em] hover:bg-white/8 transition-all">
               Resumen ejecutivo
             </a>
@@ -408,49 +378,6 @@ export default function Partners() {
         </div>
       </section>
 
-      {/* ── ECOSISTEMA ── */}
-      <section id="ecosistema" className="py-28 md:py-36 border-y border-white/6" style={{ background: 'rgba(255,255,255,0.02)' }}>
-        <div className="px-6 max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-20 items-center">
-            <Reveal>
-              <Label>Plataforma de Superlujo</Label>
-              <h2 className="font-display text-5xl md:text-6xl text-white leading-none mb-6">Ecosistema AIRA</h2>
-              <p className="text-white/50 text-lg leading-relaxed mb-8">
-                AIRA Experience no es solo un evento; es una plataforma de estilo de vida de superlujo fundamentada en tres pilares:
-              </p>
-              <div className="space-y-4 mb-8">
-                {[
-                  { n: '01', title: 'Turismo', sub: 'Territorio & Asombro', desc: 'Guatapé no es el telón de fondo. Es el primer acto. Un entorno que dicta la luz, el ritmo y la temperatura de todo lo que sucede — y de cómo su marca es percibida.' },
-                  { n: '02', title: 'Deportes', sub: 'Movimiento & Presencia', desc: 'El agua como terreno. Actividades diseñadas para que el cuerpo entre en un estado de atención total. El momento en que una marca aparece aquí, no interrumpe — pertenece.' },
-                  { n: '03', title: 'Wellness', sub: 'Silencio & Integración', desc: 'El contrapeso exacto. Espacios donde la energía se asienta y el asistente está más receptivo, más presente — y más dispuesto a recordar.' },
-                ].map((p, i) => (
-                  <Reveal key={i} delay={i * 80}>
-                    <div className="flex items-start gap-5 p-5 rounded-2xl border border-white/6 hover:border-aira-lime/20 transition-all">
-                      <span className="font-mono-custom text-[10px] mt-1" style={{ color: LIME }}>{p.n}</span>
-                      <div>
-                        <p className="text-white font-semibold">{p.title} <span className="text-white/30 font-normal text-sm">— {p.sub}</span></p>
-                        <p className="text-white/40 text-sm mt-0.5">{p.desc}</p>
-                      </div>
-                    </div>
-                  </Reveal>
-                ))}
-              </div>
-              <div className="p-6 rounded-2xl border-l-2 bg-white/[0.03]" style={{ borderColor: LIME }}>
-                <p className="text-white/70 italic leading-relaxed">"Diseñamos para los que ya lo han visto todo — y aún buscan algo que los sorprenda."</p>
-              </div>
-            </Reveal>
-
-            <Reveal delay={200}>
-              <div className="relative aspect-[4/5] rounded-3xl overflow-hidden border border-white/8 group">
-                <img src="https://i.imgur.com/tN3Gr8q.jpeg" alt="AIRA Guatapé"
-                  className="w-full h-full object-cover transition-transform duration-[5s] group-hover:scale-110"/>
-                <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(3,6,18,0.8), transparent 60%)' }}/>
-              </div>
-            </Reveal>
-          </div>
-        </div>
-      </section>
-
       {/* ── ITINERARIO ── */}
       <section id="itinerario" className="py-28 md:py-36 px-6 max-w-7xl mx-auto">
         <Reveal>
@@ -550,32 +477,52 @@ export default function Partners() {
         </Reveal>
       </section>
 
-      {/* ── ALIADOS ── */}
-      <section id="aliados" className="py-28 border-y border-white/6" style={{ background: 'rgba(255,255,255,0.015)' }}>
+      {/* ── ALCANCE Y DIFUSIÓN ── */}
+      <section id="difusion" className="py-28 border-y border-white/6" style={{ background: 'rgba(255,255,255,0.015)' }}>
         <div className="px-6 max-w-7xl mx-auto">
           <Reveal>
-            <Label>Respaldo & Sinergias</Label>
-            <h2 className="font-display text-5xl md:text-6xl text-white leading-none mb-4">Aliados & Curaduría</h2>
+            <Label>Amplificación Digital</Label>
+            <h2 className="font-display text-5xl md:text-6xl text-white leading-none mb-4">Alcance & Difusión</h2>
             <p className="text-white/40 text-lg max-w-2xl leading-relaxed mb-16">
-              Red de aliados estratégicos confirmados y un lineup de talla internacional que garantizan los más altos estándares de calidad.
+              Dónde se promociona AIRA y cómo su marca queda documentada dentro de ese contenido, antes, durante y después del evento.
             </p>
           </Reveal>
 
-          {/* Curaduría */}
+          {/* Red de amplificación */}
           <Reveal className="mb-16">
             <div className="flex items-center gap-3 mb-8">
-              <Headphones className="w-5 h-5" style={{ color: LIME }}/>
-              <h3 className="font-display text-3xl text-white">Curaduría Musical</h3>
+              <Users className="w-5 h-5" style={{ color: LIME }}/>
+              <h3 className="font-display text-3xl text-white">Red de Amplificación</h3>
             </div>
-            <div className="grid md:grid-cols-3 gap-5">
+            <div className="p-8 rounded-2xl border border-white/8 bg-white/[0.02]">
+              <p className="text-white/55 text-lg leading-relaxed">
+                <span className="font-display text-4xl mr-2" style={{ color: LIME }}>30+</span>
+                artistas nacionales e internacionales actúan como embajadores orgánicos del evento, compartiendo contenido hacia sus propias comunidades — una caja de resonancia que la pauta paga no puede comprar por sí sola.
+              </p>
+            </div>
+          </Reveal>
+
+          {/* Timeline de contenido */}
+          <Reveal>
+            <div className="flex items-center gap-3 mb-8">
+              <Video className="w-5 h-5" style={{ color: LIME }}/>
+              <h3 className="font-display text-3xl text-white">Campaña de Contenido <span className="text-white/30 font-light text-2xl">(1 mes)</span></h3>
+            </div>
+            <div className="grid md:grid-cols-3 gap-5 relative">
               {[
-                { tag: 'Main Event', title: 'Headliners Internacionales', desc: 'Referentes globales de la escena electrónica que liderarán la catarsis a bordo del Majestic.' },
-                { tag: 'Soporte & Transición', title: 'Talento Nacional Top', desc: 'Los artistas más consolidados del país encargados de mantener la energía durante el día y la noche.' },
-                { tag: 'Nuevas Promesas', title: 'Open Decks & Wellness', desc: 'Espacios para descubrir talentos emergentes y acompañar las sesiones de relajación matutinas.' },
+                { tag: 'Semanas 1 – 2', title: 'Pre-Evento', icon: <Globe className="w-6 h-6"/>,
+                  desc: 'Pauta digital segmentada por perfil de audiencia y playlists oficiales patrocinadas.' },
+                { tag: 'Días del Evento', title: 'Live-Action', icon: <Instagram className="w-6 h-6"/>,
+                  desc: 'Cobertura profesional en tiempo real en redes durante los 3 días del evento.' },
+                { tag: 'Semanas 3 – 4', title: 'Post-Evento', icon: <Video className="w-6 h-6"/>,
+                  desc: 'Sets grabados formato Boiler Room/Cercle + aftermovie cinematográfico.' },
               ].map((c, i) => (
                 <Reveal key={i} delay={i * 80}>
-                  <div className="p-7 rounded-2xl border border-white/8 bg-white/[0.02] hover:border-aira-lime/20 transition-all">
-                    <span className="font-mono-custom text-[9px] uppercase tracking-widest block mb-3" style={{ color: LIME }}>{c.tag}</span>
+                  <div className="p-7 rounded-2xl border border-white/8 bg-white/[0.02] hover:border-aira-lime/20 transition-all h-full">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-5" style={{ background: `${LIME}12`, color: LIME }}>
+                      {c.icon}
+                    </div>
+                    <span className="font-mono-custom text-[9px] uppercase tracking-widest block mb-2" style={{ color: LIME }}>{c.tag}</span>
                     <h4 className="font-display text-xl text-white mb-3">{c.title}</h4>
                     <p className="text-white/40 text-sm leading-relaxed">{c.desc}</p>
                   </div>
@@ -583,37 +530,7 @@ export default function Partners() {
               ))}
             </div>
             <div className="mt-5 p-5 rounded-2xl border text-center" style={{ background: `${LIME}08`, borderColor: `${LIME}20` }}>
-              <p className="text-sm italic" style={{ color: `${LIME}cc` }}>Nota Estratégica: El cartel completo de artistas se revelará de manera progresiva en nuestras fases de campaña.</p>
-            </div>
-          </Reveal>
-
-          {/* Aliados */}
-          <Reveal>
-            <div className="flex items-center gap-3 mb-8">
-              <Star className="w-5 h-5" style={{ color: LIME }}/>
-              <h3 className="font-display text-3xl text-white">Red de Aliados Confirmados</h3>
-            </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <AllyGroup category="Institucional & Base" items={[
-                { name: 'Alcaldía de El Peñol' },
-                { name: 'Joinn Houtel', link: 'https://www.instagram.com/joinn_houtel/', img: 'https://i.imgur.com/ITrRi84.jpeg' },
-              ]}/>
-              <AllyGroup category="Promotores & Producción" items={[
-                { name: 'Aphasia Collective',  link: 'https://www.instagram.com/aphasia.col/',    img: '/dj-1.jpg' },
-                { name: 'Real Salsa Vibes',    link: 'https://www.instagram.com/realsalsavibes/', img: '/crowd-1.jpg' },
-                { name: 'In House Production', link: 'https://www.instagram.com/djfrann75/',      img: '/dj-console.jpg' },
-              ]}/>
-              <AllyGroup category="Sellos & Estudios" items={[
-                { name: 'Isiday Music',     link: 'https://www.instagram.com/isiday_music/',  img: '/main-stage.jpg' },
-                { name: 'Club Sonica',      link: 'https://www.instagram.com/clubsonica/',    img: '/stage-1.jpg' },
-                { name: 'Japi' },
-                { name: 'Yin Yang Studios', link: 'https://www.instagram.com/yinyangcol/',   img: '/dj-portrait.jpg' },
-              ]}/>
-              <AllyGroup category="Media & Turismo" items={[
-                { name: 'Iwana Travel',      link: 'https://www.instagram.com/iwana.travel/',     img: '/yacht-party.jpg' },
-                { name: 'El de los Planes',  link: 'https://www.instagram.com/eldelosplanes/',    img: '/beach-party.jpg' },
-                { name: 'REC Emisora',       link: 'https://www.instagram.com/recemisora/',       img: '/celebration.jpg' },
-              ]}/>
+              <p className="text-sm italic" style={{ color: `${LIME}cc` }}>Métricas de alcance de campañas anteriores disponibles bajo solicitud.</p>
             </div>
           </Reveal>
         </div>
@@ -675,13 +592,13 @@ export default function Partners() {
 
               <div className="grid md:grid-cols-2 gap-8 mb-10">
                 <p className="text-white/50 text-base leading-relaxed">
-                  El patrocinio no se limita a los 3 días del evento. Nuestro plan de media garantiza una presencia sostenida a través de una campaña en tres fases: <strong className="text-white">3 meses de expectativa previa, cobertura en tiempo real, y 1 mes de amplificación posterior.</strong>
+                  El patrocinio no se limita a los 3 días del evento. Nuestro plan de media garantiza una presencia sostenida a través de una campaña de <strong className="text-white">1 mes</strong>, distribuida en tres fases: expectativa previa, cobertura en tiempo real, y amplificación posterior.
                 </p>
                 <div className="space-y-3">
                   {[
-                    { label: 'Fase 1 — Pre', value: '3 Meses', active: false },
+                    { label: 'Fase 1 — Pre', value: '2 Semanas', active: false },
                     { label: 'Fase 2 — Live', value: '3 Días', active: true },
-                    { label: 'Fase 3 — Post', value: '1 Mes', active: false },
+                    { label: 'Fase 3 — Post', value: '2 Semanas', active: false },
                   ].map((f, i) => (
                     <div key={i} className="flex justify-between items-center py-2 border-b border-white/8">
                       <span className="font-mono-custom text-[10px] uppercase tracking-widest text-white/40">{f.label}</span>
