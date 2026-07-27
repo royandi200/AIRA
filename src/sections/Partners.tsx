@@ -8,7 +8,10 @@ import {
 } from 'lucide-react';
 
 // ─── Global styles
-const GLOBAL_STYLE = '@keyframes fadeIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }';
+const GLOBAL_STYLE = `
+@keyframes fadeIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+@keyframes fadeInUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+`;
 
 // ─── Brand colors ──────────────────────────────────────────────────────────────
 const LIME  = '#e1fe52';
@@ -125,28 +128,46 @@ function Label({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ─── Image hover tooltip ─────────────────────────────────────────────────────
+// ─── Detect touch device ──────────────────────────────────────────────────────
+function isTouchDevice() {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+}
+
+// ─── Image hover tooltip (desktop) + tap strip (mobile) ──────────────────────
 function ImageHover({ src, children, href, className = '' }: {
   src: string; children: React.ReactNode; href?: string; className?: string;
 }) {
-  const [hov, setHov] = useState(false);
-  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [hov, setHov]         = useState(false);
+  const [pos, setPos]         = useState({ x: 0, y: 0 });
+  const [tapped, setTapped]   = useState(false);
+  const dismissRef            = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTouch               = isTouchDevice();
   const W = 380, H = 240;
+
+  // Clean up dismiss timer on unmount
+  useEffect(() => () => { if (dismissRef.current) clearTimeout(dismissRef.current); }, []);
 
   const onMove = (e: React.MouseEvent) => {
     setPos({ x: e.clientX, y: e.clientY });
   };
 
-  // Clamp to viewport
-  const vw = typeof window !== 'undefined' ? window.innerWidth  : 1200;
-  const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+  // ── Mobile tap handler ────────────────────────────────────────────────────
+  const handleTap = (e: React.TouchEvent) => {
+    if (!isTouch) return;
+    e.preventDefault(); // prevent ghost click
+    setTapped(true);
+    if (dismissRef.current) clearTimeout(dismissRef.current);
+    dismissRef.current = setTimeout(() => setTapped(false), 2000);
+  };
+
+  // ── Desktop tooltip (portal, absolute positioned) ────────────────────────
+  const vw   = typeof window !== 'undefined' ? window.innerWidth  : 1200;
+  const vh   = typeof window !== 'undefined' ? window.innerHeight : 800;
   const left = pos.x + W + 20 > vw ? pos.x - W - 12 : pos.x + 12;
-  const top  = pos.y + H / 2     > vh ? vh - H - 8   : Math.max(8, pos.y - H / 2);
+  const top  = pos.y + H / 2  > vh ? vh - H - 8      : Math.max(8, pos.y - H / 2);
 
-  const Tag = href ? 'a' : 'div';
-  const tagProps = href ? { href, target: '_blank', rel: 'noopener noreferrer' } : {};
-
-  const tooltip = hov ? createPortal(
+  const desktopTooltip = (!isTouch && hov) ? createPortal(
     <div className="pointer-events-none rounded-2xl overflow-hidden shadow-2xl"
       style={{
         position: 'fixed', left, top,
@@ -161,13 +182,58 @@ function ImageHover({ src, children, href, className = '' }: {
     document.body
   ) : null;
 
+  // ── Mobile bottom strip (inline, below children) ─────────────────────────
+  const mobileStrip = (isTouch && tapped) ? (
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: 140,
+        borderRadius: '0 0 16px 16px',
+        overflow: 'hidden',
+        marginTop: 4,
+        border: '1px solid rgba(225,254,82,0.2)',
+        animation: 'fadeInUp .2s ease',
+      }}>
+      <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(3,6,18,0.55), transparent)' }}/>
+    </div>
+  ) : null;
+
+  // ── Mobile hint (visible when not tapped) ────────────────────────────────
+  const mobileHint = isTouch ? (
+    <p style={{
+      fontSize: 10,
+      color: 'rgba(225,254,82,0.45)',
+      textAlign: 'center',
+      marginTop: 4,
+      letterSpacing: '0.08em',
+      fontFamily: 'monospace',
+      textTransform: 'uppercase',
+      opacity: tapped ? 0 : 1,
+      transition: 'opacity .2s',
+      pointerEvents: 'none',
+    }}>Toca para ver imagen</p>
+  ) : null;
+
+  const Tag = href ? 'a' : 'div';
+  const tagProps = href
+    ? { href, target: '_blank', rel: 'noopener noreferrer' }
+    : {};
+
   return (
-    <Tag {...tagProps as any} className={`cursor-pointer ${className}`}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      onMouseMove={onMove}>
+    <Tag
+      {...tagProps as any}
+      className={`cursor-pointer ${className}`}
+      onMouseEnter={() => { if (!isTouch) setHov(true); }}
+      onMouseLeave={() => { if (!isTouch) setHov(false); }}
+      onMouseMove={onMove}
+      onTouchEnd={handleTap}
+    >
       {children}
-      {tooltip}
+      {desktopTooltip}
+      {mobileStrip}
+      {mobileHint}
     </Tag>
   );
 }
@@ -297,7 +363,7 @@ export default function Partners() {
           ].map((c, i) => (
             <Reveal key={i} delay={i * 90}
               className="p-7 rounded-3xl border border-white/8 bg-white/[0.03] hover:border-aira-lime/30 transition-all duration-500">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-5" style={{ background: `${LIME}15`, color: LIME }}>
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5" style={{ background: `${LIME}15`, color: LIME }}>
                 {c.icon}
               </div>
               <h3 className="font-display text-xl text-white mb-2">{c.title}</h3>
