@@ -187,6 +187,14 @@ export default function MyApp() {
 
   return (
     <div className="myapp-root">
+      {/* Fondo — imagen de la sección activa, borrosa y oscurecida (igual que /mesa) */}
+      <div
+        key={`bg-${activeSection.id}`}
+        className="myapp-bg"
+        style={{ backgroundImage: `url(${activeSection.image})` }}
+      />
+      <div className="myapp-bg-scrim" />
+
       <div className="myapp-topbar">
         <img src="/AIRA BLANCO.png" alt="AIRA" className="myapp-logo" data-no-drag />
       </div>
