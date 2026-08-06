@@ -83,13 +83,14 @@ function CabanaMarker({ point, onSelect, selected }: {
   const groupRef = useRef<THREE.Group>(null);
   const px = (point.x * PLANE_W) / 2;
   const pz = (point.z * PLANE_D) / 2;
-  const scale = selected || point.isMine ? 1.35 : 1;
+  const MARKER_SCALE = 4; // tamaño de las casitas 3D — aumentado 4x
+  const scale = (selected || point.isMine ? 1.35 : 1) * MARKER_SCALE;
   const wallColor = point.isMine ? point.color : '#f4f1ea';
 
   useFrame(({ clock }) => {
     if (!groupRef.current) return;
     const bob = point.isMine ? Math.sin(clock.getElapsedTime() * 2.2) * 0.004 : 0;
-    groupRef.current.position.y = 0.028 + bob;
+    groupRef.current.position.y = bob; // el cuerpo ya toca el suelo en su espacio local
   });
 
   return (
@@ -137,7 +138,8 @@ function LandmarkMarker({ point, onSelect, selected }: {
   const groupRef = useRef<THREE.Group>(null);
   const px = (point.x * PLANE_W) / 2;
   const pz = (point.z * PLANE_D) / 2;
-  const height = 0.09;
+  const markerScale = (selected ? 1.25 : 1) * 4; // mismo factor x4 que las casitas
+  const height = 0.09 * markerScale; // el poste debe llegar hasta el suelo con el nuevo tamaño
 
   useFrame(({ clock }) => {
     if (!groupRef.current) return;
@@ -148,10 +150,10 @@ function LandmarkMarker({ point, onSelect, selected }: {
   return (
     <group position={[px, 0, pz]} onClick={(e) => { e.stopPropagation(); onSelect(point); }}>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.002, 0]}>
-        <circleGeometry args={[0.026, 16]} />
+        <circleGeometry args={[0.026 * (markerScale / 4), 16]} />
         <meshBasicMaterial color="#000000" transparent opacity={0.3} />
       </mesh>
-      <group ref={groupRef} scale={selected ? 1.25 : 1}>
+      <group ref={groupRef} scale={markerScale}>
         <mesh position={[0, -0.045, 0]}>
           <cylinderGeometry args={[0.003, 0.003, 0.09, 8]} />
           <meshStandardMaterial color="#ffffff" opacity={0.7} transparent />
