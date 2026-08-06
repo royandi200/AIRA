@@ -82,6 +82,7 @@ export default function MyApp() {
   const [dragging, setDragging]   = useState(false);
   const [snapping, setSnapping]   = useState(false);
 
+  const rootRef         = useRef<HTMLDivElement>(null);
   const ringRef        = useRef<HTMLDivElement>(null);
   const lastAngleRef    = useRef(0);
   const lastStepRef     = useRef(0);       // último "diente" cruzado, para no repetir tick
@@ -102,6 +103,17 @@ export default function MyApp() {
   };
 
   const activeSection = SECTIONS[activeIdx];
+
+  // Vibración visual sutil de pantalla — manipula el DOM directo (sin rAF/estado)
+  // para que se reinicie de forma confiable en cada diente, aunque se disparen
+  // varios seguidos mientras se arrastra rápido.
+  const pulseSettle = useCallback(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    el.classList.remove('is-settled');
+    void el.offsetWidth; // fuerza reflow para poder reiniciar la animación
+    el.classList.add('is-settled');
+  }, []);
 
   const settleToStep = useCallback((rot: number) => {
     // La sección activa es la más cercana a "arriba" (0°) del aro
@@ -145,6 +157,7 @@ export default function MyApp() {
         setActiveIdx(idx);
         tick(1);
         haptic(10);
+        pulseSettle();
       }
     };
 
@@ -155,6 +168,7 @@ export default function MyApp() {
       settleToStep(rotationRef.current);
       tick(1.4);
       haptic([0, 16, 40, 10]);
+      pulseSettle();
     };
 
     window.addEventListener('pointerdown', onDown, { passive: true });
@@ -167,13 +181,14 @@ export default function MyApp() {
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onUp);
     };
-  }, [settleToStep, tick, haptic]);
+  }, [settleToStep, tick, haptic, pulseSettle]);
 
   const goToIndex = (idx: number) => {
     if (idx === activeIdx) return;
     settleToStep(-idx * STEP);
     tick(1.4);
     haptic([0, 16, 40, 10]);
+    pulseSettle();
   };
 
   const sectionsWithAngle = useMemo(
@@ -186,7 +201,11 @@ export default function MyApp() {
   }, []);
 
   return (
-    <div className="myapp-root">
+    <div
+      ref={rootRef}
+      className="myapp-root"
+      onAnimationEnd={(e) => { if (e.animationName === 'myapp-settle-shake') rootRef.current?.classList.remove('is-settled'); }}
+    >
       {/* Fondo — imagen de la sección activa, borrosa y oscurecida (igual que /mesa) */}
       <div
         key={`bg-${activeSection.id}`}

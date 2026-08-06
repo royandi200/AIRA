@@ -14,6 +14,16 @@
   user-select: none;
   -webkit-user-select: none;
 }
+.myapp-root.is-settled {
+  animation: myapp-settle-shake 220ms ease;
+}
+@keyframes myapp-settle-shake {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(-1.5px, 1px); }
+  50%  { transform: translate(1.5px, -1px); }
+  75%  { transform: translate(-1px, 0); }
+  100% { transform: translate(0, 0); }
+}
 
 /* ── Fondo dinámico — imagen de la sección activa, borrosa (igual que /mesa) ── */
 .myapp-bg {
@@ -21,15 +31,15 @@
   inset: 0;
   background-size: cover;
   background-position: center;
-  filter: blur(28px) brightness(0.5) saturate(1.3);
-  transform: scale(1.15);
+  filter: blur(14px) brightness(0.85) saturate(1.4);
+  transform: scale(1.1);
   z-index: 0;
   animation: myapp-bg-fade 480ms ease;
 }
 .myapp-bg-scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 35%, rgba(0,0,0,0.75) 100%);
+  background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 35%, rgba(0,0,0,0.6) 100%);
   z-index: 1;
 }
 @keyframes myapp-bg-fade {
@@ -47,7 +57,8 @@
   position: relative;
 }
 .myapp-logo {
-  height: 64px;
+  height: 190px;
+  max-height: 24vh;
   width: auto;
   object-fit: contain;
   filter: drop-shadow(0 2px 14px rgba(0,0,0,0.6));
