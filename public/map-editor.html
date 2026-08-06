@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Editor de puntos — Mapa AIRA</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #0a0a0d;
+    color: #fff;
+    font-family: -apple-system, system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  header {
+    padding: 14px 18px;
+    background: #14141a;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  header h1 { font-size: 15px; margin: 0 0 4px; }
+  header p { font-size: 12px; color: rgba(255,255,255,0.5); margin: 0; }
+  .main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+  .img-wrap {
+    flex: 1;
+    overflow: auto;
+    position: relative;
+    background: #000;
+  }
+  .img-wrap img {
+    display: block;
+    width: 100%;
+    height: auto;
+    cursor: crosshair;
+    user-select: none;
+  }
+  .pin {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    margin: -14px 0 0 -7px;
+    border-radius: 50% 50% 50% 0;
+    background: #22c55e;
+    border: 2px solid #fff;
+    transform: rotate(-45deg);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+    pointer-events: none;
+  }
+  .pin-label {
+    position: absolute;
+    transform: translate(-50%, -100%);
+    margin-top: -18px;
+    background: rgba(0,0,0,0.75);
+    color: #fff;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .sidebar {
+    width: 340px;
+    flex-shrink: 0;
+    background: #101014;
+    border-left: 1px solid rgba(255,255,255,0.1);
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .sidebar h2 { font-size: 13px; margin: 0; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.05em; }
+  textarea {
+    width: 100%;
+    height: 240px;
+    background: #0a0a0d;
+    color: #7ee787;
+    font-family: 'Consolas', monospace;
+    font-size: 11.5px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 10px;
+    resize: vertical;
+  }
+  button {
+    background: #22c55e;
+    color: #06110c;
+    border: none;
+    border-radius: 8px;
+    padding: 10px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  button.secondary {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+  }
+  .list { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+  .list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.05);
+    padding: 6px 8px;
+    border-radius: 6px;
+  }
+  .list-item button { padding: 3px 8px; font-size: 11px; background: rgba(239,68,68,0.2); color: #fca5a5; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🗺️ Editor de puntos — venue-map.jpg</h1>
+  <p>Haz clic sobre la imagen en cada punto (entrada, cabañas, escenario, etc). Se genera el código listo para pegar en <code>MyAppMap.tsx</code>.</p>
+</header>
+<div class="main">
+  <div class="img-wrap" id="imgWrap">
+    <img id="img" src="/venue-map.jpg" alt="venue" />
+  </div>
+  <div class="sidebar">
+    <h2>Puntos agregados</h2>
+    <div class="list" id="list"></div>
+    <h2>Código generado</h2>
+    <textarea id="output" readonly placeholder="Haz clic en la imagen para empezar..."></textarea>
+    <button id="copyBtn">📋 Copiar código</button>
+    <button id="clearBtn" class="secondary">Borrar todo</button>
+  </div>
+</div>
+
+<script>
+  const img = document.getElementById('img');
+  const imgWrap = document.getElementById('imgWrap');
+  const output = document.getElementById('output');
+  const list = document.getElementById('list');
+  const colors = ['#38bdf8', '#a855f7', '#facc15', '#22c55e', '#ef4444', '#ec4899', '#f97316', '#10b981'];
+  let points = [];
+
+  function slugify(s) {
+    return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  }
+
+  function render() {
+    document.querySelectorAll('.pin, .pin-label').forEach(el => el.remove());
+    list.innerHTML = '';
+
+    points.forEach((p, i) => {
+      const pin = document.createElement('div');
+      pin.className = 'pin';
+      pin.style.left = p.px + 'px';
+      pin.style.top = p.py + 'px';
+      pin.style.background = p.color;
+      imgWrap.appendChild(pin);
+
+      const lbl = document.createElement('div');
+      lbl.className = 'pin-label';
+      lbl.style.left = p.px + 'px';
+      lbl.style.top = p.py + 'px';
+      lbl.textContent = p.emoji + ' ' + p.label;
+      imgWrap.appendChild(lbl);
+
+      const row = document.createElement('div');
+      row.className = 'list-item';
+      row.innerHTML = '<span>' + p.emoji + ' ' + p.label + (p.isMine ? ' (Tú)' : '') + '</span>';
+      const del = document.createElement('button');
+      del.textContent = '✕';
+      del.onclick = () => { points.splice(i, 1); render(); };
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+
+    const code = points.map(p =>
+      `  { id: '${p.id}', label: '${p.label}', emoji: '${p.emoji}', x: ${p.x}, z: ${p.z}, color: '${p.color}'${p.isMine ? ', isMine: true' : ''} },`
+    ).join('\n');
+    output.value = points.length
+      ? 'const POINTS: MapPoint[] = [\n' + code + '\n];'
+      : '';
+  }
+
+  img.addEventListener('click', (e) => {
+    const rect = img.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+
+    const label = prompt('Nombre del punto (ej. Entrada, Cabaña 3, Escenario):');
+    if (!label) return;
+    const emoji = prompt('Emoji (ej. 🚪 🏠 🎧 👑 🚻):', '📍') || '📍';
+    const isMine = confirm('¿Es la cabaña del asistente actual (se resalta con glow)?');
+
+    // Normalizado igual que en MyAppMap.tsx: ((px/dim)*2-1) * 0.9
+    const nx = ((px / rect.width) * 2 - 1) * 0.9;
+    const nz = ((py / rect.height) * 2 - 1) * 0.9;
+
+    points.push({
+      id: slugify(label) + '-' + Date.now().toString(36).slice(-4),
+      label, emoji, isMine,
+      x: nx.toFixed(3), z: nz.toFixed(3),
+      color: colors[points.length % colors.length],
+      px, py,
+    });
+    render();
+  });
+
+  document.getElementById('copyBtn').onclick = () => {
+    output.select();
+    document.execCommand('copy');
+    navigator.clipboard?.writeText(output.value).catch(() => {});
+    alert('Código copiado — pégalo en el chat o directamente en MyAppMap.tsx');
+  };
+  document.getElementById('clearBtn').onclick = () => { points = []; render(); };
+</script>
+</body>
+</html>
