@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import MyAppMap from './MyAppMap';
 
 /**
  * Contenido de cada sección de /myapp.
@@ -157,6 +158,7 @@ export function renderSectionContent(section: CompassSection) {
   switch (section.id) {
     case 'pasaporte': return <PasaportePanel />;
     case 'gastos':    return <GastosPanel />;
+    case 'mapa':      return <MyAppMap />;
     default:          return <ComingSoonPanel section={section} />;
   }
 }
