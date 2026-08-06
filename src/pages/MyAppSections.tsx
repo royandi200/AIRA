@@ -1,17 +1,20 @@
 import { useState } from 'react';
 import {
   Fingerprint, Wallet, Headphones, Radar, Aperture, Gem, Bus, ScanFace,
+  X, CheckCircle2, MapPinned, ArrowRight, Bell, LogOut, Sparkles, ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
 import MyAppMap from './MyAppMap';
 
 /**
  * Contenido de cada sección de /myapp.
- * Gastos y Pasaporte ya tienen funcionalidad real (local, sin backend aún).
- * El resto son placeholders listos para irse llenando.
+ * Todo el contenido es ficticio por ahora (demo) — Gastos y Pasaporte ya
+ * tienen interacción real (local, sin backend aún). El resto simula datos
+ * reales para poder revisar el look & feel completo antes de conectarlo.
  *
- * Los íconos son de línea (lucide-react) en vez de emoji, para mantener
- * el estilo tecnológico/cyberpunk del resto de AIRA.
+ * Estilo alineado con el sitio principal de AIRA (viveaira.live): paleta
+ * aira-lime (#e1fe52) como acento de marca transversal, JetBrains Mono
+ * para números/horas, kickers uppercase con tracking amplio.
  */
 
 export interface CompassSection {
@@ -28,7 +31,7 @@ export const SECTIONS: CompassSection[] = [
   { id: 'lineup',     label: 'Line-Up',      Icon: Headphones,  image: '/dj-console.jpg',      color: '#a855f7' },
   { id: 'mapa',       label: 'Mapa',         Icon: Radar,       image: '/venue-map.jpg',       color: '#38bdf8' },
   { id: 'galeria',    label: 'Galería',      Icon: Aperture,    image: '/crowd-1.jpg',         color: '#f97316' },
-  { id: 'vip',        label: 'VIP',          Icon: Gem,         image: '/vip-area.jpg',        color: '#facc15' },
+  { id: 'vip',        label: 'VIP',          Icon: Gem,         image: '/vip-area.jpg',        color: '#e1fe52' },
   { id: 'transporte', label: 'Transporte',   Icon: Bus,         image: '/yacht-party.jpg',     color: '#ef4444' },
   { id: 'perfil',     label: 'Mi Perfil',    Icon: ScanFace,    image: '/dj-portrait.jpg',     color: '#ec4899' },
 ];
@@ -152,6 +155,229 @@ function GastosPanel() {
   );
 }
 
+// ── Line-Up ─────────────────────────────────────────────────────────────────
+interface LineupSet { time: string; artist: string; stage: string; headliner?: boolean }
+interface LineupDay { id: string; label: string; sub: string; date: string; sets: LineupSet[] }
+
+const LINEUP_DAYS: LineupDay[] = [
+  {
+    id: 'day1', label: 'DÍA 1', sub: 'After Fiesta de Yates', date: 'VIE 21 NOV',
+    sets: [
+      { time: '14:00', artist: 'NOVA SORA',           stage: 'Muelle Principal' },
+      { time: '16:30', artist: 'KAIROS B2B ECLYPS',   stage: 'Muelle Principal' },
+      { time: '19:00', artist: 'VELVETRA',            stage: 'Cubierta Norte', headliner: true },
+      { time: '21:30', artist: 'DJ AXIOM',            stage: 'Cubierta Norte' },
+    ],
+  },
+  {
+    id: 'day2', label: 'DÍA 2', sub: 'Fiesta Majestic & Stage Joinn', date: 'SÁB 22 NOV',
+    sets: [
+      { time: '15:00', artist: 'LUNA NOX',             stage: 'Stage Joinn' },
+      { time: '17:30', artist: 'REVLON DEEP',          stage: 'Stage Joinn' },
+      { time: '20:00', artist: 'AXEL PRIME',           stage: 'Majestic Deck', headliner: true },
+      { time: '22:30', artist: 'KAIROS',               stage: 'Majestic Deck' },
+      { time: '00:30', artist: 'NOVA SORA · Closing',  stage: 'Majestic Deck' },
+    ],
+  },
+  {
+    id: 'day3', label: 'DÍA 3', sub: 'Open Deck', date: 'DOM 23 NOV',
+    sets: [
+      { time: '13:00', artist: 'ECLYPS',               stage: 'Open Deck' },
+      { time: '15:30', artist: 'VELVETRA B2B AXIOM',   stage: 'Open Deck', headliner: true },
+      { time: '18:00', artist: 'LUNA NOX · Sunset Set', stage: 'Open Deck' },
+    ],
+  },
+];
+
+function LineupPanel() {
+  const [dayIdx, setDayIdx] = useState(0);
+  const day = LINEUP_DAYS[dayIdx];
+
+  return (
+    <div className="lineup-panel">
+      <div className="lineup-daytabs">
+        {LINEUP_DAYS.map((d, i) => (
+          <button
+            key={d.id}
+            className={`lineup-daytab ${i === dayIdx ? 'is-active' : ''}`}
+            onClick={() => setDayIdx(i)}
+          >
+            {d.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="lineup-day-header">
+        <span className="lineup-day-sub">{day.sub}</span>
+        <span className="lineup-day-date">{day.date}</span>
+      </div>
+
+      <div className="lineup-timeline">
+        {day.sets.map((s, i) => (
+          <div key={i} className={`lineup-set ${s.headliner ? 'is-headliner' : ''}`}>
+            <span className="lineup-set-time">{s.time}</span>
+            <div className="lineup-set-dot" />
+            <div className="lineup-set-body">
+              <span className="lineup-set-artist">{s.artist}</span>
+              <span className="lineup-set-stage">{s.stage}</span>
+            </div>
+            {s.headliner && <span className="lineup-set-badge">HEADLINER</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Galería ──────────────────────────────────────────────────────────────────
+const GALLERY_ITEMS = [
+  { src: '/crowd-1.jpg',    caption: 'La marea AIRA' },
+  { src: '/dj-1.jpg',       caption: 'Cabina en llamas' },
+  { src: '/stage-1.jpg',    caption: 'Main Stage · Noche 1' },
+  { src: '/dancers.jpg',    caption: 'Pista sin freno' },
+  { src: '/bar.jpg',        caption: 'Barra flotante' },
+  { src: '/celebration.jpg',caption: 'Conteo regresivo' },
+  { src: '/sunset.jpg',     caption: 'Atardecer en el embalse' },
+  { src: '/vinyl.jpg',      caption: 'Vinilos & bajos' },
+  { src: '/dj-female.jpg',  caption: 'Set al atardecer' },
+];
+
+function GaleriaPanel() {
+  const [open, setOpen] = useState<number | null>(null);
+
+  return (
+    <div className="galeria-panel">
+      <p className="galeria-hint">Toca una foto para verla completa</p>
+      <div className="galeria-grid">
+        {GALLERY_ITEMS.map((g, i) => (
+          <button key={g.src} className="galeria-thumb" onClick={() => setOpen(i)}>
+            <img src={g.src} alt={g.caption} loading="lazy" />
+          </button>
+        ))}
+      </div>
+
+      {open !== null && (
+        <div className="galeria-lightbox" onClick={() => setOpen(null)}>
+          <button className="galeria-lightbox-close" onClick={() => setOpen(null)} aria-label="Cerrar">
+            <X size={20} />
+          </button>
+          <img src={GALLERY_ITEMS[open].src} alt={GALLERY_ITEMS[open].caption} />
+          <p className="galeria-lightbox-caption">{GALLERY_ITEMS[open].caption}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── VIP ──────────────────────────────────────────────────────────────────────
+const VIP_PERKS = [
+  'Acceso a zona VIP elevada frente al escenario principal',
+  'Barra premium ilimitada — cócteles de autor',
+  'Servicio de meseros dedicado',
+  'Check-in prioritario, sin filas',
+  'Lounge privado con vista al embalse',
+  'Kit de bienvenida AIRA',
+];
+
+function VipPanel() {
+  return (
+    <div className="vip-panel">
+      <div className="vip-hero">
+        <Sparkles className="vip-hero-icon" size={22} />
+        <span className="vip-hero-kicker">Tu paquete</span>
+        <span className="vip-hero-title">VIP Deluxe</span>
+      </div>
+
+      <div className="vip-perks">
+        {VIP_PERKS.map((p) => (
+          <div key={p} className="vip-perk">
+            <CheckCircle2 size={17} className="vip-perk-check" />
+            <span>{p}</span>
+          </div>
+        ))}
+      </div>
+
+      <button className="vip-cta">
+        Habla con tu concierge <ChevronRight size={16} />
+      </button>
+    </div>
+  );
+}
+
+// ── Transporte ───────────────────────────────────────────────────────────────
+const ROUTES = [
+  { id: 'r1', from: 'Terminal Norte, Medellín',    to: 'Joinn Houtel, Guatapé',    depart: 'Vie 10:00 AM', duration: '1h 45min', seats: 12 },
+  { id: 'r2', from: 'C.C. Santafé, Medellín',       to: 'Joinn Houtel, Guatapé',    depart: 'Vie 12:30 PM', duration: '1h 30min', seats: 4  },
+  { id: 'r3', from: 'Joinn Houtel, Guatapé',        to: 'Terminal Norte, Medellín', depart: 'Dom 8:00 AM',  duration: '1h 45min', seats: 20 },
+];
+
+function TransportePanel() {
+  return (
+    <div className="transporte-panel">
+      <p className="transporte-hint">Rutas incluidas en tu paquete de transporte</p>
+      {ROUTES.map(r => (
+        <div key={r.id} className="transporte-card">
+          <div className="transporte-route">
+            <span className="transporte-point">{r.from}</span>
+            <ArrowRight size={14} className="transporte-arrow" />
+            <span className="transporte-point">{r.to}</span>
+          </div>
+          <div className="transporte-meta">
+            <span className="transporte-time">{r.depart}</span>
+            <span className="transporte-dur">{r.duration}</span>
+            <span className={`transporte-seats ${r.seats <= 5 ? 'is-low' : ''}`}>
+              {r.seats} cupos
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Mi Perfil ────────────────────────────────────────────────────────────────
+function PerfilPanel() {
+  return (
+    <div className="perfil-panel">
+      <div className="perfil-avatar-row">
+        <div className="perfil-avatar">AI</div>
+        <div className="perfil-id">
+          <span className="perfil-name">Invitado AIRA</span>
+          <span className="perfil-ticket-badge">Pase 3 Días · 2ª Etapa</span>
+        </div>
+      </div>
+
+      <div className="perfil-stats">
+        <div className="perfil-stat">
+          <MapPinned size={16} className="perfil-stat-icon" />
+          <span className="perfil-stat-label">Cabaña asignada</span>
+          <span className="perfil-stat-value">Cabaña 9</span>
+        </div>
+        <div className="perfil-stat">
+          <Bell size={16} className="perfil-stat-icon" />
+          <span className="perfil-stat-label">Notificaciones</span>
+          <span className="perfil-stat-value">Activas</span>
+        </div>
+      </div>
+
+      <div className="perfil-menu">
+        <button className="perfil-menu-item">
+          <span>Editar datos</span>
+          <ChevronRight size={16} />
+        </button>
+        <button className="perfil-menu-item">
+          <span>Historial de pedidos</span>
+          <ChevronRight size={16} />
+        </button>
+        <button className="perfil-menu-item perfil-menu-item--danger">
+          <LogOut size={16} />
+          <span>Cerrar sesión</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ComingSoonPanel({ section }: { section: CompassSection }) {
   const { Icon } = section;
   return (
@@ -164,9 +390,14 @@ function ComingSoonPanel({ section }: { section: CompassSection }) {
 
 export function renderSectionContent(section: CompassSection) {
   switch (section.id) {
-    case 'pasaporte': return <PasaportePanel />;
-    case 'gastos':    return <GastosPanel />;
-    case 'mapa':      return <MyAppMap />;
-    default:          return <ComingSoonPanel section={section} />;
+    case 'pasaporte':  return <PasaportePanel />;
+    case 'gastos':     return <GastosPanel />;
+    case 'mapa':       return <MyAppMap />;
+    case 'lineup':     return <LineupPanel />;
+    case 'galeria':    return <GaleriaPanel />;
+    case 'vip':        return <VipPanel />;
+    case 'transporte': return <TransportePanel />;
+    case 'perfil':     return <PerfilPanel />;
+    default:           return <ComingSoonPanel section={section} />;
   }
 }
