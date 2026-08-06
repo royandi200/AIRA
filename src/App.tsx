@@ -15,6 +15,7 @@ import MisReservas from './sections/MisReservas';
 import AddOnModal  from './sections/AddOnModal';
 import PoliticasModal from './sections/PoliticasModal';
 import Promotor from './pages/Promotor';
+import MyApp from './pages/MyApp';
 
 function App() {
   useLenis();
@@ -141,6 +142,7 @@ function App() {
   }, [muted]);
 
   if (window.location.pathname === '/promotor') return <Promotor />
+  if (window.location.pathname === '/myapp') return <MyApp />
 
   return (
     <main className="relative w-full min-h-screen bg-void-black overflow-x-hidden">
