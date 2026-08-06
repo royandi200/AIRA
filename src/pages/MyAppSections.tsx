@@ -1,29 +1,36 @@
 import { useState } from 'react';
+import {
+  Fingerprint, Wallet, Headphones, Radar, Aperture, Gem, Bus, ScanFace,
+  type LucideIcon,
+} from 'lucide-react';
 import MyAppMap from './MyAppMap';
 
 /**
  * Contenido de cada sección de /myapp.
  * Gastos y Pasaporte ya tienen funcionalidad real (local, sin backend aún).
  * El resto son placeholders listos para irse llenando.
+ *
+ * Los íconos son de línea (lucide-react) en vez de emoji, para mantener
+ * el estilo tecnológico/cyberpunk del resto de AIRA.
  */
 
 export interface CompassSection {
   id: string;
   label: string;
-  emoji: string;
+  Icon: LucideIcon;
   image: string;
   color: string; // acento por sección
 }
 
 export const SECTIONS: CompassSection[] = [
-  { id: 'pasaporte',  label: 'Mi Pasaporte', emoji: '🛂', image: '/AIRA.png',           color: '#22c55e' },
-  { id: 'gastos',     label: 'Tus Gastos',   emoji: '💸', image: '/vinyl.jpg',           color: '#10b981' },
-  { id: 'lineup',     label: 'Line-Up',      emoji: '🎧', image: '/dj-console.jpg',      color: '#a855f7' },
-  { id: 'mapa',       label: 'Mapa',         emoji: '🗺️', image: '/venue-map.jpg',       color: '#38bdf8' },
-  { id: 'galeria',    label: 'Galería',      emoji: '📸', image: '/crowd-1.jpg',         color: '#f97316' },
-  { id: 'vip',        label: 'VIP',          emoji: '👑', image: '/vip-area.jpg',        color: '#facc15' },
-  { id: 'transporte', label: 'Transporte',   emoji: '🚌', image: '/yacht-party.jpg',     color: '#ef4444' },
-  { id: 'perfil',     label: 'Mi Perfil',    emoji: '👤', image: '/dj-portrait.jpg',     color: '#ec4899' },
+  { id: 'pasaporte',  label: 'Mi Pasaporte', Icon: Fingerprint, image: '/AIRA.png',           color: '#22c55e' },
+  { id: 'gastos',     label: 'Tus Gastos',   Icon: Wallet,      image: '/vinyl.jpg',           color: '#10b981' },
+  { id: 'lineup',     label: 'Line-Up',      Icon: Headphones,  image: '/dj-console.jpg',      color: '#a855f7' },
+  { id: 'mapa',       label: 'Mapa',         Icon: Radar,       image: '/venue-map.jpg',       color: '#38bdf8' },
+  { id: 'galeria',    label: 'Galería',      Icon: Aperture,    image: '/crowd-1.jpg',         color: '#f97316' },
+  { id: 'vip',        label: 'VIP',          Icon: Gem,         image: '/vip-area.jpg',        color: '#facc15' },
+  { id: 'transporte', label: 'Transporte',   Icon: Bus,         image: '/yacht-party.jpg',     color: '#ef4444' },
+  { id: 'perfil',     label: 'Mi Perfil',    Icon: ScanFace,    image: '/dj-portrait.jpg',     color: '#ec4899' },
 ];
 
 /** Placeholder visual tipo QR — se reemplaza por el QR real (orders.qr_token) cuando se conecte al backend */
@@ -146,9 +153,10 @@ function GastosPanel() {
 }
 
 function ComingSoonPanel({ section }: { section: CompassSection }) {
+  const { Icon } = section;
   return (
     <div className="soon-panel">
-      <span className="soon-emoji">{section.emoji}</span>
+      <Icon className="soon-icon" style={{ color: section.color }} strokeWidth={1.4} />
       <p className="soon-text">Estamos preparando <strong>{section.label}</strong> — vuelve pronto.</p>
     </div>
   );

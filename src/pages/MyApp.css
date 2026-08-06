@@ -134,9 +134,14 @@
   background: color-mix(in srgb, var(--accent) 22%, #14141a);
   box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 55%, transparent);
 }
-.myapp-tooth-emoji {
-  font-size: 22px;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+.myapp-tooth-icon {
+  color: rgba(255,255,255,0.55);
+  transition: color 200ms ease, filter 200ms ease;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
+}
+.myapp-tooth.is-active .myapp-tooth-icon {
+  color: var(--accent);
+  filter: drop-shadow(0 0 6px var(--accent));
 }
 
 /* ── Núcleo fijo (no rota con el aro) — imagen de la sección activa ─────── */
@@ -224,7 +229,7 @@
   border: 1px solid rgba(255,255,255,0.12);
   backdrop-filter: blur(10px);
 }
-.myapp-preview-emoji { font-size: 18px; }
+.myapp-preview-icon { color: rgba(255,255,255,0.85); flex-shrink: 0; }
 .myapp-preview-text {
   font-weight: 700;
   font-size: 15px;
@@ -543,7 +548,7 @@
   text-align: center;
   padding: 0 20px;
 }
-.soon-emoji { font-size: 48px; }
+.soon-icon { width: 46px; height: 46px; filter: drop-shadow(0 0 10px currentColor); opacity: 0.9; }
 .soon-text {
   color: rgba(255,255,255,0.7);
   font-size: 15px;

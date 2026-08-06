@@ -107,7 +107,8 @@ function SectionSheet({ section, origin, onClose }: {
       <div className="myapp-sheet-header">
         <button className="myapp-sheet-close" onClick={handleClose} aria-label="Cerrar">✕</button>
         <span className="myapp-sheet-title">
-          <span>{section.emoji}</span> {section.label}
+          <section.Icon size={19} strokeWidth={1.6} />
+          {section.label}
         </span>
       </div>
 
@@ -303,7 +304,7 @@ export default function MyApp() {
               onClick={(e) => { e.stopPropagation(); goToIndex(i); }}
               aria-label={s.label}
             >
-              <span className="myapp-tooth-emoji">{s.emoji}</span>
+              <s.Icon className="myapp-tooth-icon" size={20} strokeWidth={1.6} />
             </button>
           ))}
         </div>
@@ -330,7 +331,7 @@ export default function MyApp() {
 
       <div className="myapp-footer">
         <div className="myapp-preview-label">
-          <span className="myapp-preview-emoji">{activeSection.emoji}</span>
+          <activeSection.Icon className="myapp-preview-icon" size={16} strokeWidth={1.6} />
           <span className="myapp-preview-text">{activeSection.label}</span>
         </div>
         <div className="myapp-hint">Toca el círculo para abrir · Desliza para girar</div>
