@@ -120,7 +120,7 @@ export default function MyApp() {
 
   const rootRef         = useRef<HTMLDivElement>(null);
   const ringRef          = useRef<HTMLDivElement>(null);
-  const circleRef         = useRef<HTMLDivElement>(null);
+  const circleRef         = useRef<HTMLButtonElement>(null);
   const lastAngleRef    = useRef(0);
   const lastStepRef     = useRef(0);       // último "diente" cruzado, para no repetir tick
   const pointerIdRef    = useRef<number | null>(null);
