@@ -17,14 +17,15 @@ interface MapPoint {
   z: number; // -1..1 sobre el plano
   color: string;
   isMine?: boolean; // resalta la cabaña del asistente actual
+  kind?: 'cabana' | 'landmark'; // cambia el tipo de marcador 3D
 }
 
 // Puntos generales del venue — coordenadas aproximadas, pendientes de
 // ubicar con /map-editor.html igual que se hizo con las cabañas.
 const LANDMARKS: MapPoint[] = [
-  { id: 'entrada',   label: 'Entrada',   emoji: '🚪', x: 0.75,  z: -0.21, color: '#38bdf8' },
-  { id: 'escenario', label: 'Escenario', emoji: '🎧', x: -0.05, z: -0.10, color: '#a855f7' },
-  { id: 'vip',       label: 'Zona VIP',  emoji: '👑', x: 0.26,  z: 0.16,  color: '#facc15' },
+  { id: 'entrada',   label: 'Entrada',   emoji: '🚪', x: 0.75,  z: -0.21, color: '#38bdf8', kind: 'landmark' },
+  { id: 'escenario', label: 'Escenario', emoji: '🎧', x: -0.05, z: -0.10, color: '#a855f7', kind: 'landmark' },
+  { id: 'vip',       label: 'Zona VIP',  emoji: '👑', x: 0.26,  z: 0.16,  color: '#facc15', kind: 'landmark' },
 ];
 
 // Las 19 cabañas reales del venue — ubicadas con /map-editor.html
@@ -55,9 +56,10 @@ const CABANAS: MapPoint[] = [
 // Demo: resalta una cabaña como "la tuya" mientras se conecta el dato real
 const DEMO_MINE_ID = 'cabana-9';
 
-const POINTS: MapPoint[] = [...LANDMARKS, ...CABANAS].map(p =>
-  p.id === DEMO_MINE_ID ? { ...p, isMine: true } : p
-);
+const POINTS: MapPoint[] = [
+  ...LANDMARKS,
+  ...CABANAS.map(p => ({ ...p, kind: 'cabana' as const })),
+].map(p => (p.id === DEMO_MINE_ID ? { ...p, isMine: true } : p));
 
 const PLANE_W = 6;
 const PLANE_D = 4.2;
@@ -72,7 +74,8 @@ function Terrain({ image }: { image: string }) {
   );
 }
 
-function Pin({ point, onSelect, selected }: {
+/** Casita 3D — usada para las cabañas. Pequeña, pegada al suelo. */
+function CabanaMarker({ point, onSelect, selected }: {
   point: MapPoint;
   onSelect: (p: MapPoint) => void;
   selected: boolean;
@@ -80,39 +83,83 @@ function Pin({ point, onSelect, selected }: {
   const groupRef = useRef<THREE.Group>(null);
   const px = (point.x * PLANE_W) / 2;
   const pz = (point.z * PLANE_D) / 2;
-  const height = point.isMine ? 1.1 : 0.8;
+  const scale = selected || point.isMine ? 1.35 : 1;
+  const wallColor = point.isMine ? point.color : '#f4f1ea';
 
   useFrame(({ clock }) => {
     if (!groupRef.current) return;
-    const bob = Math.sin(clock.getElapsedTime() * 2 + px) * 0.04;
-    groupRef.current.position.y = height + bob + (selected ? 0.12 : 0);
+    const bob = point.isMine ? Math.sin(clock.getElapsedTime() * 2.2) * 0.004 : 0;
+    groupRef.current.position.y = 0.028 + bob;
   });
 
   return (
-    <group position={[px, 0, pz]}>
-      {/* sombra falsa en el suelo */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
-        <circleGeometry args={[point.isMine ? 0.22 : 0.16, 24]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.35} />
+    <group position={[px, 0, pz]} onClick={(e) => { e.stopPropagation(); onSelect(point); }}>
+      {/* sombra pegada al suelo */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.002, 0]}>
+        <circleGeometry args={[0.032 * scale, 16]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.3} />
       </mesh>
 
-      <group ref={groupRef} onClick={() => onSelect(point)}>
-        {/* punta del pin */}
-        <mesh position={[0, -0.18, 0]} rotation={[Math.PI, 0, 0]}>
-          <coneGeometry args={[0.11, 0.22, 16]} />
-          <meshStandardMaterial color={point.color} emissive={point.color} emissiveIntensity={selected || point.isMine ? 0.8 : 0.3} />
+      {(selected || point.isMine) && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, 0]}>
+          <ringGeometry args={[0.034 * scale, 0.042 * scale, 24]} />
+          <meshBasicMaterial color={point.color} transparent opacity={0.9} />
         </mesh>
-        {/* cabeza del pin */}
+      )}
+
+      <group ref={groupRef} scale={scale}>
+        {/* cuerpo de la cabaña */}
+        <mesh position={[0, 0.011, 0]}>
+          <boxGeometry args={[0.034, 0.022, 0.034]} />
+          <meshStandardMaterial color={wallColor} roughness={0.8} />
+        </mesh>
+        {/* techo a dos aguas */}
+        <mesh position={[0, 0.026, 0]} rotation={[0, Math.PI / 4, 0]}>
+          <coneGeometry args={[0.026, 0.018, 4]} />
+          <meshStandardMaterial
+            color={point.isMine ? point.color : '#7c4a2d'}
+            emissive={point.isMine ? point.color : '#000000'}
+            emissiveIntensity={point.isMine ? 0.5 : 0}
+            roughness={0.6}
+          />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+/** Baliza fina — usada para entrada / escenario / VIP (no son cabañas). */
+function LandmarkMarker({ point, onSelect, selected }: {
+  point: MapPoint;
+  onSelect: (p: MapPoint) => void;
+  selected: boolean;
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+  const px = (point.x * PLANE_W) / 2;
+  const pz = (point.z * PLANE_D) / 2;
+  const height = 0.09;
+
+  useFrame(({ clock }) => {
+    if (!groupRef.current) return;
+    const bob = Math.sin(clock.getElapsedTime() * 2 + px) * 0.006;
+    groupRef.current.position.y = height + bob;
+  });
+
+  return (
+    <group position={[px, 0, pz]} onClick={(e) => { e.stopPropagation(); onSelect(point); }}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.002, 0]}>
+        <circleGeometry args={[0.026, 16]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.3} />
+      </mesh>
+      <group ref={groupRef} scale={selected ? 1.25 : 1}>
+        <mesh position={[0, -0.045, 0]}>
+          <cylinderGeometry args={[0.003, 0.003, 0.09, 8]} />
+          <meshStandardMaterial color="#ffffff" opacity={0.7} transparent />
+        </mesh>
         <mesh>
-          <sphereGeometry args={[0.16, 20, 20]} />
-          <meshStandardMaterial color="#0a0a0d" emissive={point.color} emissiveIntensity={0.15} />
+          <sphereGeometry args={[0.02, 16, 16]} />
+          <meshStandardMaterial color={point.color} emissive={point.color} emissiveIntensity={selected ? 0.9 : 0.5} />
         </mesh>
-        {point.isMine && (
-          <mesh>
-            <sphereGeometry args={[0.24, 20, 20]} />
-            <meshBasicMaterial color={point.color} transparent opacity={0.18} />
-          </mesh>
-        )}
       </group>
     </group>
   );
@@ -130,14 +177,16 @@ function Scene({ image, selected, onSelect }: {
       <Suspense fallback={null}>
         <Terrain image={image} />
       </Suspense>
-      {POINTS.map(p => (
-        <Pin key={p.id} point={p} selected={selected?.id === p.id} onSelect={onSelect} />
-      ))}
+      {POINTS.map(p =>
+        p.kind === 'cabana'
+          ? <CabanaMarker key={p.id} point={p} selected={selected?.id === p.id} onSelect={onSelect} />
+          : <LandmarkMarker key={p.id} point={p} selected={selected?.id === p.id} onSelect={onSelect} />
+      )}
       <OrbitControls
         enablePan={false}
         enableZoom={true}
-        minDistance={2.6}
-        maxDistance={6}
+        minDistance={1.6}
+        maxDistance={4.5}
         minPolarAngle={Math.PI / 5}
         maxPolarAngle={Math.PI / 2.35}
         target={[0, 0, 0]}
@@ -151,7 +200,7 @@ export default function MyAppMap({ image = '/venue-map.jpg' }: { image?: string 
     POINTS.find(p => p.isMine) ?? null
   );
 
-  const initialCamPos = useMemo<[number, number, number]>(() => [0, 3.4, 3.6], []);
+  const initialCamPos = useMemo<[number, number, number]>(() => [0, 2.1, 2.3], []);
 
   return (
     <div className="mapa-panel">
