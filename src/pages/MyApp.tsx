@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './MyApp.css';
+import { SECTIONS, renderSectionContent, type CompassSection } from './MyAppSections';
 
 /**
  * MyApp — Webapp para asistentes al evento AIRA.
@@ -10,25 +11,11 @@ import './MyApp.css';
  *
  * La rueda vive centrada en pantalla y se puede arrastrar desde
  * cualquier punto de la pantalla, no solo tocando el aro.
+ *
+ * Al tocar el círculo central, la sección se abre con una transición
+ * de "el círculo se transforma en la pantalla" (clip-path circular
+ * que crece desde el punto exacto donde estaba el círculo).
  */
-
-interface CompassSection {
-  id: string;
-  label: string;
-  emoji: string;
-  image: string;
-  color: string; // acento por sección
-}
-
-const SECTIONS: CompassSection[] = [
-  { id: 'boletas',   label: 'Mi Boleta',   emoji: '🎟️', image: '/AIRA.png',           color: '#22c55e' },
-  { id: 'lineup',    label: 'Line-Up',     emoji: '🎧', image: '/dj-console.jpg',      color: '#a855f7' },
-  { id: 'mapa',      label: 'Mapa',        emoji: '🗺️', image: '/guatape-aerial.jpg',  color: '#38bdf8' },
-  { id: 'galeria',   label: 'Galería',     emoji: '📸', image: '/crowd-1.jpg',         color: '#f97316' },
-  { id: 'vip',       label: 'VIP',         emoji: '👑', image: '/vip-area.jpg',        color: '#facc15' },
-  { id: 'transporte',label: 'Transporte',  emoji: '🚌', image: '/yacht-party.jpg',     color: '#ef4444' },
-  { id: 'perfil',    label: 'Mi Perfil',   emoji: '👤', image: '/dj-portrait.jpg',     color: '#ec4899' },
-];
 
 const N = SECTIONS.length;
 const STEP = 360 / N;
@@ -76,18 +63,69 @@ function useHaptic() {
   }, []);
 }
 
+interface SheetOrigin { x: number; y: number; r: number; }
+
+/** Panel que se abre con el círculo "transformándose" en pantalla completa */
+function SectionSheet({ section, origin, onClose }: {
+  section: CompassSection; origin: SheetOrigin; onClose: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const haptic = useHaptic();
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setExpanded(true), 20);
+    haptic(14);
+    return () => window.clearTimeout(t);
+  }, [haptic]);
+
+  const handleClose = () => {
+    setExpanded(false);
+    haptic(10);
+    window.setTimeout(onClose, 420);
+  };
+
+  const clip = expanded
+    ? `circle(150% at ${origin.x}px ${origin.y}px)`
+    : `circle(${origin.r}px at ${origin.x}px ${origin.y}px)`;
+
+  return (
+    <div
+      className="myapp-sheet"
+      style={{ clipPath: clip, WebkitClipPath: clip, ['--accent' as any]: section.color }}
+      data-no-drag
+    >
+      <div className="myapp-sheet-bg" style={{ backgroundImage: `url(${section.image})` }} />
+      <div className="myapp-sheet-scrim" />
+
+      <div className="myapp-sheet-header">
+        <button className="myapp-sheet-close" onClick={handleClose} aria-label="Cerrar">✕</button>
+        <span className="myapp-sheet-title">
+          <span>{section.emoji}</span> {section.label}
+        </span>
+      </div>
+
+      <div className="myapp-sheet-content">
+        {renderSectionContent(section)}
+      </div>
+    </div>
+  );
+}
+
 export default function MyApp() {
   const [rotation, setRotation]   = useState(0);      // ángulo acumulado del aro
   const [activeIdx, setActiveIdx] = useState(0);
   const [dragging, setDragging]   = useState(false);
   const [snapping, setSnapping]   = useState(false);
+  const [openSection, setOpenSection] = useState<{ section: CompassSection; origin: SheetOrigin } | null>(null);
 
   const rootRef         = useRef<HTMLDivElement>(null);
-  const ringRef        = useRef<HTMLDivElement>(null);
+  const ringRef          = useRef<HTMLDivElement>(null);
+  const circleRef         = useRef<HTMLDivElement>(null);
   const lastAngleRef    = useRef(0);
   const lastStepRef     = useRef(0);       // último "diente" cruzado, para no repetir tick
   const pointerIdRef    = useRef<number | null>(null);
   const rotationRef      = useRef(0);       // espejo síncrono de `rotation`, para el listener global
+  const openRef           = useRef(false);  // espejo síncrono — bloquea el drag mientras hay sección abierta
 
   const tick   = useTickSound();
   const haptic = useHaptic();
@@ -129,6 +167,7 @@ export default function MyApp() {
   // ── Drag desde cualquier punto de la pantalla ──────────────────────────
   useEffect(() => {
     const onDown = (e: PointerEvent) => {
+      if (openRef.current) return; // no arrastrar con una sección abierta
       // Ignora toques sobre botones/controles (para no romper el tap directo)
       if ((e.target as HTMLElement)?.closest('[data-no-drag]')) return;
       pointerIdRef.current = e.pointerId;
@@ -139,6 +178,7 @@ export default function MyApp() {
     };
 
     const onMove = (e: PointerEvent) => {
+      if (openRef.current) return;
       if (pointerIdRef.current !== e.pointerId) return;
       const angle = getAngle(e.clientX, e.clientY);
       let delta = angle - lastAngleRef.current;
@@ -165,6 +205,7 @@ export default function MyApp() {
       if (pointerIdRef.current !== e.pointerId) return;
       pointerIdRef.current = null;
       setDragging(false);
+      if (openRef.current) return;
       settleToStep(rotationRef.current);
       tick(1.4);
       haptic([0, 16, 40, 10]);
@@ -189,6 +230,24 @@ export default function MyApp() {
     tick(1.4);
     haptic([0, 16, 40, 10]);
     pulseSettle();
+  };
+
+  const openActiveSection = () => {
+    const el = circleRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const origin: SheetOrigin = {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+      r: rect.width / 2,
+    };
+    openRef.current = true;
+    setOpenSection({ section: activeSection, origin });
+  };
+
+  const closeSection = () => {
+    openRef.current = false;
+    setOpenSection(null);
   };
 
   const sectionsWithAngle = useMemo(
@@ -242,13 +301,20 @@ export default function MyApp() {
           ))}
         </div>
 
-        {/* Núcleo fijo (no rota) con la imagen de la sección activa */}
+        {/* Núcleo fijo (no rota) con la imagen de la sección activa — tocar para abrir */}
         <div className="myapp-core">
           <div className="myapp-preview-glow" style={{ background: activeSection.color }} />
-          <div key={activeSection.id} className="myapp-preview-circle">
+          <button
+            ref={circleRef}
+            key={activeSection.id}
+            className="myapp-preview-circle"
+            data-no-drag
+            onClick={openActiveSection}
+            aria-label={`Abrir ${activeSection.label}`}
+          >
             <img src={activeSection.image} alt={activeSection.label} draggable={false} />
             <div className="myapp-preview-ring" style={{ boxShadow: `0 0 0 3px ${activeSection.color}` }} />
-          </div>
+          </button>
         </div>
 
         {/* Puntero fijo arriba del aro — indica la sección seleccionada */}
@@ -260,8 +326,16 @@ export default function MyApp() {
           <span className="myapp-preview-emoji">{activeSection.emoji}</span>
           <span className="myapp-preview-text">{activeSection.label}</span>
         </div>
-        <div className="myapp-hint">Desliza en cualquier parte de la pantalla para girar</div>
+        <div className="myapp-hint">Toca el círculo para abrir · Desliza para girar</div>
       </div>
+
+      {openSection && (
+        <SectionSheet
+          section={openSection.section}
+          origin={openSection.origin}
+          onClose={closeSection}
+        />
+      )}
     </div>
   );
 }
