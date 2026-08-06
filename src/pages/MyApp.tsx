@@ -78,10 +78,12 @@ function SectionSheet({ section, origin, onClose }: {
     return () => window.clearTimeout(t);
   }, [haptic]);
 
+  const CLOSE_MS = 420;
+
   const handleClose = () => {
     setExpanded(false);
     haptic(10);
-    window.setTimeout(onClose, 420);
+    window.setTimeout(onClose, CLOSE_MS);
   };
 
   const clip = expanded
@@ -91,7 +93,12 @@ function SectionSheet({ section, origin, onClose }: {
   return (
     <div
       className="myapp-sheet"
-      style={{ clipPath: clip, WebkitClipPath: clip, ['--accent' as any]: section.color }}
+      style={{
+        clipPath: clip,
+        WebkitClipPath: clip,
+        transitionDuration: expanded ? '820ms' : `${CLOSE_MS}ms`,
+        ['--accent' as any]: section.color,
+      }}
       data-no-drag
     >
       <div className="myapp-sheet-bg" style={{ backgroundImage: `url(${section.image})` }} />
