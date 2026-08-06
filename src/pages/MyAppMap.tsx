@@ -19,13 +19,15 @@ interface MapPoint {
   isMine?: boolean; // resalta la cabaña del asistente actual
 }
 
-// Placeholder — reemplazar con coordenadas reales del venue cuando se tengan
+// Coordenadas aproximadas sobre venue-map.jpg (Joinn Houtel, Guatapé).
+// Aún placeholder en su asignación exacta de cabaña — pero ya ubicadas
+// sobre los puntos reales de la imagen (muelles, fila de cabañas, entrada).
 const POINTS: MapPoint[] = [
-  { id: 'entrada',   label: 'Entrada',   emoji: '🚪', x: -0.55, z: 0.5,  color: '#38bdf8' },
-  { id: 'escenario', label: 'Escenario', emoji: '🎧', x: 0.05,  z: -0.1, color: '#a855f7' },
-  { id: 'vip',       label: 'Zona VIP',  emoji: '👑', x: 0.5,   z: 0.2,  color: '#facc15' },
-  { id: 'cabana-a',  label: 'Cabaña A',  emoji: '🏠', x: -0.2,  z: -0.5, color: '#22c55e', isMine: true },
-  { id: 'cabana-b',  label: 'Cabaña B',  emoji: '🏠', x: 0.35,  z: -0.55, color: '#22c55e' },
+  { id: 'entrada',   label: 'Entrada',   emoji: '🚪', x: 0.75,  z: -0.21, color: '#38bdf8' },
+  { id: 'escenario', label: 'Escenario', emoji: '🎧', x: -0.05, z: -0.10, color: '#a855f7' },
+  { id: 'vip',       label: 'Zona VIP',  emoji: '👑', x: 0.26,  z: 0.16,  color: '#facc15' },
+  { id: 'cabana-a',  label: 'Cabaña A',  emoji: '🏠', x: -0.67, z: 0.43,  color: '#22c55e', isMine: true },
+  { id: 'cabana-b',  label: 'Cabaña B',  emoji: '🏠', x: 0.14,  z: 0.51,  color: '#22c55e' },
 ];
 
 const PLANE_W = 6;
@@ -115,7 +117,7 @@ function Scene({ image, selected, onSelect }: {
   );
 }
 
-export default function MyAppMap({ image = '/guatape-aerial.jpg' }: { image?: string }) {
+export default function MyAppMap({ image = '/venue-map.jpg' }: { image?: string }) {
   const [selected, setSelected] = useState<MapPoint | null>(
     POINTS.find(p => p.isMine) ?? null
   );

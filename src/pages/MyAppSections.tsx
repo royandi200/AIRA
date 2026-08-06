@@ -19,7 +19,7 @@ export const SECTIONS: CompassSection[] = [
   { id: 'pasaporte',  label: 'Mi Pasaporte', emoji: '🛂', image: '/AIRA.png',           color: '#22c55e' },
   { id: 'gastos',     label: 'Tus Gastos',   emoji: '💸', image: '/vinyl.jpg',           color: '#10b981' },
   { id: 'lineup',     label: 'Line-Up',      emoji: '🎧', image: '/dj-console.jpg',      color: '#a855f7' },
-  { id: 'mapa',       label: 'Mapa',         emoji: '🗺️', image: '/guatape-aerial.jpg',  color: '#38bdf8' },
+  { id: 'mapa',       label: 'Mapa',         emoji: '🗺️', image: '/venue-map.jpg',       color: '#38bdf8' },
   { id: 'galeria',    label: 'Galería',      emoji: '📸', image: '/crowd-1.jpg',         color: '#f97316' },
   { id: 'vip',        label: 'VIP',          emoji: '👑', image: '/vip-area.jpg',        color: '#facc15' },
   { id: 'transporte', label: 'Transporte',   emoji: '🚌', image: '/yacht-party.jpg',     color: '#ef4444' },
