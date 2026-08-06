@@ -19,16 +19,45 @@ interface MapPoint {
   isMine?: boolean; // resalta la cabaña del asistente actual
 }
 
-// Coordenadas aproximadas sobre venue-map.jpg (Joinn Houtel, Guatapé).
-// Aún placeholder en su asignación exacta de cabaña — pero ya ubicadas
-// sobre los puntos reales de la imagen (muelles, fila de cabañas, entrada).
-const POINTS: MapPoint[] = [
+// Puntos generales del venue — coordenadas aproximadas, pendientes de
+// ubicar con /map-editor.html igual que se hizo con las cabañas.
+const LANDMARKS: MapPoint[] = [
   { id: 'entrada',   label: 'Entrada',   emoji: '🚪', x: 0.75,  z: -0.21, color: '#38bdf8' },
   { id: 'escenario', label: 'Escenario', emoji: '🎧', x: -0.05, z: -0.10, color: '#a855f7' },
   { id: 'vip',       label: 'Zona VIP',  emoji: '👑', x: 0.26,  z: 0.16,  color: '#facc15' },
-  { id: 'cabana-a',  label: 'Cabaña A',  emoji: '🏠', x: -0.67, z: 0.43,  color: '#22c55e', isMine: true },
-  { id: 'cabana-b',  label: 'Cabaña B',  emoji: '🏠', x: 0.14,  z: 0.51,  color: '#22c55e' },
 ];
+
+// Las 19 cabañas reales del venue — ubicadas con /map-editor.html
+// sobre venue-map.jpg. La cabaña asignada a cada asistente (isMine)
+// se decide dinámicamente cuando se conecte al backend (orders.cabana_id).
+const CABANAS: MapPoint[] = [
+  { id: 'cabana-1',  label: 'Cabaña 1',  emoji: '🏠', x: 0.220,  z: -0.889, color: '#22c55e' },
+  { id: 'cabana-2',  label: 'Cabaña 2',  emoji: '🏠', x: 0.361,  z: -0.736, color: '#22c55e' },
+  { id: 'cabana-3',  label: 'Cabaña 3',  emoji: '🏠', x: 0.442,  z: -0.614, color: '#22c55e' },
+  { id: 'cabana-4',  label: 'Cabaña 4',  emoji: '🏠', x: 0.533,  z: -0.487, color: '#22c55e' },
+  { id: 'cabana-5',  label: 'Cabaña 5',  emoji: '🏠', x: 0.596,  z: -0.327, color: '#22c55e' },
+  { id: 'cabana-6',  label: 'Cabaña 6',  emoji: '🏠', x: 0.661,  z: -0.159, color: '#22c55e' },
+  { id: 'cabana-7',  label: 'Cabaña 7',  emoji: '🏠', x: 0.740,  z: 0.025,  color: '#22c55e' },
+  { id: 'cabana-8',  label: 'Cabaña 8',  emoji: '🏠', x: 0.783,  z: 0.264,  color: '#22c55e' },
+  { id: 'cabana-9',  label: 'Cabaña 9',  emoji: '🏠', x: 0.742,  z: 0.482,  color: '#22c55e' },
+  { id: 'cabana-10', label: 'Cabaña 10', emoji: '🏠', x: 0.555,  z: 0.573,  color: '#22c55e' },
+  { id: 'cabana-11', label: 'Cabaña 11', emoji: '🏠', x: 0.198,  z: 0.451,  color: '#22c55e' },
+  { id: 'cabana-12', label: 'Cabaña 12', emoji: '🏠', x: 0.018,  z: 0.494,  color: '#22c55e' },
+  { id: 'cabana-13', label: 'Cabaña 13', emoji: '🏠', x: -0.156, z: 0.525,  color: '#22c55e' },
+  { id: 'cabana-14', label: 'Cabaña 14', emoji: '🏠', x: -0.339, z: 0.518,  color: '#22c55e' },
+  { id: 'cabana-15', label: 'Cabaña 15', emoji: '🏠', x: -0.506, z: 0.446,  color: '#22c55e' },
+  { id: 'cabana-16', label: 'Cabaña 16', emoji: '🏠', x: -0.645, z: 0.379,  color: '#22c55e' },
+  { id: 'cabana-17', label: 'Cabaña 17', emoji: '🏠', x: -0.776, z: 0.281,  color: '#22c55e' },
+  { id: 'cabana-19', label: 'Cabaña 19', emoji: '🏠', x: -0.831, z: 0.628,  color: '#22c55e' },
+  { id: 'cabana-20', label: 'Cabaña 20', emoji: '🏠', x: -0.716, z: 0.714,  color: '#22c55e' },
+];
+
+// Demo: resalta una cabaña como "la tuya" mientras se conecta el dato real
+const DEMO_MINE_ID = 'cabana-9';
+
+const POINTS: MapPoint[] = [...LANDMARKS, ...CABANAS].map(p =>
+  p.id === DEMO_MINE_ID ? { ...p, isMine: true } : p
+);
 
 const PLANE_W = 6;
 const PLANE_D = 4.2;
