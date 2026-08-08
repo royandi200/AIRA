@@ -287,6 +287,7 @@ export default function MyApp() {
 
       {/* Zona central — la rueda vive aquí, arrastrable desde toda la pantalla */}
       <div className="myapp-wheel-zone">
+        <div className="myapp-ring-contact-shadow" />
         <div
           ref={ringRef}
           className={`myapp-ring ${dragging ? 'is-dragging' : ''} ${snapping ? 'is-snapping' : ''}`}
