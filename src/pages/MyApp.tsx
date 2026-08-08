@@ -312,6 +312,9 @@ export default function MyApp() {
         {/* Núcleo fijo (no rota) con la imagen de la sección activa — tocar para abrir */}
         <div className="myapp-core">
           <div className="myapp-preview-glow" style={{ background: activeSection.color }} />
+          {/* Pulso tipo radar — señala que el círculo es tocable */}
+          <span className="myapp-tap-ping" style={{ borderColor: activeSection.color }} />
+          <span className="myapp-tap-ping myapp-tap-ping--delay" style={{ borderColor: activeSection.color }} />
           <button
             ref={circleRef}
             key={activeSection.id}
