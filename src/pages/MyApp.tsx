@@ -77,25 +77,68 @@ function useHaptic() {
 
 interface SheetOrigin { x: number; y: number; r: number; }
 
-/** Panel que se abre con el círculo "transformándose" en pantalla completa */
+const SHEET_CLOSE_MS = 420;
+
+/**
+ * Panel que se abre con el círculo "transformándose" en pantalla completa.
+ * Se puede cerrar de 3 formas: botón X, botón/gesto "atrás" del navegador
+ * o celular (sin salir de /myapp — solo cierra la sección), y deslizando
+ * desde el borde izquierdo hacia la derecha (gesto tipo iOS).
+ */
 function SectionSheet({ section, origin, onClose }: {
   section: CompassSection; origin: SheetOrigin; onClose: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const haptic = useHaptic();
+  const closingRef = useRef(false);
+  const swipeRef = useRef<{ x: number; y: number; active: boolean } | null>(null);
 
   useEffect(() => {
     const t = window.setTimeout(() => setExpanded(true), 20);
     haptic(14);
-    return () => window.clearTimeout(t);
-  }, [haptic]);
 
-  const CLOSE_MS = 420;
+    // Empuja una entrada de historial — así "atrás" cierra la sección
+    // en vez de salir de /myapp.
+    window.history.pushState({ myappSheet: true }, '');
+
+    const onPopState = () => {
+      if (closingRef.current) return;
+      closingRef.current = true;
+      setExpanded(false);
+      window.setTimeout(onClose, SHEET_CLOSE_MS);
+    };
+    window.addEventListener('popstate', onPopState);
+
+    return () => {
+      window.clearTimeout(t);
+      window.removeEventListener('popstate', onPopState);
+    };
+  }, [haptic, onClose]);
 
   const handleClose = () => {
+    if (closingRef.current) return;
+    closingRef.current = true;
     setExpanded(false);
     haptic(10);
-    window.setTimeout(onClose, CLOSE_MS);
+    window.setTimeout(onClose, SHEET_CLOSE_MS);
+    // Consume la entrada de historial que empujamos al abrir, para que
+    // el siguiente "atrás" no quede apuntando a un estado fantasma.
+    window.history.back();
+  };
+
+  // Gesto: deslizar desde el borde izquierdo hacia la derecha para cerrar
+  const onPointerDown = (e: React.PointerEvent) => {
+    swipeRef.current = e.clientX < 28 ? { x: e.clientX, y: e.clientY, active: true } : null;
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    const s = swipeRef.current;
+    if (!s?.active) return;
+    const dx = e.clientX - s.x;
+    const dy = Math.abs(e.clientY - s.y);
+    if (dx > 90 && dy < 60) {
+      s.active = false;
+      handleClose();
+    }
   };
 
   const clip = expanded
@@ -108,10 +151,12 @@ function SectionSheet({ section, origin, onClose }: {
       style={{
         clipPath: clip,
         WebkitClipPath: clip,
-        transitionDuration: expanded ? '820ms' : `${CLOSE_MS}ms`,
+        transitionDuration: expanded ? '820ms' : `${SHEET_CLOSE_MS}ms`,
         ['--accent' as any]: section.color,
       }}
       data-no-drag
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
     >
       <div className="myapp-sheet-bg" style={{ backgroundImage: `url(${section.image})` }} />
       <div className="myapp-sheet-scrim" />
