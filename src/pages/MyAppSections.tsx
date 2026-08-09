@@ -1,10 +1,23 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import {
   Fingerprint, Wallet, Headphones, Radar, Aperture, Gem, Bus, ScanFace,
   X, CheckCircle2, MapPinned, ArrowRight, Bell, LogOut, Sparkles, ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
-import MyAppMap from './MyAppMap';
+
+// Three.js (react-three-fiber + drei) solo se descarga cuando el usuario
+// realmente abre "Mapa" — evita que todo /myapp cargue esa dependencia
+// pesada de entrada.
+const MyAppMap = lazy(() => import('./MyAppMap'));
+
+function MapLoading() {
+  return (
+    <div className="mapa-loading">
+      <div className="spinner" />
+      <span>Cargando mapa 3D…</span>
+    </div>
+  );
+}
 
 /**
  * Contenido de cada sección de /myapp.
@@ -392,7 +405,7 @@ export function renderSectionContent(section: CompassSection) {
   switch (section.id) {
     case 'pasaporte':  return <PasaportePanel />;
     case 'gastos':     return <GastosPanel />;
-    case 'mapa':       return <MyAppMap />;
+    case 'mapa':       return <Suspense fallback={<MapLoading />}><MyAppMap /></Suspense>;
     case 'lineup':     return <LineupPanel />;
     case 'galeria':    return <GaleriaPanel />;
     case 'vip':        return <VipPanel />;

@@ -24,14 +24,26 @@ const STEP = 360 / N;
 function useTickSound() {
   const ctxRef = useRef<AudioContext | null>(null);
 
-  const tick = useCallback((strength: number = 1) => {
+  const ensureCtx = useCallback((): AudioContext | null => {
     try {
       if (!ctxRef.current) {
         const AC = window.AudioContext || (window as any).webkitAudioContext;
         ctxRef.current = new AC();
       }
-      const ctx = ctxRef.current;
-      if (ctx.state === 'suspended') ctx.resume();
+      if (ctxRef.current.state === 'suspended') ctxRef.current.resume();
+      return ctxRef.current;
+    } catch { return null; }
+  }, []);
+
+  // Se llama en el primer toque de la pantalla, ANTES de que se necesite el
+  // primer tick — así el costo de crear/despertar el AudioContext no se
+  // siente como un salto justo cuando cruza el primer diente.
+  const warm = useCallback(() => { ensureCtx(); }, [ensureCtx]);
+
+  const tick = useCallback((strength: number = 1) => {
+    try {
+      const ctx = ensureCtx();
+      if (!ctx) return;
 
       const now = ctx.currentTime;
       const osc  = ctx.createOscillator();
@@ -52,9 +64,9 @@ function useTickSound() {
       osc.start(now);
       osc.stop(now + 0.05);
     } catch { /* audio no soportado — degrada silenciosamente */ }
-  }, []);
+  }, [ensureCtx]);
 
-  return tick;
+  return { tick, warm };
 }
 
 function useHaptic() {
@@ -134,17 +146,24 @@ export default function MyApp() {
   const pointerIdRef    = useRef<number | null>(null);
   const rotationRef      = useRef(0);       // espejo síncrono de `rotation`, para el listener global
   const openRef           = useRef(false);  // espejo síncrono — bloquea el drag mientras hay sección abierta
+  const centerRef         = useRef({ cx: 0, cy: 0 }); // centro del aro, cacheado 1 vez por arrastre
+  const rafRef             = useRef<number | null>(null); // limita los renders a 1 por frame
 
-  const tick   = useTickSound();
+  const { tick, warm } = useTickSound();
   const haptic = useHaptic();
 
-  // Ángulo del centro del aro hasta el puntero
-  const getAngle = (clientX: number, clientY: number): number => {
+  // Cachea el centro del aro UNA vez al empezar a arrastrar — evita forzar
+  // un reflow (getBoundingClientRect) en cada pixel de movimiento, que era
+  // el principal cuello de botella de la rueda sintiéndose lenta.
+  const cacheCenter = () => {
     const el = ringRef.current;
-    if (!el) return 0;
+    if (!el) return;
     const rect = el.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
+    centerRef.current = { cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2 };
+  };
+
+  const getAngle = (clientX: number, clientY: number): number => {
+    const { cx, cy } = centerRef.current;
     return (Math.atan2(clientY - cy, clientX - cx) * 180) / Math.PI;
   };
 
@@ -175,10 +194,12 @@ export default function MyApp() {
   // ── Drag desde cualquier punto de la pantalla ──────────────────────────
   useEffect(() => {
     const onDown = (e: PointerEvent) => {
+      warm(); // precalienta el AudioContext en el primer toque, sea donde sea
       if (openRef.current) return; // no arrastrar con una sección abierta
       // Ignora toques sobre botones/controles (para no romper el tap directo)
       if ((e.target as HTMLElement)?.closest('[data-no-drag]')) return;
       pointerIdRef.current = e.pointerId;
+      cacheCenter();
       setDragging(true);
       setSnapping(false);
       lastAngleRef.current = getAngle(e.clientX, e.clientY);
@@ -196,7 +217,17 @@ export default function MyApp() {
       const next = rotationRef.current + delta;
       lastAngleRef.current = angle;
       rotationRef.current  = next;
-      setRotation(next);
+
+      // Un solo setState por frame — el dedo/mouse puede disparar
+      // pointermove muchas más veces por segundo de lo que React necesita
+      // re-renderizar; sin esto cada pixel recalculaba las 8 posiciones
+      // del aro y se sentía "pesado".
+      if (rafRef.current === null) {
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = null;
+          setRotation(rotationRef.current);
+        });
+      }
 
       const currentStep = Math.round(-next / STEP);
       if (currentStep !== lastStepRef.current) {
@@ -212,6 +243,7 @@ export default function MyApp() {
     const onUp = (e: PointerEvent) => {
       if (pointerIdRef.current !== e.pointerId) return;
       pointerIdRef.current = null;
+      if (rafRef.current !== null) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
       setDragging(false);
       if (openRef.current) return;
       settleToStep(rotationRef.current);
@@ -225,12 +257,13 @@ export default function MyApp() {
     window.addEventListener('pointerup', onUp, { passive: true });
     window.addEventListener('pointercancel', onUp, { passive: true });
     return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       window.removeEventListener('pointerdown', onDown);
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onUp);
     };
-  }, [settleToStep, tick, haptic, pulseSettle]);
+  }, [settleToStep, tick, haptic, pulseSettle, warm]);
 
   const goToIndex = (idx: number) => {
     if (idx === activeIdx) return;

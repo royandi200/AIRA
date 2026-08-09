@@ -1,14 +1,39 @@
-import { StrictMode } from 'react'
+import { StrictMode, lazy, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import App from './App.tsx'
-import Partners from './sections/Partners.tsx'
+
+// ── Code-splitting por ruta ─────────────────────────────────────────────────
+// Cada "página" es su propio chunk: un visitante de /myapp nunca descarga
+// el código de la landing (Hero/AlbumCube/Three.js del cubo) ni al revés.
+// Esto es lo que más pesaba en la carga inicial — antes todo iba en un
+// solo bundle de ~1.75MB sin importar la ruta.
+const App      = lazy(() => import('./App.tsx'))
+const Partners = lazy(() => import('./sections/Partners.tsx'))
+const Promotor = lazy(() => import('./pages/Promotor'))
+const MyApp    = lazy(() => import('./pages/MyApp'))
 
 const path = window.location.pathname.replace(/\/$/, '')
-const isPartners = path === '/partners' || path === '/patrocinios'
+
+function pickRoute() {
+  if (path === '/partners' || path === '/patrocinios') return Partners
+  if (path === '/promotor') return Promotor
+  if (path === '/myapp')    return MyApp
+  return App
+}
+
+const Route = pickRoute()
+
+// Fallback minimalista — fondo oscuro a juego con cada página,
+// para que no haya parpadeo blanco mientras carga el chunk.
+function RouteFallback() {
+  const bg = path === '/myapp' ? '#08080b' : '#00164c'
+  return <div style={{ position: 'fixed', inset: 0, background: bg }} />
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {isPartners ? <Partners /> : <App />}
+    <Suspense fallback={<RouteFallback />}>
+      <Route />
+    </Suspense>
   </StrictMode>,
 )
