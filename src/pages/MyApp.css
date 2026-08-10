@@ -354,6 +354,16 @@
   padding: max(18px, env(safe-area-inset-top)) 20px 14px;
   backdrop-filter: blur(6px);
 }
+/* Mapa: header flota transparente sobre el mapa a pantalla completa,
+   en vez de empujarlo hacia abajo — así el canvas ocupa todo el alto. */
+.myapp-sheet-header--floating {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 100%);
+  backdrop-filter: none;
+}
 .myapp-sheet-close {
   width: 38px;
   height: 38px;
@@ -383,6 +393,12 @@
   position: relative;
   z-index: 2;
   padding: 8px 20px max(32px, env(safe-area-inset-bottom));
+}
+/* Mapa: sin padding ni límite de alto — el mapa ocupa toda la pantalla,
+   con el header flotando encima (position:absolute, ver arriba). */
+.myapp-sheet-content--flush {
+  padding: 0;
+  height: 100%;
 }
 
 /* ── Pasaporte ────────────────────────────────────────────────────────── */
@@ -543,43 +559,24 @@
 
 /* ── Mapa 3D ──────────────────────────────────────────────────────────── */
 .mapa-panel {
-  margin-top: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  position: relative;
+  width: 100%;
+  height: 100%;
 }
 .mapa-canvas-wrap {
   position: relative;
   width: 100%;
-  height: 44vh;
-  min-height: 260px;
-  border-radius: 20px;
+  height: 100%;
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.14);
   background: #05070a;
   touch-action: none;
 }
 .mapa-canvas-wrap canvas { touch-action: none; }
-.mapa-hint {
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.55);
-  background: rgba(0,0,0,0.4);
-  padding: 5px 12px;
-  border-radius: 999px;
-  backdrop-filter: blur(6px);
-  pointer-events: none;
-}
-
 .mapa-locate-btn {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: max(64px, calc(env(safe-area-inset-top) + 50px));
+  right: 14px;
+  z-index: 4;
   width: 38px;
   height: 38px;
   border-radius: 50%;
@@ -610,8 +607,9 @@
 
 .mapa-geo-msg {
   position: absolute;
-  top: 56px;
-  right: 10px;
+  top: max(112px, calc(env(safe-area-inset-top) + 98px));
+  right: 14px;
+  z-index: 4;
   max-width: 190px;
   font-size: 10.5px;
   line-height: 1.4;
@@ -623,47 +621,67 @@
   backdrop-filter: blur(6px);
 }
 
-.mapa-legend {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.mapa-legend-item {
+/* ── Selector inferior tipo carrusel — reemplaza la lista de puntos ────── */
+.mapa-selector {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
-  padding: 11px 14px;
-  border-radius: 14px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #fff;
-  text-align: left;
-  -webkit-tap-highlight-color: transparent;
-  transition: background 180ms ease, border-color 180ms ease;
+  padding: 18px 14px max(22px, env(safe-area-inset-bottom));
+  background: linear-gradient(0deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.35) 60%, rgba(0,0,0,0) 100%);
 }
-.mapa-legend-item.is-active {
-  background: color-mix(in srgb, var(--pin-color) 16%, #14141a);
-  border-color: var(--pin-color);
-}
-.mapa-legend-dot {
-  width: 9px;
-  height: 9px;
+.mapa-nav-arrow {
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  background: var(--pin-color);
-  box-shadow: 0 0 10px var(--pin-color);
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  backdrop-filter: blur(6px);
 }
-.mapa-legend-emoji { font-size: 15px; }
-.mapa-legend-label { flex: 1; font-size: 14px; font-weight: 600; }
-.mapa-legend-tag {
+.mapa-nav-arrow:active { transform: scale(0.9); }
+.mapa-selector-label {
+  flex: 1;
+  max-width: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  text-align: center;
+}
+.mapa-selector-name {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--pin-color, #fff);
+  text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  animation: mapa-selector-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.mapa-selector-tag {
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  background: var(--pin-color);
-  color: #06110c;
-  padding: 3px 8px;
-  border-radius: 999px;
+  color: var(--pin-color, #fff);
+  opacity: 0.85;
+}
+@keyframes mapa-selector-pop {
+  0%   { transform: scale(0.85); opacity: 0; }
+  100% { transform: scale(1);    opacity: 1; }
 }
 
 /* ── Line-Up ──────────────────────────────────────────────────────────── */

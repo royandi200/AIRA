@@ -2,12 +2,15 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { Canvas, useLoader, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
-import { LocateFixed } from 'lucide-react';
+import { LocateFixed, ChevronLeft, ChevronRight } from 'lucide-react';
 
 /**
  * Mapa 3D del venue — Opción A: plano inclinado con textura satelital
  * (la foto ya trae la perspectiva oblicua "horneada") + pines 3D flotantes.
  * Liviano: sin datos de elevación externos, sin llamadas a APIs de mapas.
+ *
+ * A pantalla completa. La navegación entre puntos es un selector tipo
+ * carrusel (nombre grande + flechas, o swipe horizontal) — no hay lista.
  */
 
 interface MapPoint {
@@ -18,14 +21,14 @@ interface MapPoint {
   z: number; // -1..1 sobre el plano
   color: string;
   isMine?: boolean; // resalta la cabaña del asistente actual
-  kind?: 'cabana' | 'landmark'; // cambia el tipo de marcador 3D
+  kind?: 'cabana' | 'landmark' | 'balloon'; // cambia el tipo de marcador 3D
 }
 
 // Puntos generales del venue — coordenadas aproximadas, pendientes de
 // ubicar con /map-editor.html igual que se hizo con las cabañas.
 const LANDMARKS: MapPoint[] = [
   { id: 'entrada',   label: 'Entrada',   emoji: '🚪', x: 0.75,  z: -0.21, color: '#38bdf8', kind: 'landmark' },
-  { id: 'escenario', label: 'Escenario', emoji: '🎧', x: -0.05, z: -0.10, color: '#a855f7', kind: 'landmark' },
+  { id: 'escenario', label: 'Escenario', emoji: '🎈', x: -0.05, z: -0.10, color: '#a855f7', kind: 'balloon' },
   { id: 'vip',       label: 'Zona VIP',  emoji: '👑', x: 0.26,  z: 0.16,  color: '#facc15', kind: 'landmark' },
 ];
 
@@ -151,12 +154,10 @@ function Terrain({ image }: { image: string }) {
   );
 }
 
+interface MarkerProps { point: MapPoint; index: number; onSelect: (i: number) => void; selected: boolean; }
+
 /** Casita 3D — usada para las cabañas. Pequeña, pegada al suelo. */
-function CabanaMarker({ point, onSelect, selected }: {
-  point: MapPoint;
-  onSelect: (p: MapPoint) => void;
-  selected: boolean;
-}) {
+function CabanaMarker({ point, index, onSelect, selected }: MarkerProps) {
   const groupRef = useRef<THREE.Group>(null);
   const px = (point.x * PLANE_W) / 2;
   const pz = (point.z * PLANE_D) / 2;
@@ -171,7 +172,7 @@ function CabanaMarker({ point, onSelect, selected }: {
   });
 
   return (
-    <group position={[px, 0, pz]} onClick={(e) => { e.stopPropagation(); onSelect(point); }}>
+    <group position={[px, 0, pz]} onClick={(e) => { e.stopPropagation(); onSelect(index); }}>
       {/* sombra pegada al suelo */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.002, 0]}>
         <circleGeometry args={[0.032 * scale, 16]} />
@@ -206,12 +207,8 @@ function CabanaMarker({ point, onSelect, selected }: {
   );
 }
 
-/** Baliza fina — usada para entrada / escenario / VIP (no son cabañas). */
-function LandmarkMarker({ point, onSelect, selected }: {
-  point: MapPoint;
-  onSelect: (p: MapPoint) => void;
-  selected: boolean;
-}) {
+/** Baliza fina — usada para entrada / VIP (no son cabañas ni el escenario). */
+function LandmarkMarker({ point, index, onSelect, selected }: MarkerProps) {
   const groupRef = useRef<THREE.Group>(null);
   const px = (point.x * PLANE_W) / 2;
   const pz = (point.z * PLANE_D) / 2;
@@ -225,7 +222,7 @@ function LandmarkMarker({ point, onSelect, selected }: {
   });
 
   return (
-    <group position={[px, 0, pz]} onClick={(e) => { e.stopPropagation(); onSelect(point); }}>
+    <group position={[px, 0, pz]} onClick={(e) => { e.stopPropagation(); onSelect(index); }}>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.002, 0]}>
         <circleGeometry args={[0.026 * (markerScale / 4), 16]} />
         <meshBasicMaterial color="#000000" transparent opacity={0.3} />
@@ -241,6 +238,106 @@ function LandmarkMarker({ point, onSelect, selected }: {
         </mesh>
       </group>
     </group>
+  );
+}
+
+/** Globo aerostático morado — marca el Escenario, flotando sobre el venue. */
+function BalloonMarker({ point, index, onSelect, selected }: MarkerProps) {
+  const groupRef = useRef<THREE.Group>(null);
+  const px = (point.x * PLANE_W) / 2;
+  const pz = (point.z * PLANE_D) / 2;
+  const scale = (selected ? 1.2 : 1) * 4.4;
+  const FLOAT_HEIGHT = 0.16; // el globo vuela mucho más alto que los demás marcadores
+
+  useFrame(({ clock }) => {
+    if (!groupRef.current) return;
+    const t = clock.getElapsedTime();
+    groupRef.current.position.y = FLOAT_HEIGHT + Math.sin(t * 0.9) * 0.01;
+    groupRef.current.rotation.y = Math.sin(t * 0.4) * 0.15; // se mece suavemente
+  });
+
+  return (
+    <group position={[px, 0, pz]} onClick={(e) => { e.stopPropagation(); onSelect(index); }}>
+      {/* sombra proyectada en el suelo */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.002, 0]}>
+        <circleGeometry args={[0.028 * scale * 0.5, 20]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.22} />
+      </mesh>
+      {selected && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, 0]}>
+          <ringGeometry args={[0.036 * scale * 0.5, 0.044 * scale * 0.5, 24]} />
+          <meshBasicMaterial color={point.color} transparent opacity={0.9} />
+        </mesh>
+      )}
+
+      <group ref={groupRef} scale={scale}>
+        {/* globo — esfera alargada, con un casquete superior más oscuro para dar volumen */}
+        <mesh position={[0, 0.05, 0]} scale={[1, 1.25, 1]}>
+          <sphereGeometry args={[0.024, 20, 20]} />
+          <meshStandardMaterial color={point.color} emissive={point.color} emissiveIntensity={0.35} roughness={0.5} />
+        </mesh>
+        <mesh position={[0, 0.05, 0]} scale={[1.03, 1.28, 1.03]}>
+          <sphereGeometry args={[0.024, 20, 20, 0, Math.PI * 2, 0, Math.PI * 0.35]} />
+          <meshBasicMaterial color="#3b0764" transparent opacity={0.5} />
+        </mesh>
+        {/* cuello del globo */}
+        <mesh position={[0, 0.023, 0]}>
+          <coneGeometry args={[0.006, 0.012, 8]} />
+          <meshStandardMaterial color="#3b0764" />
+        </mesh>
+        {/* cuerdas */}
+        {[[-0.012, -0.012], [0.012, -0.012], [-0.012, 0.012], [0.012, 0.012]].map(([ox, oz], i) => (
+          <mesh key={i} position={[ox, 0.008, oz]}>
+            <cylinderGeometry args={[0.0008, 0.0008, 0.03, 4]} />
+            <meshBasicMaterial color="#e5e7eb" />
+          </mesh>
+        ))}
+        {/* canasta */}
+        <mesh position={[0, -0.008, 0]}>
+          <boxGeometry args={[0.026, 0.016, 0.026]} />
+          <meshStandardMaterial color="#7c4a2d" roughness={0.9} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+const MARKERS: Record<NonNullable<MapPoint['kind']>, typeof CabanaMarker> = {
+  cabana: CabanaMarker,
+  landmark: LandmarkMarker,
+  balloon: BalloonMarker,
+};
+
+function Scene({ image, selectedIdx, onSelect, geo }: {
+  image: string;
+  selectedIdx: number;
+  onSelect: (i: number) => void;
+  geo: GeoState;
+}) {
+  return (
+    <>
+      <ambientLight intensity={0.9} />
+      <directionalLight position={[3, 5, 2]} intensity={1.1} />
+      <Suspense fallback={null}>
+        <Terrain image={image} />
+      </Suspense>
+      {POINTS.map((p, i) => {
+        const MarkerComp = MARKERS[p.kind ?? 'landmark'];
+        return <MarkerComp key={p.id} point={p} index={i} selected={selectedIdx === i} onSelect={onSelect} />;
+      })}
+      {geo.status === 'active' && geo.lat !== null && geo.lon !== null && (
+        <UserLocationMarker lat={geo.lat} lon={geo.lon} accuracy={geo.accuracy} />
+      )}
+      <OrbitControls
+        enablePan={false}
+        enableZoom={true}
+        minDistance={1.6}
+        maxDistance={4.5}
+        minPolarAngle={Math.PI / 5}
+        maxPolarAngle={Math.PI / 2.35}
+        target={[0, 0, 0]}
+      />
+    </>
   );
 }
 
@@ -305,45 +402,14 @@ function UserLocationMarker({ lat, lon, accuracy }: { lat: number; lon: number; 
   );
 }
 
-function Scene({ image, selected, onSelect, geo }: {
-  image: string;
-  selected: MapPoint | null;
-  onSelect: (p: MapPoint) => void;
-  geo: GeoState;
-}) {
-  return (
-    <>
-      <ambientLight intensity={0.9} />
-      <directionalLight position={[3, 5, 2]} intensity={1.1} />
-      <Suspense fallback={null}>
-        <Terrain image={image} />
-      </Suspense>
-      {POINTS.map(p =>
-        p.kind === 'cabana'
-          ? <CabanaMarker key={p.id} point={p} selected={selected?.id === p.id} onSelect={onSelect} />
-          : <LandmarkMarker key={p.id} point={p} selected={selected?.id === p.id} onSelect={onSelect} />
-      )}
-      {geo.status === 'active' && geo.lat !== null && geo.lon !== null && (
-        <UserLocationMarker lat={geo.lat} lon={geo.lon} accuracy={geo.accuracy} />
-      )}
-      <OrbitControls
-        enablePan={false}
-        enableZoom={true}
-        minDistance={1.6}
-        maxDistance={4.5}
-        minPolarAngle={Math.PI / 5}
-        maxPolarAngle={Math.PI / 2.35}
-        target={[0, 0, 0]}
-      />
-    </>
-  );
-}
-
 export default function MyAppMap({ image = '/venue-map.jpg' }: { image?: string }) {
-  const [selected, setSelected] = useState<MapPoint | null>(
-    POINTS.find(p => p.isMine) ?? null
-  );
+  const [selectedIdx, setSelectedIdx] = useState<number>(() => {
+    const i = POINTS.findIndex(p => p.isMine);
+    return i >= 0 ? i : 0;
+  });
   const geo = useGeolocation();
+  const selected = POINTS[selectedIdx];
+  const swipeRef = useRef<{ x: number; y: number; active: boolean } | null>(null);
 
   const initialCamPos = useMemo<[number, number, number]>(() => [0, 2.1, 2.3], []);
 
@@ -352,17 +418,38 @@ export default function MyAppMap({ image = '/venue-map.jpg' }: { image?: string 
     else geo.start();
   };
 
+  const goPrev = () => setSelectedIdx(i => (i - 1 + POINTS.length) % POINTS.length);
+  const goNext = () => setSelectedIdx(i => (i + 1) % POINTS.length);
+
+  // Swipe horizontal sobre el mapa — igual de intuitivo que las flechas
+  const onPointerDown = (e: React.PointerEvent) => {
+    swipeRef.current = { x: e.clientX, y: e.clientY, active: true };
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    const s = swipeRef.current;
+    if (!s?.active) return;
+    const dx = e.clientX - s.x;
+    const dy = Math.abs(e.clientY - s.y);
+    if (Math.abs(dx) > 70 && dy < 50) {
+      s.active = false;
+      dx < 0 ? goNext() : goPrev();
+    }
+  };
+
   return (
     <div className="mapa-panel">
-      <div className="mapa-canvas-wrap">
+      <div
+        className="mapa-canvas-wrap"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+      >
         <Canvas
           camera={{ position: initialCamPos, fov: 42 }}
           dpr={[1, 1.5]}
           gl={{ antialias: true, alpha: true }}
         >
-          <Scene image={image} selected={selected} onSelect={setSelected} geo={geo} />
+          <Scene image={image} selectedIdx={selectedIdx} onSelect={setSelectedIdx} geo={geo} />
         </Canvas>
-        <div className="mapa-hint">Arrastra para girar · Pellizca para zoom</div>
 
         {geo.supported && (
           <button
@@ -382,22 +469,20 @@ export default function MyAppMap({ image = '/venue-map.jpg' }: { image?: string 
         {geo.status === 'error' && (
           <div className="mapa-geo-msg">No pudimos obtener tu ubicación. Intenta de nuevo.</div>
         )}
-      </div>
 
-      <div className="mapa-legend">
-        {POINTS.map(p => (
-          <button
-            key={p.id}
-            className={`mapa-legend-item ${selected?.id === p.id ? 'is-active' : ''} ${p.isMine ? 'is-mine' : ''}`}
-            style={{ ['--pin-color' as any]: p.color }}
-            onClick={() => setSelected(p)}
-          >
-            <span className="mapa-legend-dot" />
-            <span className="mapa-legend-emoji">{p.emoji}</span>
-            <span className="mapa-legend-label">{p.label}</span>
-            {p.isMine && <span className="mapa-legend-tag">Tú</span>}
+        {/* Selector inferior — reemplaza la lista: nombre grande + flechas / swipe */}
+        <div className="mapa-selector" style={{ ['--pin-color' as any]: selected.color }}>
+          <button className="mapa-nav-arrow" onClick={goPrev} aria-label="Punto anterior">
+            <ChevronLeft size={20} />
           </button>
-        ))}
+          <div className="mapa-selector-label">
+            <span className="mapa-selector-tag">{selected.isMine ? 'Tu cabaña' : selected.kind === 'cabana' ? 'Cabaña' : 'Punto de interés'}</span>
+            <span key={selected.id} className="mapa-selector-name">{selected.emoji} {selected.label}</span>
+          </div>
+          <button className="mapa-nav-arrow" onClick={goNext} aria-label="Punto siguiente">
+            <ChevronRight size={20} />
+          </button>
+        </div>
       </div>
     </div>
   );

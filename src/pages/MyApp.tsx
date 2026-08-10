@@ -158,10 +158,14 @@ function SectionSheet({ section, origin, onClose }: {
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
     >
-      <div className="myapp-sheet-bg" style={{ backgroundImage: `url(${section.image})` }} />
-      <div className="myapp-sheet-scrim" />
+      {section.id !== 'mapa' && (
+        <>
+          <div className="myapp-sheet-bg" style={{ backgroundImage: `url(${section.image})` }} />
+          <div className="myapp-sheet-scrim" />
+        </>
+      )}
 
-      <div className="myapp-sheet-header">
+      <div className={`myapp-sheet-header ${section.id === 'mapa' ? 'myapp-sheet-header--floating' : ''}`}>
         <button className="myapp-sheet-close" onClick={handleClose} aria-label="Cerrar">✕</button>
         <span className="myapp-sheet-title">
           <section.Icon size={19} strokeWidth={1.6} />
@@ -169,7 +173,7 @@ function SectionSheet({ section, origin, onClose }: {
         </span>
       </div>
 
-      <div className="myapp-sheet-content">
+      <div className={`myapp-sheet-content ${section.id === 'mapa' ? 'myapp-sheet-content--flush' : ''}`}>
         {renderSectionContent(section)}
       </div>
     </div>
