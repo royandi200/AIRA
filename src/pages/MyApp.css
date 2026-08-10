@@ -576,6 +576,53 @@
   pointer-events: none;
 }
 
+.mapa-locate-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(10,10,13,0.75);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 200ms ease, color 200ms ease, border-color 200ms ease;
+}
+.mapa-locate-btn:active { transform: scale(0.92); }
+.mapa-locate-btn.is-locating {
+  color: #4285F4;
+  animation: mapa-locate-pulse 1s ease-in-out infinite;
+}
+.mapa-locate-btn.is-active {
+  background: #4285F4;
+  border-color: #4285F4;
+  color: #fff;
+}
+@keyframes mapa-locate-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.mapa-geo-msg {
+  position: absolute;
+  top: 56px;
+  right: 10px;
+  max-width: 190px;
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: rgba(255,255,255,0.75);
+  background: rgba(0,0,0,0.7);
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 8px 10px;
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+}
+
 .mapa-legend {
   display: flex;
   flex-direction: column;

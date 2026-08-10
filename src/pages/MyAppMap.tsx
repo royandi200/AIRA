@@ -1,7 +1,8 @@
-import { Suspense, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useLoader, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
+import { LocateFixed } from 'lucide-react';
 
 /**
  * Mapa 3D del venue — Opción A: plano inclinado con textura satelital
@@ -63,6 +64,82 @@ const POINTS: MapPoint[] = [
 
 const PLANE_W = 6;
 const PLANE_D = 4.2;
+
+// ══ Georreferenciación (GPS → plano 3D) ═══════════════════════════════════
+// No usa ninguna API de mapas — solo navigator.geolocation (nativo del
+// navegador/celular, gratis) + una transformación lineal calibrada con
+// 2 puntos de referencia reales (Cabaña 1 y Cabaña 20), medidos con
+// Google Maps. Al ser un área chiquita (cientos de metros) no hace falta
+// lidiar con la curvatura de la Tierra: alcanza con proyectar a metros
+// locales (este/norte) y aplicar una rotación + escala fija.
+const GPS_REF        = { lat: 6.233305555555556, lon: -75.23014444444445 }; // Cabaña 20
+const GPS_REF_WORLD   = { x: (-0.716 * PLANE_W) / 2, z: (0.714 * PLANE_D) / 2 }; // su posición en el plano
+const GPS_K           = { a: -0.020093304378655072, b: -0.02120206483940115 }; // escala+rotación (unidades del plano / metro)
+const METERS_PER_DEG_LAT = 111320;
+
+/** Convierte lat/lon reales a coordenadas del plano 3D (mismo sistema que los pines) */
+function latLonToWorld(lat: number, lon: number): { x: number; z: number } {
+  const north = (lat - GPS_REF.lat) * METERS_PER_DEG_LAT;
+  const east  = (lon - GPS_REF.lon) * METERS_PER_DEG_LAT * Math.cos((GPS_REF.lat * Math.PI) / 180);
+  const dx = GPS_K.a * east - GPS_K.b * north;
+  const dz = GPS_K.b * east + GPS_K.a * north;
+  return { x: GPS_REF_WORLD.x + dx, z: GPS_REF_WORLD.z + dz };
+}
+
+/** Radio de precisión del GPS (metros) → unidades del plano */
+function metersToWorld(m: number): number {
+  return m * Math.hypot(GPS_K.a, GPS_K.b);
+}
+
+interface GeoState {
+  supported: boolean;
+  status: 'idle' | 'locating' | 'active' | 'denied' | 'error';
+  lat: number | null;
+  lon: number | null;
+  accuracy: number | null;
+}
+
+/** Hook de geolocalización — API nativa del navegador, sin costo ni API key */
+function useGeolocation() {
+  const [state, setState] = useState<GeoState>({
+    supported: typeof navigator !== 'undefined' && 'geolocation' in navigator,
+    status: 'idle',
+    lat: null,
+    lon: null,
+    accuracy: null,
+  });
+  const watchIdRef = useRef<number | null>(null);
+
+  const start = useCallback(() => {
+    if (!state.supported) return;
+    setState(s => ({ ...s, status: 'locating' }));
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        setState({
+          supported: true,
+          status: 'active',
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+        });
+      },
+      (err) => {
+        setState(s => ({ ...s, status: err.code === err.PERMISSION_DENIED ? 'denied' : 'error' }));
+      },
+      { enableHighAccuracy: true, maximumAge: 4000, timeout: 15000 }
+    );
+  }, [state.supported]);
+
+  const stop = useCallback(() => {
+    if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+    watchIdRef.current = null;
+    setState(s => ({ ...s, status: 'idle' }));
+  }, []);
+
+  useEffect(() => () => { if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current); }, []);
+
+  return { ...state, start, stop };
+}
 
 function Terrain({ image }: { image: string }) {
   const texture = useLoader(THREE.TextureLoader, image);
@@ -167,10 +244,72 @@ function LandmarkMarker({ point, onSelect, selected }: {
   );
 }
 
-function Scene({ image, selected, onSelect }: {
+/** Punto "estás aquí" — se posiciona con GPS real, sin ninguna API de mapas */
+function UserLocationMarker({ lat, lon, accuracy }: { lat: number; lon: number; accuracy: number | null }) {
+  const dotRef = useRef<THREE.Group>(null);
+  const ringRef = useRef<THREE.Mesh>(null);
+
+  const { worldX, worldZ, offMap } = useMemo(() => {
+    const { x, z } = latLonToWorld(lat, lon);
+    const halfW = PLANE_W / 2;
+    const halfD = PLANE_D / 2;
+    const outside = Math.abs(x) > halfW || Math.abs(z) > halfD;
+    // Si está fuera del área mapeada, lo dejamos pegado al borde más cercano
+    // en vez de desaparecer — sigue indicando la dirección aproximada.
+    const cx = Math.max(-halfW * 0.96, Math.min(halfW * 0.96, x));
+    const cz = Math.max(-halfD * 0.96, Math.min(halfD * 0.96, z));
+    return { worldX: cx, worldZ: cz, offMap: outside };
+  }, [lat, lon]);
+
+  const accuracyRadius = accuracy ? Math.max(0.05, Math.min(0.6, metersToWorld(accuracy))) : 0.08;
+
+  useFrame(({ clock }) => {
+    if (dotRef.current) dotRef.current.position.y = 0.06 + Math.sin(clock.getElapsedTime() * 2.4) * 0.006;
+    if (ringRef.current) {
+      const t = (clock.getElapsedTime() % 1.6) / 1.6;
+      ringRef.current.scale.setScalar(0.4 + t * 1.4);
+      (ringRef.current.material as THREE.MeshBasicMaterial).opacity = 0.5 * (1 - t);
+    }
+  });
+
+  return (
+    <group position={[worldX, 0, worldZ]}>
+      {/* círculo de precisión GPS */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]}>
+        <circleGeometry args={[accuracyRadius, 32]} />
+        <meshBasicMaterial color="#4285F4" transparent opacity={0.14} />
+      </mesh>
+      {/* onda expansiva en loop */}
+      <mesh ref={ringRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.013, 0]}>
+        <ringGeometry args={[0.05, 0.062, 24]} />
+        <meshBasicMaterial color="#4285F4" transparent opacity={0.4} />
+      </mesh>
+      {/* punto azul */}
+      <group ref={dotRef}>
+        <mesh>
+          <sphereGeometry args={[0.045, 20, 20]} />
+          <meshStandardMaterial color="#4285F4" emissive="#4285F4" emissiveIntensity={0.6} />
+        </mesh>
+        <mesh>
+          <sphereGeometry args={[0.052, 20, 20]} />
+          <meshBasicMaterial color="#ffffff" transparent opacity={0.5} side={THREE.BackSide} />
+        </mesh>
+      </group>
+      {offMap && (
+        <mesh position={[0, 0.09, 0]} rotation={[0, 0, 0]}>
+          <coneGeometry args={[0.035, 0.05, 3]} />
+          <meshBasicMaterial color="#4285F4" />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
+function Scene({ image, selected, onSelect, geo }: {
   image: string;
   selected: MapPoint | null;
   onSelect: (p: MapPoint) => void;
+  geo: GeoState;
 }) {
   return (
     <>
@@ -183,6 +322,9 @@ function Scene({ image, selected, onSelect }: {
         p.kind === 'cabana'
           ? <CabanaMarker key={p.id} point={p} selected={selected?.id === p.id} onSelect={onSelect} />
           : <LandmarkMarker key={p.id} point={p} selected={selected?.id === p.id} onSelect={onSelect} />
+      )}
+      {geo.status === 'active' && geo.lat !== null && geo.lon !== null && (
+        <UserLocationMarker lat={geo.lat} lon={geo.lon} accuracy={geo.accuracy} />
       )}
       <OrbitControls
         enablePan={false}
@@ -201,8 +343,14 @@ export default function MyAppMap({ image = '/venue-map.jpg' }: { image?: string 
   const [selected, setSelected] = useState<MapPoint | null>(
     POINTS.find(p => p.isMine) ?? null
   );
+  const geo = useGeolocation();
 
   const initialCamPos = useMemo<[number, number, number]>(() => [0, 2.1, 2.3], []);
+
+  const toggleLocate = () => {
+    if (geo.status === 'active' || geo.status === 'locating') geo.stop();
+    else geo.start();
+  };
 
   return (
     <div className="mapa-panel">
@@ -212,9 +360,28 @@ export default function MyAppMap({ image = '/venue-map.jpg' }: { image?: string 
           dpr={[1, 1.5]}
           gl={{ antialias: true, alpha: true }}
         >
-          <Scene image={image} selected={selected} onSelect={setSelected} />
+          <Scene image={image} selected={selected} onSelect={setSelected} geo={geo} />
         </Canvas>
         <div className="mapa-hint">Arrastra para girar · Pellizca para zoom</div>
+
+        {geo.supported && (
+          <button
+            className={`mapa-locate-btn ${geo.status === 'active' ? 'is-active' : ''} ${geo.status === 'locating' ? 'is-locating' : ''}`}
+            onClick={toggleLocate}
+            aria-label="Ubícame"
+          >
+            <LocateFixed size={18} />
+          </button>
+        )}
+
+        {geo.status === 'denied' && (
+          <div className="mapa-geo-msg">
+            Activa el permiso de ubicación en tu navegador para verte en el mapa.
+          </div>
+        )}
+        {geo.status === 'error' && (
+          <div className="mapa-geo-msg">No pudimos obtener tu ubicación. Intenta de nuevo.</div>
+        )}
       </div>
 
       <div className="mapa-legend">
