@@ -83,6 +83,13 @@
   line-height: 1;
 }
 .myapp-clock-colon { display: inline-block; width: 9px; text-align: center; transition: opacity 80ms linear; }
+.myapp-clock-ampm {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(255,255,255,0.55);
+  margin-left: 3px;
+}
 .myapp-clock-status {
   display: flex;
   align-items: center;

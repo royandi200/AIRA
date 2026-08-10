@@ -56,7 +56,7 @@ export const SCHEDULE: ScheduleItem[] = [
   item('d2', 16, 'Domingo', '16 Agosto', '09:00', '10:00', 'Sesión de yoga / entrenamiento funcional', 'Playa Aira'),
   item('d3', 16, 'Domingo', '16 Agosto', '10:00', '18:00', 'Torneo de voleibol', 'Playa Aira'),
   item('d4', 16, 'Domingo', '16 Agosto', '10:00', '18:00', 'Presentación de artistas', 'Pandora Stage y Joinn Stage'),
-  item('d5', 16, 'Domingo', '16 Agosto', '20:00', '12:00', 'Noche blanca y antifaz / presentación de artistas', 'Main Stage Majestic'),
+  item('d5', 16, 'Domingo', '16 Agosto', '20:00', '00:00', 'Noche blanca y antifaz / presentación de artistas', 'Main Stage Majestic'),
   // Ojo: 01:00–03:00 cae en la madrugada del lunes 17 (parte de la
   // misma noche que empieza el domingo a las 20:00) — se fecha en el
   // día calendario correcto (17) para que el estado "en vivo" del
@@ -71,7 +71,12 @@ export const SCHEDULE: ScheduleItem[] = [
 ].sort((a, b) => a.start.getTime() - b.start.getTime());
 
 export function formatHM(d: Date): string {
-  return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false });
+  let h = d.getHours();
+  const m = d.getMinutes();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${h}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
 /** Estado en vivo del itinerario — recalcula cada 30s (suficiente para un cronograma) */

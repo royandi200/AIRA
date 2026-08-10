@@ -15,8 +15,10 @@ export default function MyAppClock() {
   }, []);
 
   const { current, next } = useLiveSchedule();
-  const hh = String(now.getHours()).padStart(2, '0');
+  const h24 = now.getHours();
+  const hh = String(h24 % 12 === 0 ? 12 : h24 % 12);
   const mm = String(now.getMinutes()).padStart(2, '0');
+  const ampm = h24 >= 12 ? 'PM' : 'AM';
   const blink = now.getSeconds() % 2 === 0;
 
   return (
@@ -25,6 +27,7 @@ export default function MyAppClock() {
         <span>{hh}</span>
         <span className="myapp-clock-colon" style={{ opacity: blink ? 1 : 0.25 }}>:</span>
         <span>{mm}</span>
+        <span className="myapp-clock-ampm">{ampm}</span>
       </div>
       {current ? (
         <div className="myapp-clock-status myapp-clock-status--live">
