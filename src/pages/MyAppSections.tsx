@@ -1,9 +1,10 @@
 import { lazy, Suspense, useState } from 'react';
 import {
-  Fingerprint, Wallet, Headphones, Radar, Aperture, Gem, Bus, ScanFace,
+  Fingerprint, Wallet, CalendarClock, Radar, Aperture, Gem, Bus, ScanFace,
   X, CheckCircle2, MapPinned, ArrowRight, Bell, LogOut, Sparkles, ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
+import { SCHEDULE, useLiveSchedule, formatHM, type ScheduleItem } from './MyAppSchedule';
 
 // Three.js (react-three-fiber + drei) solo se descarga cuando el usuario
 // realmente abre "Mapa" — evita que todo /myapp cargue esa dependencia
@@ -41,7 +42,7 @@ export interface CompassSection {
 export const SECTIONS: CompassSection[] = [
   { id: 'pasaporte',  label: 'Mi Pasaporte', Icon: Fingerprint, image: '/AIRA.png',           color: '#22c55e' },
   { id: 'gastos',     label: 'Tus Gastos',   Icon: Wallet,      image: '/vinyl.jpg',           color: '#10b981' },
-  { id: 'lineup',     label: 'Line-Up',      Icon: Headphones,  image: '/dj-console.jpg',      color: '#a855f7' },
+  { id: 'lineup',     label: 'Itinerario',   Icon: CalendarClock, image: '/dj-console.jpg',    color: '#a855f7' },
   { id: 'mapa',       label: 'Mapa',         Icon: Radar,       image: '/venue-map.jpg',       color: '#38bdf8' },
   { id: 'galeria',    label: 'Galería',      Icon: Aperture,    image: '/crowd-1.jpg',         color: '#f97316' },
   { id: 'vip',        label: 'VIP',          Icon: Gem,         image: '/vip-area.jpg',        color: '#e1fe52' },
@@ -168,75 +169,68 @@ function GastosPanel() {
   );
 }
 
-// ── Line-Up ─────────────────────────────────────────────────────────────────
-interface LineupSet { time: string; artist: string; stage: string; headliner?: boolean }
-interface LineupDay { id: string; label: string; sub: string; date: string; sets: LineupSet[] }
+// ── Itinerario ───────────────────────────────────────────────────────────────
+// Datos reales del PDF "ITINERARIO AIRA" (src/pages/MyAppSchedule.tsx).
+// Muestra qué está pasando AHORA (banner en vivo) y el cronograma completo
+// de los 3 días para saber qué viene — todo con el mismo reloj real.
+const ITIN_DAYS: ScheduleItem['day'][] = ['Sábado', 'Domingo', 'Lunes'];
 
-const LINEUP_DAYS: LineupDay[] = [
-  {
-    id: 'day1', label: 'DÍA 1', sub: 'After Fiesta de Yates', date: 'VIE 21 NOV',
-    sets: [
-      { time: '14:00', artist: 'NOVA SORA',           stage: 'Muelle Principal' },
-      { time: '16:30', artist: 'KAIROS B2B ECLYPS',   stage: 'Muelle Principal' },
-      { time: '19:00', artist: 'VELVETRA',            stage: 'Cubierta Norte', headliner: true },
-      { time: '21:30', artist: 'DJ AXIOM',            stage: 'Cubierta Norte' },
-    ],
-  },
-  {
-    id: 'day2', label: 'DÍA 2', sub: 'Fiesta Majestic & Stage Joinn', date: 'SÁB 22 NOV',
-    sets: [
-      { time: '15:00', artist: 'LUNA NOX',             stage: 'Stage Joinn' },
-      { time: '17:30', artist: 'REVLON DEEP',          stage: 'Stage Joinn' },
-      { time: '20:00', artist: 'AXEL PRIME',           stage: 'Majestic Deck', headliner: true },
-      { time: '22:30', artist: 'KAIROS',               stage: 'Majestic Deck' },
-      { time: '00:30', artist: 'NOVA SORA · Closing',  stage: 'Majestic Deck' },
-    ],
-  },
-  {
-    id: 'day3', label: 'DÍA 3', sub: 'Open Deck', date: 'DOM 23 NOV',
-    sets: [
-      { time: '13:00', artist: 'ECLYPS',               stage: 'Open Deck' },
-      { time: '15:30', artist: 'VELVETRA B2B AXIOM',   stage: 'Open Deck', headliner: true },
-      { time: '18:00', artist: 'LUNA NOX · Sunset Set', stage: 'Open Deck' },
-    ],
-  },
-];
+function ItinerarioPanel() {
+  const { now, current, next } = useLiveSchedule();
+  const [dayFilter, setDayFilter] = useState<ScheduleItem['day']>(current?.day ?? next?.day ?? 'Sábado');
 
-function LineupPanel() {
-  const [dayIdx, setDayIdx] = useState(0);
-  const day = LINEUP_DAYS[dayIdx];
+  const items = SCHEDULE.filter(it => it.day === dayFilter);
 
   return (
-    <div className="lineup-panel">
+    <div className="itin-panel">
+      {current && (
+        <div className="itin-live-banner">
+          <span className="itin-live-dot" />
+          <div className="itin-live-text">
+            <span className="itin-live-kicker">Sucediendo ahora</span>
+            <span className="itin-live-title">{current.title}</span>
+            <span className="itin-live-place">{current.place} · hasta las {formatHM(current.end)}</span>
+          </div>
+        </div>
+      )}
+      {!current && next && (
+        <div className="itin-live-banner itin-live-banner--next">
+          <div className="itin-live-text">
+            <span className="itin-live-kicker">Próximo</span>
+            <span className="itin-live-title">{next.title}</span>
+            <span className="itin-live-place">{next.place} · {formatHM(next.start)}</span>
+          </div>
+        </div>
+      )}
+
       <div className="lineup-daytabs">
-        {LINEUP_DAYS.map((d, i) => (
+        {ITIN_DAYS.map(d => (
           <button
-            key={d.id}
-            className={`lineup-daytab ${i === dayIdx ? 'is-active' : ''}`}
-            onClick={() => setDayIdx(i)}
+            key={d}
+            className={`lineup-daytab ${d === dayFilter ? 'is-active' : ''}`}
+            onClick={() => setDayFilter(d)}
           >
-            {d.label}
+            {d}
           </button>
         ))}
       </div>
 
-      <div className="lineup-day-header">
-        <span className="lineup-day-sub">{day.sub}</span>
-        <span className="lineup-day-date">{day.date}</span>
-      </div>
-
       <div className="lineup-timeline">
-        {day.sets.map((s, i) => (
-          <div key={i} className={`lineup-set ${s.headliner ? 'is-headliner' : ''}`}>
-            <span className="lineup-set-time">{s.time}</span>
-            <div className="lineup-set-dot" />
-            <div className="lineup-set-body">
-              <span className="lineup-set-artist">{s.artist}</span>
-              <span className="lineup-set-stage">{s.stage}</span>
+        {items.map((it) => {
+          const isLive = current?.id === it.id;
+          const isPast = it.end <= now && !isLive;
+          return (
+            <div key={it.id} className={`lineup-set ${isLive ? 'is-headliner' : ''} ${isPast ? 'is-past' : ''}`}>
+              <span className="lineup-set-time">{formatHM(it.start)}</span>
+              <div className="lineup-set-dot" />
+              <div className="lineup-set-body">
+                <span className="lineup-set-artist">{it.title}</span>
+                <span className="lineup-set-stage">{it.place}</span>
+              </div>
+              {isLive && <span className="lineup-set-badge">EN VIVO</span>}
             </div>
-            {s.headliner && <span className="lineup-set-badge">HEADLINER</span>}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -406,7 +400,7 @@ export function renderSectionContent(section: CompassSection) {
     case 'pasaporte':  return <PasaportePanel />;
     case 'gastos':     return <GastosPanel />;
     case 'mapa':       return <Suspense fallback={<MapLoading />}><MyAppMap /></Suspense>;
-    case 'lineup':     return <LineupPanel />;
+    case 'lineup':     return <ItinerarioPanel />;
     case 'galeria':    return <GaleriaPanel />;
     case 'vip':        return <VipPanel />;
     case 'transporte': return <TransportePanel />;

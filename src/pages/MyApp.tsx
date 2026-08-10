@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './MyApp.css';
 import { SECTIONS, renderSectionContent, type CompassSection } from './MyAppSections';
+import MyAppClock from './MyAppClock';
 
 /**
  * MyApp — Webapp para asistentes al evento AIRA.
@@ -350,6 +351,7 @@ export default function MyApp() {
   }, []);
 
   return (
+    <>
     <div
       ref={rootRef}
       className="myapp-root"
@@ -431,5 +433,11 @@ export default function MyApp() {
         />
       )}
     </div>
+
+    {/* Reloj en vivo — fuera de .myapp-root a propósito: ese contenedor
+        anima su transform en cada "tac" (pulseSettle) y cualquier
+        transform en un ancestro rompe el position:fixed de sus hijos. */}
+    <MyAppClock />
+    </>
   );
 }

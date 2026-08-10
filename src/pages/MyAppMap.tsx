@@ -1,8 +1,8 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useLoader, useFrame } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, Line } from '@react-three/drei';
 import * as THREE from 'three';
-import { LocateFixed, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LocateFixed, ChevronLeft, ChevronRight, Navigation } from 'lucide-react';
 
 /**
  * Mapa 3D del venue — Opción A: plano inclinado con textura satelital
@@ -92,6 +92,13 @@ function latLonToWorld(lat: number, lon: number): { x: number; z: number } {
 /** Radio de precisión del GPS (metros) → unidades del plano */
 function metersToWorld(m: number): number {
   return m * Math.hypot(GPS_K.a, GPS_K.b);
+}
+
+const METERS_PER_WORLD_UNIT = 1 / Math.hypot(GPS_K.a, GPS_K.b);
+
+/** Distancia real (línea recta) entre dos puntos del plano, en metros */
+function worldDistanceMeters(ax: number, az: number, bx: number, bz: number): number {
+  return Math.hypot(ax - bx, az - bz) * METERS_PER_WORLD_UNIT;
 }
 
 interface GeoState {
@@ -308,12 +315,43 @@ const MARKERS: Record<NonNullable<MapPoint['kind']>, typeof CabanaMarker> = {
   balloon: BalloonMarker,
 };
 
+/**
+ * Guía de ruta — línea recta punteada del usuario al punto seleccionado.
+ * Es orientación "línea de aire" (dirección + distancia real), no una
+ * ruta peatonal trazada sobre los caminos reales del venue.
+ */
+function GuideLine({ from, to, color }: { from: [number, number]; to: [number, number]; color: string }) {
+  const points = useMemo<[number, number, number][]>(() => [
+    [from[0], 0.018, from[1]],
+    [to[0], 0.018, to[1]],
+  ], [from, to]);
+
+  return (
+    <Line
+      points={points}
+      color={color}
+      lineWidth={2}
+      dashed
+      dashScale={12}
+      dashSize={1}
+      gapSize={0.6}
+      transparent
+      opacity={0.85}
+    />
+  );
+}
+
 function Scene({ image, selectedIdx, onSelect, geo }: {
   image: string;
   selectedIdx: number;
   onSelect: (i: number) => void;
   geo: GeoState;
 }) {
+  const selected = POINTS[selectedIdx];
+  const targetWorld: [number, number] = [(selected.x * PLANE_W) / 2, (selected.z * PLANE_D) / 2];
+  const hasGeo = geo.status === 'active' && geo.lat !== null && geo.lon !== null;
+  const userWorld = hasGeo ? latLonToWorld(geo.lat!, geo.lon!) : null;
+
   return (
     <>
       <ambientLight intensity={0.9} />
@@ -325,14 +363,17 @@ function Scene({ image, selectedIdx, onSelect, geo }: {
         const MarkerComp = MARKERS[p.kind ?? 'landmark'];
         return <MarkerComp key={p.id} point={p} index={i} selected={selectedIdx === i} onSelect={onSelect} />;
       })}
-      {geo.status === 'active' && geo.lat !== null && geo.lon !== null && (
-        <UserLocationMarker lat={geo.lat} lon={geo.lon} accuracy={geo.accuracy} />
+      {hasGeo && (
+        <>
+          <UserLocationMarker lat={geo.lat!} lon={geo.lon!} accuracy={geo.accuracy} />
+          <GuideLine from={[userWorld!.x, userWorld!.z]} to={targetWorld} color={selected.color} />
+        </>
       )}
       <OrbitControls
         enablePan={false}
         enableZoom={true}
         minDistance={1.6}
-        maxDistance={4.5}
+        maxDistance={8.5}
         minPolarAngle={Math.PI / 5}
         maxPolarAngle={Math.PI / 2.35}
         target={[0, 0, 0]}
@@ -478,6 +519,16 @@ export default function MyAppMap({ image = '/venue-map.jpg' }: { image?: string 
           <div className="mapa-selector-label">
             <span className="mapa-selector-tag">{selected.isMine ? 'Tu cabaña' : selected.kind === 'cabana' ? 'Cabaña' : 'Punto de interés'}</span>
             <span key={selected.id} className="mapa-selector-name">{selected.emoji} {selected.label}</span>
+            {geo.status === 'active' && geo.lat !== null && geo.lon !== null && (() => {
+              const user = latLonToWorld(geo.lat, geo.lon);
+              const target = { x: (selected.x * PLANE_W) / 2, z: (selected.z * PLANE_D) / 2 };
+              const meters = worldDistanceMeters(user.x, user.z, target.x, target.z);
+              return (
+                <span className="mapa-selector-distance">
+                  <Navigation size={11} /> {meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(1)} km`}
+                </span>
+              );
+            })()}
           </div>
           <button className="mapa-nav-arrow" onClick={goNext} aria-label="Punto siguiente">
             <ChevronRight size={20} />

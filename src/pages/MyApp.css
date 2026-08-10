@@ -56,6 +56,65 @@
   z-index: 6;
   position: relative;
 }
+/* ── Reloj en vivo — flota encima de todo, home y secciones abiertas ──── */
+.myapp-clock {
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top));
+  right: 14px;
+  z-index: 70; /* por encima de .myapp-sheet (50) */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  padding: 7px 12px;
+  border-radius: 14px;
+  background: rgba(8,8,11,0.55);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(8px);
+  pointer-events: none; /* solo informativo, nunca bloquea toques */
+  user-select: none;
+}
+.myapp-clock-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 0.02em;
+  color: #fff;
+  line-height: 1;
+}
+.myapp-clock-colon { display: inline-block; width: 9px; text-align: center; transition: opacity 80ms linear; }
+.myapp-clock-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 150px;
+}
+.myapp-clock-status-text {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: rgba(255,255,255,0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.myapp-clock-status--live .myapp-clock-status-text {
+  color: #e1fe52;
+}
+.myapp-clock-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #e1fe52;
+  box-shadow: 0 0 6px #e1fe52;
+  flex-shrink: 0;
+  animation: myapp-clock-live-pulse 1.4s ease-in-out infinite;
+}
+@keyframes myapp-clock-live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(0.75); }
+}
+
 .myapp-logo {
   height: 190px;
   max-height: 24vh;
@@ -679,6 +738,16 @@
   color: var(--pin-color, #fff);
   opacity: 0.85;
 }
+.mapa-selector-distance {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.6);
+  margin-top: 1px;
+}
 @keyframes mapa-selector-pop {
   0%   { transform: scale(0.85); opacity: 0; }
   100% { transform: scale(1);    opacity: 1; }
@@ -686,6 +755,54 @@
 
 /* ── Line-Up ──────────────────────────────────────────────────────────── */
 .lineup-panel { margin-top: 8px; display: flex; flex-direction: column; gap: 16px; }
+.itin-panel { margin-top: 8px; display: flex; flex-direction: column; gap: 16px; }
+
+.itin-live-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(225,254,82,0.16), rgba(225,254,82,0.03));
+  border: 1px solid rgba(225,254,82,0.35);
+}
+.itin-live-banner--next {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.12);
+}
+.itin-live-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e1fe52;
+  box-shadow: 0 0 10px #e1fe52;
+  flex-shrink: 0;
+  animation: myapp-clock-live-pulse 1.4s ease-in-out infinite;
+}
+.itin-live-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.itin-live-kicker {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #e1fe52;
+}
+.itin-live-banner--next .itin-live-kicker { color: rgba(255,255,255,0.5); }
+.itin-live-title {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.itin-live-place {
+  font-size: 11.5px;
+  color: rgba(255,255,255,0.5);
+}
+
+.lineup-set.is-past { opacity: 0.4; }
+.lineup-set.is-past .lineup-set-artist { text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.3); }
+
 .lineup-daytabs {
   display: flex;
   gap: 8px;
