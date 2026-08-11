@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Phone, ShieldCheck } from 'lucide-react';
 import type { Attendee } from './MyAppAuth';
+import { useInstallPrompt } from './useInstallPrompt';
 
 /**
  * Login de /myapp con OTP real por SMS (WebSSenger) — garantiza que
@@ -14,6 +15,26 @@ export default function MyAppLogin({ onLogin }: { onLogin: (token: string, atten
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
   const [info, setInfo]       = useState('');
+
+  const { canInstall, isIOS, installed, install } = useInstallPrompt();
+
+  useEffect(() => {
+    // Manifest + ícono propios de /myapp (distinto al de /seguridad),
+    // inyectados solo mientras se ve la pantalla de login.
+    const manifestLink = document.createElement('link');
+    manifestLink.rel = 'manifest';
+    manifestLink.href = '/manifest-myapp.json';
+    document.head.appendChild(manifestLink);
+
+    const prevAppleIcon = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement | null;
+    const prevHref = prevAppleIcon?.href;
+    if (prevAppleIcon) prevAppleIcon.href = '/AIRA.png';
+
+    return () => {
+      manifestLink.remove();
+      if (prevAppleIcon && prevHref) prevAppleIcon.href = prevHref;
+    };
+  }, []);
 
   const sendCode = async () => {
     setError(''); setLoading(true);
@@ -113,6 +134,21 @@ export default function MyAppLogin({ onLogin }: { onLogin: (token: string, atten
             Cambiar número
           </button>
         </>
+      )}
+
+      {!installed && (
+        <div className="myapp-login-install">
+          {canInstall && (
+            <button className="myapp-login-install-btn" onClick={install}>
+              📲 Enviar al escritorio del celular
+            </button>
+          )}
+          {isIOS && !canInstall && (
+            <p className="myapp-login-install-hint">
+              En iPhone: toca <strong>Compartir</strong> ⬆️ y luego <strong>"Agregar a pantalla de inicio"</strong>
+            </p>
+          )}
+        </div>
       )}
     </div>
   );
