@@ -48,24 +48,29 @@ function useTickSound() {
       const ctx = ensureCtx();
       if (!ctx) return;
 
-      const now = ctx.currentTime;
+      // "Clic" suave tipo mecanismo físico (diente de caja fuerte) en vez
+      // de un beep — onda seno (sin armónicos duros) + caída muy rápida
+      // de tono y volumen, con un pasabajos que le quita cualquier brillo
+      // metálico.
+      const now  = ctx.currentTime;
       const osc  = ctx.createOscillator();
       const gain = ctx.createGain();
-      const hp   = ctx.createBiquadFilter();
+      const lp   = ctx.createBiquadFilter();
 
-      hp.type = 'highpass';
-      hp.frequency.value = 800;
+      lp.type = 'lowpass';
+      lp.frequency.value = 1800;
+      lp.Q.value = 0.6;
 
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(1400 + strength * 400, now);
-      osc.frequency.exponentialRampToValueAtTime(300, now + 0.025);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(620 + strength * 90, now);
+      osc.frequency.exponentialRampToValueAtTime(180, now + 0.018);
 
-      gain.gain.setValueAtTime(0.18 * strength, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+      gain.gain.setValueAtTime(0.075 * strength, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
 
-      osc.connect(hp).connect(gain).connect(ctx.destination);
+      osc.connect(lp).connect(gain).connect(ctx.destination);
       osc.start(now);
-      osc.stop(now + 0.05);
+      osc.stop(now + 0.035);
     } catch { /* audio no soportado — degrada silenciosamente */ }
   }, [ensureCtx]);
 
