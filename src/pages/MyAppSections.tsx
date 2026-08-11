@@ -1,10 +1,12 @@
 import { lazy, Suspense, useState } from 'react';
 import {
-  Fingerprint, Wallet, CalendarClock, Radar, Aperture, Gem, Bus, ScanFace,
+  Fingerprint, UtensilsCrossed, Sailboat, CalendarClock, Radar, Aperture, Gem, Bus, ScanFace,
   X, CheckCircle2, MapPinned, ArrowRight, Bell, LogOut, Sparkles, ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
 import { SCHEDULE, useLiveSchedule, formatHM, type ScheduleItem } from './MyAppSchedule';
+import MyAppOrders from './MyAppOrders';
+import MyAppActivities from './MyAppActivities';
 
 // Three.js (react-three-fiber + drei) solo se descarga cuando el usuario
 // realmente abre "Mapa" — evita que todo /myapp cargue esa dependencia
@@ -40,14 +42,15 @@ export interface CompassSection {
 }
 
 export const SECTIONS: CompassSection[] = [
-  { id: 'pasaporte',  label: 'Mi Pasaporte', Icon: Fingerprint, image: '/AIRA.png',           color: '#22c55e' },
-  { id: 'gastos',     label: 'Tus Gastos',   Icon: Wallet,      image: '/vinyl.jpg',           color: '#10b981' },
-  { id: 'lineup',     label: 'Itinerario',   Icon: CalendarClock, image: '/dj-console.jpg',    color: '#a855f7' },
-  { id: 'mapa',       label: 'Mapa',         Icon: Radar,       image: '/venue-map.jpg',       color: '#38bdf8' },
-  { id: 'galeria',    label: 'Galería',      Icon: Aperture,    image: '/crowd-1.jpg',         color: '#f97316' },
-  { id: 'vip',        label: 'VIP',          Icon: Gem,         image: '/vip-area.jpg',        color: '#e1fe52' },
-  { id: 'transporte', label: 'Transporte',   Icon: Bus,         image: '/yacht-party.jpg',     color: '#ef4444' },
-  { id: 'perfil',     label: 'Mi Perfil',    Icon: ScanFace,    image: '/dj-portrait.jpg',     color: '#ec4899' },
+  { id: 'pasaporte',   label: 'Mi Pasaporte', Icon: Fingerprint,     image: '/AIRA.png',           color: '#22c55e' },
+  { id: 'pedidos',     label: 'Pedidos',      Icon: UtensilsCrossed, image: '/bar.jpg',            color: '#10b981' },
+  { id: 'actividades', label: 'Actividades',  Icon: Sailboat,        image: '/beach-party.jpg',    color: '#0ea5e9' },
+  { id: 'lineup',      label: 'Itinerario',   Icon: CalendarClock,   image: '/dj-console.jpg',     color: '#a855f7' },
+  { id: 'mapa',        label: 'Mapa',         Icon: Radar,           image: '/venue-map.jpg',      color: '#38bdf8' },
+  { id: 'galeria',     label: 'Galería',      Icon: Aperture,        image: '/crowd-1.jpg',        color: '#f97316' },
+  { id: 'vip',         label: 'VIP',          Icon: Gem,             image: '/vip-area.jpg',       color: '#e1fe52' },
+  { id: 'transporte',  label: 'Transporte',   Icon: Bus,             image: '/yacht-party.jpg',    color: '#ef4444' },
+  { id: 'perfil',      label: 'Mi Perfil',    Icon: ScanFace,        image: '/dj-portrait.jpg',    color: '#ec4899' },
 ];
 
 /** Placeholder visual tipo QR — se reemplaza por el QR real (orders.qr_token) cuando se conecte al backend */
@@ -99,71 +102,6 @@ function PasaportePanel() {
           <QrPlaceholder color="#22c55e" />
           <p className="passport-qr-hint">Tu QR real se activa al confirmar el pago de tu boleta</p>
         </div>
-      </div>
-    </div>
-  );
-}
-
-interface Expense {
-  id: number;
-  label: string;
-  amount: number;
-}
-
-function GastosPanel() {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [label, setLabel]       = useState('');
-  const [amount, setAmount]     = useState('');
-
-  const total = expenses.reduce((sum, e) => sum + e.amount, 0);
-
-  const addExpense = () => {
-    const n = Number(amount);
-    if (!label.trim() || !n || n <= 0) return;
-    setExpenses(prev => [...prev, { id: Date.now(), label: label.trim(), amount: n }]);
-    setLabel('');
-    setAmount('');
-  };
-
-  const removeExpense = (id: number) => setExpenses(prev => prev.filter(e => e.id !== id));
-
-  return (
-    <div className="gastos-panel">
-      <div className="gastos-total">
-        <span className="gastos-total-label">Total gastado</span>
-        <span className="gastos-total-value">
-          ${total.toLocaleString('es-CO', { maximumFractionDigits: 0 })}
-        </span>
-      </div>
-
-      <div className="gastos-form">
-        <input
-          className="gastos-input"
-          placeholder="¿En qué? (ej. Trago, transporte...)"
-          value={label}
-          onChange={e => setLabel(e.target.value)}
-        />
-        <div className="gastos-form-row">
-          <input
-            className="gastos-input gastos-input--amount"
-            placeholder="$ monto"
-            inputMode="numeric"
-            value={amount}
-            onChange={e => setAmount(e.target.value.replace(/\D/g, ''))}
-          />
-          <button className="gastos-add-btn" onClick={addExpense}>Agregar</button>
-        </div>
-      </div>
-
-      <div className="gastos-list">
-        {expenses.length === 0 && <p className="gastos-empty">Aún no registras gastos.</p>}
-        {expenses.map(e => (
-          <div key={e.id} className="gastos-item">
-            <span className="gastos-item-label">{e.label}</span>
-            <span className="gastos-item-amount">${e.amount.toLocaleString('es-CO')}</span>
-            <button className="gastos-item-remove" onClick={() => removeExpense(e.id)} aria-label="Eliminar">✕</button>
-          </div>
-        ))}
       </div>
     </div>
   );
@@ -397,8 +335,9 @@ function ComingSoonPanel({ section }: { section: CompassSection }) {
 
 export function renderSectionContent(section: CompassSection) {
   switch (section.id) {
-    case 'pasaporte':  return <PasaportePanel />;
-    case 'gastos':     return <GastosPanel />;
+    case 'pasaporte':   return <PasaportePanel />;
+    case 'pedidos':     return <MyAppOrders />;
+    case 'actividades': return <MyAppActivities />;
     case 'mapa':       return <Suspense fallback={<MapLoading />}><MyAppMap /></Suspense>;
     case 'lineup':     return <ItinerarioPanel />;
     case 'galeria':    return <GaleriaPanel />;
