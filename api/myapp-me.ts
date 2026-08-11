@@ -34,29 +34,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const session = sessions[0];
     if (new Date(session.expires_at) < new Date()) return res.status(401).json({ error: 'Sesión expirada' });
 
-    let attendee: any = null;
-    if (session.source === 'orders') {
-      const [rows]: any = await pool.query(
-        `SELECT o.order_ref, u.name, o.add_pass_vip, o.qr_token
-         FROM orders o JOIN users u ON u.id = o.user_id WHERE o.order_ref = ? LIMIT 1`,
-        [session.order_ref]
-      );
-      if (rows.length) {
-        const r = rows[0];
-        attendee = { name: r.name, orderRef: r.order_ref, isVip: !!r.add_pass_vip, qrToken: r.qr_token || null };
-      }
-    } else {
-      const [rows]: any = await pool.query(
-        `SELECT order_ref, nombre AS name, qr_token FROM manual_registros WHERE order_ref = ? LIMIT 1`,
-        [session.order_ref]
-      );
-      if (rows.length) {
-        const r = rows[0];
-        attendee = { name: r.name, orderRef: r.order_ref, isVip: false, qrToken: r.qr_token || null };
-      }
-    }
+    // Fuente única de verdad: manual_registros
+    const [rows]: any = await pool.query(
+      `SELECT order_ref, nombre AS name, qr_token, paquete, monto_pendiente
+       FROM manual_registros WHERE order_ref = ? LIMIT 1`,
+      [session.order_ref]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'No encontramos tu boleta' });
 
-    if (!attendee) return res.status(404).json({ error: 'No encontramos tu boleta' });
+    const r = rows[0];
+    const montoPendiente = Number(r.monto_pendiente || 0);
+    const attendee = {
+      name:           r.name,
+      orderRef:       r.order_ref,
+      // TODO: mismo pendiente que en myapp-auth-verificar.ts -- definir
+      // qué paquetes cuentan como VIP.
+      isVip:          false,
+      qrToken:        montoPendiente > 0 ? null : (r.qr_token || null),
+      paquete:        r.paquete || null,
+      montoPendiente,
+    };
 
     return res.status(200).json({ ok: true, attendee });
   } catch (err: any) {

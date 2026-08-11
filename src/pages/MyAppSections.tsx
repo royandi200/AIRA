@@ -109,24 +109,38 @@ function PasaportePanel({ attendee }: { attendee: Attendee | null }) {
           </div>
         </div>
 
-        <div className="passport-qr-wrap">
-          <QrPlaceholder color="#22c55e" />
-          {attendee?.qrToken ? (
-            <>
-              <p className="passport-qr-hint">Muestra tu boleta con QR en la entrada del evento</p>
-              <a
-                className="passport-qr-link"
-                href={`/boleta/${attendee.orderRef}?token=${attendee.qrToken}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Ver mi boleta con QR real
-              </a>
-            </>
-          ) : (
-            <p className="passport-qr-hint">Tu QR real se activa al confirmar el pago de tu boleta</p>
-          )}
-        </div>
+        {attendee && attendee.montoPendiente > 0 ? (
+          <div className="passport-pending">
+            <span className="passport-pending-icon">⚠️</span>
+            <div>
+              <p className="passport-pending-title">
+                Saldo pendiente: ${attendee.montoPendiente.toLocaleString('es-CO')}
+              </p>
+              <p className="passport-pending-sub">
+                Tu QR de acceso se activa al completar el pago{attendee.paquete ? ` de tu ${attendee.paquete}` : ''}.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="passport-qr-wrap">
+            <QrPlaceholder color="#22c55e" />
+            {attendee?.qrToken ? (
+              <>
+                <p className="passport-qr-hint">Muestra tu boleta con QR en la entrada del evento</p>
+                <a
+                  className="passport-qr-link"
+                  href={`/boleta/${attendee.orderRef}?token=${attendee.qrToken}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Ver mi boleta con QR real
+                </a>
+              </>
+            ) : (
+              <p className="passport-qr-hint">Tu QR real se activa al confirmar el pago de tu boleta</p>
+            )}
+          </div>
+        )}
       </div>
 
       {isVip && (
@@ -304,7 +318,7 @@ function PerfilPanel({ attendee, onLogout }: { attendee: Attendee | null; onLogo
         <div className="perfil-avatar">{initials(name)}</div>
         <div className="perfil-id">
           <span className="perfil-name">{name}</span>
-          <span className="perfil-ticket-badge">{attendee?.isVip ? 'Pase VIP' : 'Pase General'} · {attendee?.orderRef ?? '—'}</span>
+          <span className="perfil-ticket-badge">{attendee?.paquete ?? 'Sin paquete'} · {attendee?.orderRef ?? '—'}</span>
         </div>
       </div>
 

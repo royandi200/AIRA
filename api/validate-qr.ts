@@ -17,6 +17,9 @@ const pool = mysql.createPool({
  * GET /api/validate-qr?token=abc123
  * Endpoint del scanner de puerta. Valida el QR y lo marca como usado.
  * Requiere header x-scanner-key con SCANNER_SECRET para seguridad.
+ *
+ * Fuente única de verdad: manual_registros (ya no orders/Bold) —
+ * decisión operativa: todo asistente se registra ahí de ahora en más.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET' && req.method !== 'POST') return res.status(405).end();
@@ -31,44 +34,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const token = (req.query.token || req.body?.token) as string | undefined;
   if (!token) return res.status(400).json({ valid: false, error: 'token requerido' });
 
-  const [[order]]: any = await pool.query(
-    `SELECT o.id, o.order_ref, o.status, o.qr_token, o.qr_used_at,
-            o.add_pass_vip, u.name, u.phone
-     FROM orders o
-     JOIN users u ON u.id = o.user_id
-     WHERE o.qr_token = ?`,
+  // Columna qr_used_at — idempotente, mismo patrón que el resto del código
+  await pool.query(`
+    ALTER TABLE manual_registros ADD COLUMN IF NOT EXISTS qr_used_at DATETIME NULL
+  `).catch(() => { /* columna ya existe */ });
+
+  const [[registro]]: any = await pool.query(
+    `SELECT id, order_ref, nombre, movil, qr_token, qr_used_at, monto_pendiente, paquete
+     FROM manual_registros
+     WHERE qr_token = ?`,
     [token]
   );
 
-  if (!order) {
+  if (!registro) {
     return res.status(200).json({ valid: false, color: 'red', message: '❌ QR inválido — No existe' });
   }
 
-  if (order.status !== 'paid') {
-    return res.status(200).json({ valid: false, color: 'red', message: `❌ Pago pendiente — ${order.order_ref}` });
+  const pendiente = Number(registro.monto_pendiente || 0);
+  if (pendiente > 0) {
+    return res.status(200).json({
+      valid: false, color: 'red',
+      message: `❌ Saldo pendiente — ${registro.nombre}\nDebe $${pendiente.toLocaleString('es-CO')}`,
+    });
   }
 
-  if (order.qr_used_at) {
-    const usedAt = new Date(order.qr_used_at).toLocaleString('es-CO');
+  if (registro.qr_used_at) {
+    const usedAt = new Date(registro.qr_used_at).toLocaleString('es-CO');
     return res.status(200).json({
       valid: false, color: 'orange',
-      message: `⚠️ QR ya usado — ${order.name}\nEscaneado: ${usedAt}`,
+      message: `⚠️ QR ya usado — ${registro.nombre}\nEscaneado: ${usedAt}`,
     });
   }
 
   // Marcar como usado
   await pool.query(
-    'UPDATE orders SET qr_used_at = NOW() WHERE id = ?',
-    [order.id]
+    'UPDATE manual_registros SET qr_used_at = NOW() WHERE id = ?',
+    [registro.id]
   );
 
   return res.status(200).json({
     valid: true,
     color: 'green',
     message: `✅ ACCESO VÁLIDO`,
-    name:    order.name,
-    ref:     order.order_ref,
-    isVip:   !!order.add_pass_vip,
-    phone:   order.phone,
+    name:    registro.nombre,
+    ref:     registro.order_ref,
+    paquete: registro.paquete,
+    phone:   registro.movil,
   });
 }

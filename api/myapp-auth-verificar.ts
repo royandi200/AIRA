@@ -8,6 +8,9 @@ import { hashOTP } from './lib/otp.js';
  * Login de /myapp — paso 2: verificar OTP y abrir sesión.
  * Crea un token de sesión propio (myapp_sessions, 30 días) — no toca
  * el sistema de otp_tokens/checkout de boletas.
+ *
+ * Fuente única de verdad: manual_registros (igual que el scanner de
+ * la puerta en validate-qr.ts).
  */
 
 const pool = mysql.createPool({
@@ -44,30 +47,36 @@ function last10(phone: string): string {
   return phone.slice(-10);
 }
 
-async function findAttendeeFull(phone: string): Promise<{ order_ref: string; name: string; is_vip: boolean; qr_token: string | null; source: 'orders' | 'manual' } | null> {
+interface AttendeeFull {
+  order_ref: string;
+  name: string;
+  is_vip: boolean;
+  qr_token: string | null;
+  paquete: string | null;
+  monto_pendiente: number;
+}
+
+async function findAttendeeFull(phone: string): Promise<AttendeeFull | null> {
   const suffix = last10(phone);
-  const [orderRows]: any = await pool.query(
-    `SELECT o.order_ref, u.name, o.add_pass_vip, o.qr_token
-     FROM orders o JOIN users u ON u.id = o.user_id
-     WHERE u.phone LIKE CONCAT('%', ?) AND o.status IN ('paid','partial')
-     ORDER BY o.created_at DESC LIMIT 1`,
+  const [rows]: any = await pool.query(
+    `SELECT order_ref, nombre AS name, qr_token, paquete, monto_pendiente
+     FROM manual_registros WHERE movil LIKE CONCAT('%', ?) ORDER BY created_at DESC LIMIT 1`,
     [suffix]
   );
-  if (orderRows.length) {
-    const r = orderRows[0];
-    return { order_ref: r.order_ref, name: r.name, is_vip: !!r.add_pass_vip, qr_token: r.qr_token || null, source: 'orders' };
-  }
+  if (!rows.length) return null;
 
-  const [manualRows]: any = await pool.query(
-    `SELECT order_ref, nombre AS name, qr_token FROM manual_registros WHERE movil LIKE CONCAT('%', ?) ORDER BY created_at DESC LIMIT 1`,
-    [suffix]
-  );
-  if (manualRows.length) {
-    const r = manualRows[0];
-    return { order_ref: r.order_ref, name: r.name, is_vip: false, qr_token: r.qr_token || null, source: 'manual' };
-  }
-
-  return null;
+  const r = rows[0];
+  return {
+    order_ref:       r.order_ref,
+    name:            r.name,
+    // TODO: definir con el negocio qué paquetes cuentan como VIP
+    // (ej. "Suite Privada", "Pass VIP") -- por ahora nadie es VIP
+    // automáticamente hasta que se confirme el mapeo.
+    is_vip:          false,
+    qr_token:        r.qr_token || null,
+    paquete:         r.paquete || null,
+    monto_pendiente: Number(r.monto_pendiente || 0),
+  };
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -116,18 +125,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
 
     await pool.query(
-      `INSERT INTO myapp_sessions (token, phone, order_ref, name, source, expires_at) VALUES (?, ?, ?, ?, ?, ?)`,
-      [sessionToken, phoneClean, attendee.order_ref, attendee.name, attendee.source, expiresAt]
+      `INSERT INTO myapp_sessions (token, phone, order_ref, name, source, expires_at) VALUES (?, ?, ?, ?, 'manual', ?)`,
+      [sessionToken, phoneClean, attendee.order_ref, attendee.name, expiresAt]
     );
+
+    // El QR solo se entrega como "activo" si no hay saldo pendiente —
+    // si debe plata, el frontend muestra el saldo en vez del QR.
+    const hasBalance = attendee.monto_pendiente > 0;
 
     return res.status(200).json({
       ok: true,
       token: sessionToken,
       attendee: {
-        name:     attendee.name,
-        orderRef: attendee.order_ref,
-        isVip:    attendee.is_vip,
-        qrToken:  attendee.qr_token,
+        name:           attendee.name,
+        orderRef:       attendee.order_ref,
+        isVip:          attendee.is_vip,
+        qrToken:        hasBalance ? null : attendee.qr_token,
+        paquete:        attendee.paquete,
+        montoPendiente: attendee.monto_pendiente,
       },
     });
   } catch (err: any) {

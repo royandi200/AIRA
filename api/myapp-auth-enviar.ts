@@ -7,8 +7,10 @@ import { generateOTP, hashOTP, otpExpiresAt, sendOTPWhatsApp } from './lib/otp.j
  * Login de /myapp — paso 1: enviar OTP.
  * Usa una tabla propia (myapp_otp_tokens), separada de otp_tokens que
  * usa el checkout de boletas, para no arriesgar esa lógica en producción.
- * Verifica que el teléfono tenga una boleta real (orders pagada/parcial
- * o un registro manual) antes de enviar el código.
+ *
+ * Fuente única de verdad: manual_registros — decisión operativa,
+ * todo asistente se registra ahí de ahora en más (igual que el
+ * scanner de la puerta en validate-qr.ts).
  */
 
 const pool = mysql.createPool({
@@ -50,15 +52,6 @@ function last10(phone: string): string {
 
 async function findAttendeeByPhone(phone: string): Promise<{ order_ref: string; name: string } | null> {
   const suffix = last10(phone);
-  const [orderRows]: any = await pool.query(
-    `SELECT o.order_ref, u.name
-     FROM orders o JOIN users u ON u.id = o.user_id
-     WHERE u.phone LIKE CONCAT('%', ?) AND o.status IN ('paid','partial')
-     ORDER BY o.created_at DESC LIMIT 1`,
-    [suffix]
-  );
-  if (orderRows.length) return orderRows[0];
-
   const [manualRows]: any = await pool.query(
     `SELECT order_ref, nombre AS name FROM manual_registros WHERE movil LIKE CONCAT('%', ?) ORDER BY created_at DESC LIMIT 1`,
     [suffix]

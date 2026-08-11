@@ -14,6 +14,8 @@ export interface Attendee {
   orderRef: string;
   isVip: boolean;
   qrToken: string | null;
+  paquete: string | null;
+  montoPendiente: number;
 }
 
 export type SessionStatus = 'checking' | 'authed' | 'anon';
