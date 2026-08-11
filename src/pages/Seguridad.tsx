@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import jsQR from 'jsqr';
+import { useInstallPrompt } from './useInstallPrompt';
 import './Seguridad.css';
 
 /**
@@ -29,7 +30,27 @@ export default function Seguridad() {
   const lastTokenRef  = useRef<string | null>(null);
   const cooldownRef   = useRef(false);
 
-  useEffect(() => { document.title = 'AIRA · Seguridad'; }, []);
+  const { canInstall, isIOS, installed, install } = useInstallPrompt();
+
+  useEffect(() => {
+    document.title = 'AIRA · Seguridad';
+
+    // Manifest + ícono propios de /seguridad (el sitio principal usa uno
+    // distinto) — se inyectan solo en esta página, sin tocar index.html.
+    const manifestLink = document.createElement('link');
+    manifestLink.rel = 'manifest';
+    manifestLink.href = '/manifest-seguridad.json';
+    document.head.appendChild(manifestLink);
+
+    const prevAppleIcon = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement | null;
+    const prevHref = prevAppleIcon?.href;
+    if (prevAppleIcon) prevAppleIcon.href = '/AIRA.png';
+
+    return () => {
+      manifestLink.remove();
+      if (prevAppleIcon && prevHref) prevAppleIcon.href = prevHref;
+    };
+  }, []);
 
   // ── Cámara ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -139,6 +160,7 @@ export default function Seguridad() {
   if (!scannerKey) {
     return (
       <div className="seg-gate">
+        <img src="/AIRA.png" alt="AIRA" className="seg-gate-logo" />
         <h1 className="seg-gate-title">🔒 AIRA · Seguridad</h1>
         <p className="seg-gate-sub">Ingresa la clave del escáner para empezar</p>
         <input
@@ -151,6 +173,21 @@ export default function Seguridad() {
           autoFocus
         />
         <button className="seg-gate-btn" onClick={saveKey}>Entrar</button>
+
+        {!installed && (
+          <div className="seg-install">
+            {canInstall && (
+              <button className="seg-install-btn" onClick={install}>
+                📲 Enviar al escritorio del celular
+              </button>
+            )}
+            {isIOS && !canInstall && (
+              <p className="seg-install-hint">
+                En iPhone: toca <strong>Compartir</strong> ⬆️ y luego <strong>"Agregar a pantalla de inicio"</strong>
+              </p>
+            )}
+          </div>
+        )}
       </div>
     );
   }
