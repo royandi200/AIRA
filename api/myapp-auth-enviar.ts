@@ -39,19 +39,29 @@ async function ensureTable() {
   `);
 }
 
+// Los teléfonos en la BD están guardados en formatos distintos
+// ('+573001234567', '3142138490', etc). Comparamos por los últimos
+// 10 dígitos (el número de celular colombiano sin indicativo) para
+// que el match funcione sin importar cómo se guardó ni cómo lo
+// escriba el usuario.
+function last10(phone: string): string {
+  return phone.slice(-10);
+}
+
 async function findAttendeeByPhone(phone: string): Promise<{ order_ref: string; name: string } | null> {
+  const suffix = last10(phone);
   const [orderRows]: any = await pool.query(
     `SELECT o.order_ref, u.name
      FROM orders o JOIN users u ON u.id = o.user_id
-     WHERE u.phone = ? AND o.status IN ('paid','partial')
+     WHERE u.phone LIKE CONCAT('%', ?) AND o.status IN ('paid','partial')
      ORDER BY o.created_at DESC LIMIT 1`,
-    [phone]
+    [suffix]
   );
   if (orderRows.length) return orderRows[0];
 
   const [manualRows]: any = await pool.query(
-    `SELECT order_ref, nombre AS name FROM manual_registros WHERE movil = ? ORDER BY created_at DESC LIMIT 1`,
-    [phone]
+    `SELECT order_ref, nombre AS name FROM manual_registros WHERE movil LIKE CONCAT('%', ?) ORDER BY created_at DESC LIMIT 1`,
+    [suffix]
   );
   if (manualRows.length) return manualRows[0];
 

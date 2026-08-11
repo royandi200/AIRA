@@ -38,13 +38,20 @@ async function ensureSessionTable() {
   `);
 }
 
+// Mismo criterio que myapp-auth-enviar.ts: match por los últimos 10
+// dígitos, porque la BD tiene teléfonos guardados en formatos distintos.
+function last10(phone: string): string {
+  return phone.slice(-10);
+}
+
 async function findAttendeeFull(phone: string): Promise<{ order_ref: string; name: string; is_vip: boolean; qr_token: string | null; source: 'orders' | 'manual' } | null> {
+  const suffix = last10(phone);
   const [orderRows]: any = await pool.query(
     `SELECT o.order_ref, u.name, o.add_pass_vip, o.qr_token
      FROM orders o JOIN users u ON u.id = o.user_id
-     WHERE u.phone = ? AND o.status IN ('paid','partial')
+     WHERE u.phone LIKE CONCAT('%', ?) AND o.status IN ('paid','partial')
      ORDER BY o.created_at DESC LIMIT 1`,
-    [phone]
+    [suffix]
   );
   if (orderRows.length) {
     const r = orderRows[0];
@@ -52,8 +59,8 @@ async function findAttendeeFull(phone: string): Promise<{ order_ref: string; nam
   }
 
   const [manualRows]: any = await pool.query(
-    `SELECT order_ref, nombre AS name, qr_token FROM manual_registros WHERE movil = ? ORDER BY created_at DESC LIMIT 1`,
-    [phone]
+    `SELECT order_ref, nombre AS name, qr_token FROM manual_registros WHERE movil LIKE CONCAT('%', ?) ORDER BY created_at DESC LIMIT 1`,
+    [suffix]
   );
   if (manualRows.length) {
     const r = manualRows[0];
