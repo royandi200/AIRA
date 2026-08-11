@@ -25,7 +25,7 @@ const pool = mysql.createPool({
 });
 
 const MAX_INTENTOS  = 3;
-const SESSION_DAYS  = 30;
+const SESSION_DAYS  = 7;
 
 async function ensureSessionTable() {
   await pool.query(`
