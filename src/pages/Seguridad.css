@@ -1,0 +1,138 @@
+/* ── /seguridad — app de escaneo del staff de entrada ────────────────── */
+
+.seg-gate {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px;
+  background: radial-gradient(circle at 50% 20%, #14141c 0%, #08080b 60%, #000 100%);
+  color: #fff;
+  text-align: center;
+  font-family: -apple-system, system-ui, sans-serif;
+}
+.seg-gate-title { font-size: 20px; font-weight: 800; margin: 0; }
+.seg-gate-sub { font-size: 13px; color: rgba(255,255,255,0.55); margin: 0 0 12px; }
+.seg-gate-input {
+  width: 100%;
+  max-width: 280px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 14px;
+  padding: 14px 16px;
+  color: #fff;
+  font-size: 15px;
+  outline: none;
+  text-align: center;
+}
+.seg-gate-btn {
+  width: 100%;
+  max-width: 280px;
+  margin-top: 8px;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  background: #e1fe52;
+  color: #00164c;
+  font-weight: 800;
+  font-size: 14.5px;
+}
+
+.seg-root {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  color: #fff;
+  font-family: -apple-system, system-ui, sans-serif;
+}
+.seg-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: max(14px, env(safe-area-inset-top)) 18px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: #0a0a0d;
+}
+.seg-logout {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.7);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.seg-camera-wrap {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  background: #000;
+}
+.seg-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.seg-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 68vw;
+  max-width: 300px;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border: 3px solid rgba(225,254,82,0.85);
+  border-radius: 20px;
+  box-shadow: 0 0 0 2000px rgba(0,0,0,0.35);
+  pointer-events: none;
+}
+.seg-camera-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  font-size: 13px;
+  color: #fca5a5;
+  background: rgba(0,0,0,0.8);
+}
+
+.seg-result {
+  padding: 22px 20px max(26px, env(safe-area-inset-bottom));
+  text-align: center;
+  background: #0a0a0d;
+  transition: background 200ms ease;
+  min-height: 92px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.seg-result--green  { background: #0d2e14; }
+.seg-result--red     { background: #3a0d0d; }
+.seg-result--orange  { background: #3a2a0d; }
+.seg-result-hint {
+  font-size: 13px;
+  color: rgba(255,255,255,0.45);
+  margin: 0;
+}
+.seg-result-message {
+  font-size: 17px;
+  font-weight: 800;
+  white-space: pre-line;
+  margin: 0 0 4px;
+}
+.seg-result-name {
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+  margin: 0;
+}
