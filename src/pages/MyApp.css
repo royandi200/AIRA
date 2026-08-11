@@ -527,6 +527,28 @@
   max-width: 220px;
 }
 
+/* ── VIP dentro del pasaporte — solo visible si el asistente tiene VIP ── */
+.passport-vip {
+  margin-top: 4px;
+  padding: 18px 20px 20px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  background: linear-gradient(180deg, rgba(225,254,82,0.06), transparent 40%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.passport-vip-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #e1fe52;
+}
+.passport-vip-icon { filter: drop-shadow(0 0 6px #e1fe52); }
+
 /* ── Pedidos (Joinn, via BarDJ) ───────────────────────────────────────── */
 .pedidos-panel { margin-top: 8px; display: flex; flex-direction: column; gap: 16px; padding-bottom: 70px; }
 .pedidos-loading, .pedidos-empty {
@@ -1062,26 +1084,7 @@
   justify-content: center;
 }
 
-/* ── VIP ──────────────────────────────────────────────────────────────── */
-.vip-panel { margin-top: 8px; display: flex; flex-direction: column; gap: 18px; }
-.vip-hero {
-  background: linear-gradient(135deg, rgba(225,254,82,0.16), rgba(225,254,82,0.02));
-  border: 1px solid rgba(225,254,82,0.35);
-  border-radius: 18px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-}
-.vip-hero-icon { color: #e1fe52; margin-bottom: 6px; filter: drop-shadow(0 0 8px #e1fe52); }
-.vip-hero-kicker {
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.5);
-}
-.vip-hero-title { font-size: 24px; font-weight: 800; color: #e1fe52; }
+/* ── VIP (bloque dentro del pasaporte) ───────────────────────────────── */
 .vip-perks { display: flex; flex-direction: column; gap: 12px; }
 .vip-perk {
   display: flex;

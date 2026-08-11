@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState } from 'react';
 import {
   Fingerprint, UtensilsCrossed, Sailboat, CalendarClock, Radar, Aperture, Gem, Bus, ScanFace,
-  X, CheckCircle2, MapPinned, ArrowRight, Bell, LogOut, Sparkles, ChevronRight,
+  X, CheckCircle2, MapPinned, ArrowRight, Bell, LogOut, ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
 import { SCHEDULE, useLiveSchedule, formatHM, type ScheduleItem } from './MyAppSchedule';
@@ -48,7 +48,6 @@ export const SECTIONS: CompassSection[] = [
   { id: 'lineup',      label: 'Itinerario',   Icon: CalendarClock,   image: '/dj-console.jpg',     color: '#a855f7' },
   { id: 'mapa',        label: 'Mapa',         Icon: Radar,           image: '/venue-map.jpg',      color: '#38bdf8' },
   { id: 'galeria',     label: 'Galería',      Icon: Aperture,        image: '/crowd-1.jpg',        color: '#f97316' },
-  { id: 'vip',         label: 'VIP',          Icon: Gem,             image: '/vip-area.jpg',       color: '#e1fe52' },
   { id: 'transporte',  label: 'Transporte',   Icon: Bus,             image: '/yacht-party.jpg',    color: '#ef4444' },
   { id: 'perfil',      label: 'Mi Perfil',    Icon: ScanFace,        image: '/dj-portrait.jpg',    color: '#ec4899' },
 ];
@@ -74,6 +73,20 @@ function QrPlaceholder({ color }: { color: string }) {
   );
 }
 
+// Demo: si el asistente tiene acceso VIP, el pasaporte muestra sus
+// beneficios debajo del QR. En real, esto viene del tipo de boleta
+// (orders.access_type) cuando se conecte al backend.
+const DEMO_HAS_VIP = true;
+
+const VIP_PERKS = [
+  'Acceso a zona VIP elevada frente al escenario principal',
+  'Barra premium ilimitada — cócteles de autor',
+  'Servicio de meseros dedicado',
+  'Check-in prioritario, sin filas',
+  'Lounge privado con vista al embalse',
+  'Kit de bienvenida AIRA',
+];
+
 function PasaportePanel() {
   return (
     <div className="passport-card">
@@ -94,7 +107,7 @@ function PasaportePanel() {
           </div>
           <div className="passport-field">
             <span className="passport-field-label">Acceso</span>
-            <span className="passport-field-value">General</span>
+            <span className="passport-field-value">{DEMO_HAS_VIP ? 'VIP' : 'General'}</span>
           </div>
         </div>
 
@@ -103,6 +116,26 @@ function PasaportePanel() {
           <p className="passport-qr-hint">Tu QR real se activa al confirmar el pago de tu boleta</p>
         </div>
       </div>
+
+      {DEMO_HAS_VIP && (
+        <div className="passport-vip">
+          <div className="passport-vip-header">
+            <Gem size={18} className="passport-vip-icon" />
+            <span>Beneficios VIP</span>
+          </div>
+          <div className="vip-perks">
+            {VIP_PERKS.map((p) => (
+              <div key={p} className="vip-perk">
+                <CheckCircle2 size={16} className="vip-perk-check" />
+                <span>{p}</span>
+              </div>
+            ))}
+          </div>
+          <button className="vip-cta">
+            Habla con tu concierge <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -214,41 +247,6 @@ function GaleriaPanel() {
   );
 }
 
-// ── VIP ──────────────────────────────────────────────────────────────────────
-const VIP_PERKS = [
-  'Acceso a zona VIP elevada frente al escenario principal',
-  'Barra premium ilimitada — cócteles de autor',
-  'Servicio de meseros dedicado',
-  'Check-in prioritario, sin filas',
-  'Lounge privado con vista al embalse',
-  'Kit de bienvenida AIRA',
-];
-
-function VipPanel() {
-  return (
-    <div className="vip-panel">
-      <div className="vip-hero">
-        <Sparkles className="vip-hero-icon" size={22} />
-        <span className="vip-hero-kicker">Tu paquete</span>
-        <span className="vip-hero-title">VIP Deluxe</span>
-      </div>
-
-      <div className="vip-perks">
-        {VIP_PERKS.map((p) => (
-          <div key={p} className="vip-perk">
-            <CheckCircle2 size={17} className="vip-perk-check" />
-            <span>{p}</span>
-          </div>
-        ))}
-      </div>
-
-      <button className="vip-cta">
-        Habla con tu concierge <ChevronRight size={16} />
-      </button>
-    </div>
-  );
-}
-
 // ── Transporte ───────────────────────────────────────────────────────────────
 const ROUTES = [
   { id: 'r1', from: 'Terminal Norte, Medellín',    to: 'Joinn Houtel, Guatapé',    depart: 'Vie 10:00 AM', duration: '1h 45min', seats: 12 },
@@ -341,7 +339,6 @@ export function renderSectionContent(section: CompassSection) {
     case 'mapa':       return <Suspense fallback={<MapLoading />}><MyAppMap /></Suspense>;
     case 'lineup':     return <ItinerarioPanel />;
     case 'galeria':    return <GaleriaPanel />;
-    case 'vip':        return <VipPanel />;
     case 'transporte': return <TransportePanel />;
     case 'perfil':     return <PerfilPanel />;
     default:           return <ComingSoonPanel section={section} />;
