@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import mysql from 'mysql2/promise';
-import { generateOTP, hashOTP, otpExpiresAt, sendOTPWhatsApp } from './lib/otp.js';
+import { generateOTP, hashOTP, otpExpiresAt, sendOTPSms } from './lib/otp.js';
 
 /**
  * Login de /myapp — paso 1: enviar OTP.
@@ -99,11 +99,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       [phoneClean, otpHash, expireAt]
     );
 
-    await sendOTPWhatsApp(phoneClean, otp);
+    await sendOTPSms(phoneClean, otp);
 
     return res.status(200).json({
       ok: true,
-      message: `Código enviado al WhatsApp terminado en ${phoneClean.slice(-4)}`,
+      message: `Código enviado por SMS al número terminado en ${phoneClean.slice(-4)}`,
     });
   } catch (err: any) {
     console.error('[myapp-auth-enviar]', err.message);

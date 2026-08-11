@@ -3,8 +3,9 @@ import { Phone, ShieldCheck } from 'lucide-react';
 import type { Attendee } from './MyAppAuth';
 
 /**
- * Login de /myapp con OTP real por WhatsApp — garantiza que quien usa
- * la app es el dueño de la boleta (mismo número con el que compró).
+ * Login de /myapp con OTP real por SMS (WebSSenger) — garantiza que
+ * quien usa la app es el dueño de la boleta (mismo número con el que
+ * compró/se registró).
  */
 export default function MyAppLogin({ onLogin }: { onLogin: (token: string, attendee: Attendee) => void }) {
   const [step, setStep]       = useState<'phone' | 'otp'>('phone');
@@ -79,13 +80,13 @@ export default function MyAppLogin({ onLogin }: { onLogin: (token: string, atten
             disabled={loading || phone.length < 7}
             onClick={sendCode}
           >
-            {loading ? 'Enviando…' : 'Enviar código por WhatsApp'}
+            {loading ? 'Enviando…' : 'Enviar código por SMS'}
           </button>
         </>
       ) : (
         <>
           <h2 className="myapp-login-title">Verifica tu número</h2>
-          <p className="myapp-login-sub">{info || 'Te enviamos un código de 6 dígitos por WhatsApp'}</p>
+          <p className="myapp-login-sub">{info || 'Te enviamos un código de 6 dígitos por SMS'}</p>
 
           <div className="myapp-login-field myapp-login-field--otp">
             <ShieldCheck size={16} />
