@@ -130,6 +130,92 @@
   filter: drop-shadow(0 2px 14px rgba(0,0,0,0.6));
 }
 
+/* ── Splash mientras se valida la sesión ─────────────────────────────── */
+.myapp-splash {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #08080b;
+}
+.myapp-splash-logo {
+  height: 90px;
+  animation: myapp-splash-pulse 1.6s ease-in-out infinite;
+}
+@keyframes myapp-splash-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(0.96); }
+  50%      { opacity: 1;   transform: scale(1); }
+}
+
+/* ── Login con OTP ────────────────────────────────────────────────────── */
+.myapp-login {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 32px 28px;
+  background: radial-gradient(circle at 50% 20%, #14141c 0%, #08080b 60%, #000 100%);
+  text-align: center;
+}
+.myapp-login-logo { height: 64px; margin-bottom: 18px; }
+.myapp-login-title { font-size: 21px; font-weight: 800; margin: 0; }
+.myapp-login-sub { font-size: 13px; color: rgba(255,255,255,0.55); margin: 0 0 20px; max-width: 280px; line-height: 1.4; }
+.myapp-login-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 280px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 14px;
+  padding: 14px 16px;
+  color: rgba(255,255,255,0.6);
+}
+.myapp-login-field input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 16px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.myapp-login-field input::placeholder { color: rgba(255,255,255,0.3); }
+.myapp-login-field--otp input { letter-spacing: 0.4em; text-align: center; }
+.myapp-login-error {
+  font-size: 12.5px;
+  color: #fca5a5;
+  max-width: 280px;
+  margin: 10px 0 0;
+}
+.myapp-login-btn {
+  width: 100%;
+  max-width: 280px;
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  background: #e1fe52;
+  color: #00164c;
+  font-weight: 800;
+  font-size: 14.5px;
+  -webkit-tap-highlight-color: transparent;
+}
+.myapp-login-btn:disabled { opacity: 0.5; }
+.myapp-login-back {
+  margin-top: 10px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  font-size: 12.5px;
+  text-decoration: underline;
+}
+
 /* ── Zona central — la rueda ocupa el centro de la pantalla ─────────────── */
 .myapp-wheel-zone {
   position: relative;
@@ -525,6 +611,13 @@
   color: rgba(255,255,255,0.45);
   text-align: center;
   max-width: 220px;
+}
+.passport-qr-link {
+  font-size: 12px;
+  font-weight: 700;
+  color: #22c55e;
+  text-decoration: underline;
+  margin-top: -6px;
 }
 
 /* ── VIP dentro del pasaporte — solo visible si el asistente tiene VIP ── */

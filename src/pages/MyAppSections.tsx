@@ -5,6 +5,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { SCHEDULE, useLiveSchedule, formatHM, type ScheduleItem } from './MyAppSchedule';
+import type { Attendee } from './MyAppAuth';
 import MyAppOrders from './MyAppOrders';
 import MyAppActivities from './MyAppActivities';
 
@@ -73,11 +74,6 @@ function QrPlaceholder({ color }: { color: string }) {
   );
 }
 
-// Demo: si el asistente tiene acceso VIP, el pasaporte muestra sus
-// beneficios debajo del QR. En real, esto viene del tipo de boleta
-// (orders.access_type) cuando se conecte al backend.
-const DEMO_HAS_VIP = true;
-
 const VIP_PERKS = [
   'Acceso a zona VIP elevada frente al escenario principal',
   'Barra premium ilimitada — cócteles de autor',
@@ -87,7 +83,9 @@ const VIP_PERKS = [
   'Kit de bienvenida AIRA',
 ];
 
-function PasaportePanel() {
+function PasaportePanel({ attendee }: { attendee: Attendee | null }) {
+  const isVip = attendee?.isVip ?? false;
+
   return (
     <div className="passport-card">
       <div className="passport-header">
@@ -98,26 +96,40 @@ function PasaportePanel() {
       <div className="passport-body">
         <div className="passport-field">
           <span className="passport-field-label">Titular</span>
-          <span className="passport-field-value">— Vincula tu orden —</span>
+          <span className="passport-field-value">{attendee?.name ?? '—'}</span>
         </div>
         <div className="passport-field-row">
           <div className="passport-field">
             <span className="passport-field-label">Referencia</span>
-            <span className="passport-field-value">AIRA-XXXX</span>
+            <span className="passport-field-value">{attendee?.orderRef ?? '—'}</span>
           </div>
           <div className="passport-field">
             <span className="passport-field-label">Acceso</span>
-            <span className="passport-field-value">{DEMO_HAS_VIP ? 'VIP' : 'General'}</span>
+            <span className="passport-field-value">{isVip ? 'VIP' : 'General'}</span>
           </div>
         </div>
 
         <div className="passport-qr-wrap">
           <QrPlaceholder color="#22c55e" />
-          <p className="passport-qr-hint">Tu QR real se activa al confirmar el pago de tu boleta</p>
+          {attendee?.qrToken ? (
+            <>
+              <p className="passport-qr-hint">Muestra tu boleta con QR en la entrada del evento</p>
+              <a
+                className="passport-qr-link"
+                href={`/boleta/${attendee.orderRef}?token=${attendee.qrToken}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Ver mi boleta con QR real
+              </a>
+            </>
+          ) : (
+            <p className="passport-qr-hint">Tu QR real se activa al confirmar el pago de tu boleta</p>
+          )}
         </div>
       </div>
 
-      {DEMO_HAS_VIP && (
+      {isVip && (
         <div className="passport-vip">
           <div className="passport-vip-header">
             <Gem size={18} className="passport-vip-icon" />
@@ -279,14 +291,20 @@ function TransportePanel() {
 }
 
 // ── Mi Perfil ────────────────────────────────────────────────────────────────
-function PerfilPanel() {
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? 'A') + (parts[1]?.[0] ?? '')).toUpperCase();
+}
+
+function PerfilPanel({ attendee, onLogout }: { attendee: Attendee | null; onLogout: () => void }) {
+  const name = attendee?.name ?? 'Invitado AIRA';
   return (
     <div className="perfil-panel">
       <div className="perfil-avatar-row">
-        <div className="perfil-avatar">AI</div>
+        <div className="perfil-avatar">{initials(name)}</div>
         <div className="perfil-id">
-          <span className="perfil-name">Invitado AIRA</span>
-          <span className="perfil-ticket-badge">Pase 3 Días · 2ª Etapa</span>
+          <span className="perfil-name">{name}</span>
+          <span className="perfil-ticket-badge">{attendee?.isVip ? 'Pase VIP' : 'Pase General'} · {attendee?.orderRef ?? '—'}</span>
         </div>
       </div>
 
@@ -294,7 +312,7 @@ function PerfilPanel() {
         <div className="perfil-stat">
           <MapPinned size={16} className="perfil-stat-icon" />
           <span className="perfil-stat-label">Cabaña asignada</span>
-          <span className="perfil-stat-value">Cabaña 9</span>
+          <span className="perfil-stat-value">— Pendiente —</span>
         </div>
         <div className="perfil-stat">
           <Bell size={16} className="perfil-stat-icon" />
@@ -312,7 +330,7 @@ function PerfilPanel() {
           <span>Historial de pedidos</span>
           <ChevronRight size={16} />
         </button>
-        <button className="perfil-menu-item perfil-menu-item--danger">
+        <button className="perfil-menu-item perfil-menu-item--danger" onClick={onLogout}>
           <LogOut size={16} />
           <span>Cerrar sesión</span>
         </button>
@@ -331,16 +349,16 @@ function ComingSoonPanel({ section }: { section: CompassSection }) {
   );
 }
 
-export function renderSectionContent(section: CompassSection) {
+export function renderSectionContent(section: CompassSection, attendee: Attendee | null, onLogout: () => void) {
   switch (section.id) {
-    case 'pasaporte':   return <PasaportePanel />;
+    case 'pasaporte':   return <PasaportePanel attendee={attendee} />;
     case 'pedidos':     return <MyAppOrders />;
     case 'actividades': return <MyAppActivities />;
     case 'mapa':       return <Suspense fallback={<MapLoading />}><MyAppMap /></Suspense>;
     case 'lineup':     return <ItinerarioPanel />;
     case 'galeria':    return <GaleriaPanel />;
     case 'transporte': return <TransportePanel />;
-    case 'perfil':     return <PerfilPanel />;
+    case 'perfil':     return <PerfilPanel attendee={attendee} onLogout={onLogout} />;
     default:           return <ComingSoonPanel section={section} />;
   }
 }

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './MyApp.css';
 import { SECTIONS, renderSectionContent, type CompassSection } from './MyAppSections';
 import MyAppClock from './MyAppClock';
+import MyAppLogin from './MyAppLogin';
+import { useMyAppSession, type Attendee } from './MyAppAuth';
 
 /**
  * MyApp — Webapp para asistentes al evento AIRA.
@@ -86,8 +88,9 @@ const SHEET_CLOSE_MS = 420;
  * o celular (sin salir de /myapp — solo cierra la sección), y deslizando
  * desde el borde izquierdo hacia la derecha (gesto tipo iOS).
  */
-function SectionSheet({ section, origin, onClose }: {
+function SectionSheet({ section, origin, onClose, attendee, onLogout }: {
   section: CompassSection; origin: SheetOrigin; onClose: () => void;
+  attendee: Attendee | null; onLogout: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const haptic = useHaptic();
@@ -175,13 +178,15 @@ function SectionSheet({ section, origin, onClose }: {
       </div>
 
       <div className={`myapp-sheet-content ${section.id === 'mapa' ? 'myapp-sheet-content--flush' : ''}`}>
-        {renderSectionContent(section)}
+        {renderSectionContent(section, attendee, onLogout)}
       </div>
     </div>
   );
 }
 
 export default function MyApp() {
+  const { status: sessionStatus, attendee, login, logout } = useMyAppSession();
+
   const [rotation, setRotation]   = useState(0);      // ángulo acumulado del aro
   const [activeIdx, setActiveIdx] = useState(0);
   const [dragging, setDragging]   = useState(false);
@@ -350,6 +355,18 @@ export default function MyApp() {
     document.title = 'AIRA · Menú';
   }, []);
 
+  // Puerta de sesión — sin OTP verificado no se ve el menú real
+  if (sessionStatus === 'checking') {
+    return (
+      <div className="myapp-splash">
+        <img src="/AIRA BLANCO.png" alt="AIRA" className="myapp-splash-logo" />
+      </div>
+    );
+  }
+  if (sessionStatus === 'anon') {
+    return <MyAppLogin onLogin={login} />;
+  }
+
   return (
     <>
     <div
@@ -430,6 +447,8 @@ export default function MyApp() {
           section={openSection.section}
           origin={openSection.origin}
           onClose={closeSection}
+          attendee={attendee}
+          onLogout={logout}
         />
       )}
     </div>
