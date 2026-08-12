@@ -192,6 +192,27 @@ function SectionSheet({ section, origin, onClose, attendee, onLogout }: {
 export default function MyApp() {
   const { status: sessionStatus, attendee, login, logout } = useMyAppSession();
 
+  // Manifest de /myapp + botón "instalar" — antes vivía SOLO en MyAppLogin,
+  // pero con sesión de 7 días la mayoría de las veces el usuario nunca pasa
+  // por el login (queda logueado), así que el manifest nunca se inyectaba
+  // y el botón de instalar era invisible en la práctica. Ahora vive acá,
+  // a nivel de toda /myapp, sin importar si está logueado o no.
+  useEffect(() => {
+    const manifestLink = document.createElement('link');
+    manifestLink.rel = 'manifest';
+    manifestLink.href = '/manifest-myapp.json';
+    document.head.appendChild(manifestLink);
+
+    const prevAppleIcon = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement | null;
+    const prevHref = prevAppleIcon?.href;
+    if (prevAppleIcon) prevAppleIcon.href = '/AIRA.png';
+
+    return () => {
+      manifestLink.remove();
+      if (prevAppleIcon && prevHref) prevAppleIcon.href = prevHref;
+    };
+  }, []);
+
   const [rotation, setRotation]   = useState(0);      // ángulo acumulado del aro
   const [activeIdx, setActiveIdx] = useState(0);
   const [dragging, setDragging]   = useState(false);

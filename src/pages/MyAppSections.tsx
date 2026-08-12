@@ -8,6 +8,7 @@ import { SCHEDULE, useLiveSchedule, formatHM, type ScheduleItem } from './MyAppS
 import type { Attendee } from './MyAppAuth';
 import MyAppOrders from './MyAppOrders';
 import MyAppActivities from './MyAppActivities';
+import { useInstallPrompt } from './useInstallPrompt';
 
 // Three.js (react-three-fiber + drei) solo se descarga cuando el usuario
 // realmente abre "Mapa" — evita que todo /myapp cargue esa dependencia
@@ -326,6 +327,7 @@ function initials(name: string): string {
 
 function PerfilPanel({ attendee, onLogout }: { attendee: Attendee | null; onLogout: () => void }) {
   const name = attendee?.name ?? 'Invitado AIRA';
+  const { canInstall, isIOS, showManualHint, installed, install } = useInstallPrompt();
   return (
     <div className="perfil-panel">
       <div className="perfil-avatar-row">
@@ -358,11 +360,25 @@ function PerfilPanel({ attendee, onLogout }: { attendee: Attendee | null; onLogo
           <span>Historial de pedidos</span>
           <ChevronRight size={16} />
         </button>
+        {!installed && canInstall && (
+          <button className="perfil-menu-item" onClick={install}>
+            <span>📲 Instalar app en el celular</span>
+            <ChevronRight size={16} />
+          </button>
+        )}
         <button className="perfil-menu-item perfil-menu-item--danger" onClick={onLogout}>
           <LogOut size={16} />
           <span>Cerrar sesión</span>
         </button>
       </div>
+
+      {!installed && !canInstall && (isIOS || showManualHint) && (
+        <p className="perfil-install-hint">
+          {isIOS
+            ? <>En iPhone: toca <strong>Compartir</strong> ⬆️ y luego <strong>"Agregar a pantalla de inicio"</strong> para instalar la app.</>
+            : <>Para instalar la app: toca el menú <strong>⋮</strong> del navegador y elige <strong>"Instalar app"</strong> o <strong>"Agregar a pantalla de inicio"</strong>.</>}
+        </p>
+      )}
     </div>
   );
 }

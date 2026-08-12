@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Phone, ShieldCheck } from 'lucide-react';
 import type { Attendee } from './MyAppAuth';
 import { useInstallPrompt } from './useInstallPrompt';
@@ -7,6 +7,9 @@ import { useInstallPrompt } from './useInstallPrompt';
  * Login de /myapp con OTP real por SMS (WebSSenger) — garantiza que
  * quien usa la app es el dueño de la boleta (mismo número con el que
  * compró/se registró).
+ *
+ * El manifest de /myapp ya se inyecta a nivel de MyApp.tsx (persiste
+ * esté logueado o no) — acá solo se usa el hook para el botón.
  */
 export default function MyAppLogin({ onLogin }: { onLogin: (token: string, attendee: Attendee) => void }) {
   const [step, setStep]       = useState<'phone' | 'otp'>('phone');
@@ -17,24 +20,6 @@ export default function MyAppLogin({ onLogin }: { onLogin: (token: string, atten
   const [info, setInfo]       = useState('');
 
   const { canInstall, isIOS, showManualHint, installed, install } = useInstallPrompt();
-
-  useEffect(() => {
-    // Manifest + ícono propios de /myapp (distinto al de /seguridad),
-    // inyectados solo mientras se ve la pantalla de login.
-    const manifestLink = document.createElement('link');
-    manifestLink.rel = 'manifest';
-    manifestLink.href = '/manifest-myapp.json';
-    document.head.appendChild(manifestLink);
-
-    const prevAppleIcon = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement | null;
-    const prevHref = prevAppleIcon?.href;
-    if (prevAppleIcon) prevAppleIcon.href = '/AIRA.png';
-
-    return () => {
-      manifestLink.remove();
-      if (prevAppleIcon && prevHref) prevAppleIcon.href = prevHref;
-    };
-  }, []);
 
   const sendCode = async () => {
     setError(''); setLoading(true);
