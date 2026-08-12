@@ -213,13 +213,20 @@ function AiraDishCard({ items, cart, onAdd, onChangeQty }: {
 }) {
   const [index, setIndex] = useState(0);
   const [added, setAdded] = useState(false);
+  const [dir, setDir]     = useState<'left' | 'right'>('left');
   const touchX = useRef(0);
 
   const safeIndex = Math.min(index, items.length - 1);
   const dish = items[safeIndex];
   const qty = cart.find(l => l.name === dish?.name)?.qty ?? 0;
 
-  const go = (delta: number) => setIndex(i => (i + delta + items.length) % items.length);
+  // dir refleja hacia dónde "entra" la siguiente tarjeta — replica el
+  // mismo lenguaje de animación (fade + slide + scale) que la app nativa.
+  const go = (delta: number) => {
+    setDir(delta > 0 ? 'left' : 'right');
+    setIndex(i => (i + delta + items.length) % items.length);
+  };
+  const goTo = (i: number) => { setDir(i > safeIndex ? 'left' : 'right'); setIndex(i); };
 
   const onTouchStart = (e: React.TouchEvent) => { touchX.current = e.touches[0].clientX; };
   const onTouchEnd = (e: React.TouchEvent) => {
@@ -238,9 +245,9 @@ function AiraDishCard({ items, cart, onAdd, onChangeQty }: {
   return (
     <div className="pedidos-dish" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       {dish.image_url ? (
-        <div className="pedidos-dish-bg" style={{ backgroundImage: `url(${dish.image_url})` }} />
+        <div key={`bg-${dish.name}`} className="pedidos-dish-bg pedidos-dish-anim-bg" style={{ backgroundImage: `url(${dish.image_url})` }} />
       ) : (
-        <div className="pedidos-dish-bg pedidos-dish-bg--placeholder" />
+        <div key={`bg-${dish.name}`} className="pedidos-dish-bg pedidos-dish-bg--placeholder pedidos-dish-anim-bg" />
       )}
       <div className="pedidos-dish-scrim" />
 
@@ -257,14 +264,14 @@ function AiraDishCard({ items, cart, onAdd, onChangeQty }: {
 
       <div className="pedidos-dish-circle-wrap">
         {qty > 0 && <span className="pedidos-dish-badge">{qty}</span>}
-        <div className={`pedidos-dish-circle ${qty > 0 ? 'has-qty' : ''}`}>
+        <div key={`circle-${dish.name}`} className={`pedidos-dish-circle pedidos-dish-anim--${dir} ${qty > 0 ? 'has-qty' : ''}`}>
           {dish.image_url
             ? <img src={dish.image_url} alt={dish.name} draggable={false} />
             : <span className="pedidos-dish-circle-emoji">{dish.category_emoji || '🍽️'}</span>}
         </div>
       </div>
 
-      <div className="pedidos-dish-content">
+      <div key={`content-${dish.name}`} className={`pedidos-dish-content pedidos-dish-anim--${dir}`}>
         {dish.category_name && <span className="pedidos-dish-cat">{dish.category_name}</span>}
         <h3 className="pedidos-dish-name">{dish.name}</h3>
         {dish.description && <p className="pedidos-dish-desc">{dish.description}</p>}
@@ -277,7 +284,7 @@ function AiraDishCard({ items, cart, onAdd, onChangeQty }: {
                 <button
                   key={it.name}
                   className={`pedidos-dish-dot ${i === safeIndex ? 'is-active' : ''} ${itQty > 0 ? 'has-qty' : ''}`}
-                  onClick={() => setIndex(i)}
+                  onClick={() => goTo(i)}
                   aria-label={it.name}
                 />
               );
