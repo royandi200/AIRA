@@ -391,6 +391,13 @@ export default function MyApp() {
         <img src="/AIRA BLANCO.png" alt="AIRA" className="myapp-logo" data-no-drag />
       </div>
 
+      {/* Nombre de la sección activa — grande y difuminado, entre el logo
+          y el aro, para ubicarse de un vistazo sin tener que leer el
+          footer chiquito. Cambia con key para que haga fade al girar. */}
+      <div className="myapp-current-label" data-no-drag>
+        <span key={activeSection.id} className="myapp-current-label-text">{activeSection.label}</span>
+      </div>
+
       {/* Zona central — la rueda vive aquí, arrastrable desde toda la pantalla */}
       <div className="myapp-wheel-zone">
         <div className="myapp-ring-contact-shadow" />
