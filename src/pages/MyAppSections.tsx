@@ -53,24 +53,27 @@ export const SECTIONS: CompassSection[] = [
   { id: 'perfil',      label: 'Mi Perfil',    Icon: ScanFace,        image: '/dj-portrait.jpg',    color: '#ec4899' },
 ];
 
-/** Placeholder visual tipo QR — se reemplaza por el QR real (orders.qr_token) cuando se conecte al backend */
-function QrPlaceholder({ color }: { color: string }) {
+const BOLETA_BASE = 'https://www.viveaira.live';
+
+/**
+ * QR real — mismo dato que valida la entrada: la URL completa de la
+ * boleta (https://www.viveaira.live/boleta/{ref}?token={qrToken}), igual
+ * a la que genera admin-generar-ticket.ts y a la que ya usa MisReservas.tsx
+ * (QRDisplay). Se renderiza con el mismo servicio (api.qrserver.com) para
+ * no sumar ninguna librería nueva — nada de placeholder ni datos falsos.
+ */
+function RealQr({ orderRef, qrToken }: { orderRef: string; qrToken: string }) {
+  const boletaUrl = `${BOLETA_BASE}/boleta/${orderRef}?token=${qrToken}`;
+  const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(boletaUrl)}`;
+  return <img src={qrImgUrl} alt="Tu QR de acceso a AIRA" width={150} height={150} className="passport-qr-svg" />;
+}
+
+/** Icono de "bloqueado" — se muestra en vez de un QR mientras no hay token real (evita mostrar algo que parezca escaneable sin serlo) */
+function QrLocked() {
   return (
-    <svg viewBox="0 0 120 120" width="150" height="150" className="passport-qr-svg">
-      <rect width="120" height="120" rx="10" fill="#fff" />
-      {[[6, 6], [80, 6], [6, 80]].map(([x, y]) => (
-        <g key={`${x}-${y}`}>
-          <rect x={x} y={y} width="34" height="34" rx="4" fill="#111" />
-          <rect x={x + 6} y={y + 6} width="22" height="22" rx="2" fill="#fff" />
-          <rect x={x + 12} y={y + 12} width="10" height="10" rx="1" fill={color} />
-        </g>
-      ))}
-      {Array.from({ length: 40 }).map((_, i) => {
-        const gx = 46 + (i % 8) * 8;
-        const gy = 46 + Math.floor(i / 8) * 8;
-        return Math.random() > 0.45 ? <rect key={i} x={gx} y={gy} width="6" height="6" fill="#111" /> : null;
-      })}
-    </svg>
+    <div className="passport-qr-locked" style={{ width: 150, height: 150 }}>
+      🔒
+    </div>
   );
 }
 
@@ -123,21 +126,24 @@ function PasaportePanel({ attendee }: { attendee: Attendee | null }) {
           </div>
         ) : (
           <div className="passport-qr-wrap">
-            <QrPlaceholder color="#22c55e" />
-            {attendee?.qrToken ? (
+            {attendee?.qrToken && attendee.orderRef ? (
               <>
-                <p className="passport-qr-hint">Muestra tu boleta con QR en la entrada del evento</p>
+                <RealQr orderRef={attendee.orderRef} qrToken={attendee.qrToken} />
+                <p className="passport-qr-hint">Muestra este QR en la entrada del evento</p>
                 <a
                   className="passport-qr-link"
                   href={`/boleta/${attendee.orderRef}?token=${attendee.qrToken}`}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Ver mi boleta con QR real
+                  Abrir en pantalla completa
                 </a>
               </>
             ) : (
-              <p className="passport-qr-hint">Tu QR real se activa al confirmar el pago de tu boleta</p>
+              <>
+                <QrLocked />
+                <p className="passport-qr-hint">Tu QR real se activa al confirmar el pago de tu boleta</p>
+              </>
             )}
           </div>
         )}

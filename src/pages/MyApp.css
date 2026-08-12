@@ -659,7 +659,17 @@
   border-top: 1px dashed rgba(255,255,255,0.15);
   margin-top: 4px;
 }
-.passport-qr-svg { border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,0.5); }
+.passport-qr-svg { border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,0.5); background: #fff; }
+.passport-qr-locked {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px dashed rgba(255,255,255,0.2);
+  font-size: 40px;
+  opacity: 0.6;
+}
 .passport-qr-hint {
   font-size: 11px;
   color: rgba(255,255,255,0.45);
