@@ -16,7 +16,7 @@ export default function MyAppLogin({ onLogin }: { onLogin: (token: string, atten
   const [error, setError]     = useState('');
   const [info, setInfo]       = useState('');
 
-  const { canInstall, isIOS, installed, install } = useInstallPrompt();
+  const { canInstall, isIOS, showManualHint, installed, install } = useInstallPrompt();
 
   useEffect(() => {
     // Manifest + ícono propios de /myapp (distinto al de /seguridad),
@@ -146,6 +146,11 @@ export default function MyAppLogin({ onLogin }: { onLogin: (token: string, atten
           {isIOS && !canInstall && (
             <p className="myapp-login-install-hint">
               En iPhone: toca <strong>Compartir</strong> ⬆️ y luego <strong>"Agregar a pantalla de inicio"</strong>
+            </p>
+          )}
+          {showManualHint && (
+            <p className="myapp-login-install-hint">
+              Toca el menú <strong>⋮</strong> del navegador y elige <strong>"Instalar app"</strong> o <strong>"Agregar a pantalla de inicio"</strong>
             </p>
           )}
         </div>

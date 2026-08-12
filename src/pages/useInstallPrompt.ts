@@ -50,6 +50,11 @@ export function useInstallPrompt() {
   return {
     canInstall: !!deferred && !installed,
     isIOS: isIOS() && !installed,
+    // Ni Android con prompt disponible ni iOS — puede pasar si Chrome
+    // todavía no considera "suficiente" el engagement para ofrecer el
+    // evento automático. Mostramos igual una instrucción manual en vez
+    // de dejar el bloque vacío.
+    showManualHint: !isIOS() && !deferred && !installed,
     installed,
     install,
   };

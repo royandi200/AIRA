@@ -30,7 +30,7 @@ export default function Seguridad() {
   const lastTokenRef  = useRef<string | null>(null);
   const cooldownRef   = useRef(false);
 
-  const { canInstall, isIOS, installed, install } = useInstallPrompt();
+  const { canInstall, isIOS, showManualHint, installed, install } = useInstallPrompt();
 
   useEffect(() => {
     document.title = 'AIRA · Seguridad';
@@ -184,6 +184,11 @@ export default function Seguridad() {
             {isIOS && !canInstall && (
               <p className="seg-install-hint">
                 En iPhone: toca <strong>Compartir</strong> ⬆️ y luego <strong>"Agregar a pantalla de inicio"</strong>
+              </p>
+            )}
+            {showManualHint && (
+              <p className="seg-install-hint">
+                Toca el menú <strong>⋮</strong> del navegador y elige <strong>"Instalar app"</strong> o <strong>"Agregar a pantalla de inicio"</strong>
               </p>
             )}
           </div>
