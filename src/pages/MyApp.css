@@ -1026,6 +1026,8 @@
 .lineup-panel { margin-top: 8px; display: flex; flex-direction: column; gap: 16px; }
 .itin-panel { margin-top: 8px; display: flex; flex-direction: column; gap: 16px; }
 
+.itin-live-stack { display: flex; flex-direction: column; gap: 8px; }
+
 .itin-live-banner {
   display: flex;
   align-items: center;

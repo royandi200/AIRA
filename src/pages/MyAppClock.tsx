@@ -14,7 +14,9 @@ export default function MyAppClock() {
     return () => window.clearInterval(id);
   }, []);
 
-  const { current, next } = useLiveSchedule();
+  const { currentList, next } = useLiveSchedule();
+  const current = currentList[0] ?? null;
+  const extraStages = currentList.length - 1;
   const h24 = now.getHours();
   const hh = String(h24 % 12 === 0 ? 12 : h24 % 12);
   const mm = String(now.getMinutes()).padStart(2, '0');
@@ -32,7 +34,10 @@ export default function MyAppClock() {
       {current ? (
         <div className="myapp-clock-status myapp-clock-status--live">
           <span className="myapp-clock-live-dot" />
-          <span className="myapp-clock-status-text">{current.title}</span>
+          <span className="myapp-clock-status-text">
+            {current.title} · {current.place}
+            {extraStages > 0 ? ` +${extraStages} escenario${extraStages > 1 ? 's' : ''}` : ''}
+          </span>
         </div>
       ) : next ? (
         <div className="myapp-clock-status">

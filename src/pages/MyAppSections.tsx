@@ -173,24 +173,29 @@ function PasaportePanel({ attendee }: { attendee: Attendee | null }) {
 const ITIN_DAYS: ScheduleItem['day'][] = ['Sábado', 'Domingo', 'Lunes'];
 
 function ItinerarioPanel() {
-  const { now, current, next } = useLiveSchedule();
+  const { now, current, currentList, next } = useLiveSchedule();
   const [dayFilter, setDayFilter] = useState<ScheduleItem['day']>(current?.day ?? next?.day ?? 'Sábado');
 
   const items = SCHEDULE.filter(it => it.day === dayFilter);
+  const liveIds = new Set(currentList.map(it => it.id));
 
   return (
     <div className="itin-panel">
-      {current && (
-        <div className="itin-live-banner">
-          <span className="itin-live-dot" />
-          <div className="itin-live-text">
-            <span className="itin-live-kicker">Sucediendo ahora</span>
-            <span className="itin-live-title">{current.title}</span>
-            <span className="itin-live-place">{current.place} · hasta las {formatHM(current.end)}</span>
-          </div>
+      {currentList.length > 0 && (
+        <div className="itin-live-stack">
+          {currentList.map(it => (
+            <div key={it.id} className="itin-live-banner">
+              <span className="itin-live-dot" />
+              <div className="itin-live-text">
+                <span className="itin-live-kicker">Sucediendo ahora · {it.place}</span>
+                <span className="itin-live-title">{it.title}</span>
+                <span className="itin-live-place">hasta las {formatHM(it.end)}</span>
+              </div>
+            </div>
+          ))}
         </div>
       )}
-      {!current && next && (
+      {currentList.length === 0 && next && (
         <div className="itin-live-banner itin-live-banner--next">
           <div className="itin-live-text">
             <span className="itin-live-kicker">Próximo</span>
@@ -214,7 +219,7 @@ function ItinerarioPanel() {
 
       <div className="lineup-timeline">
         {items.map((it) => {
-          const isLive = current?.id === it.id;
+          const isLive = liveIds.has(it.id);
           const isPast = it.end <= now && !isLive;
           return (
             <div key={it.id} className={`lineup-set ${isLive ? 'is-headliner' : ''} ${isPast ? 'is-past' : ''}`}>
