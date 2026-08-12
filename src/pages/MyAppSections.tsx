@@ -380,7 +380,7 @@ function ComingSoonPanel({ section }: { section: CompassSection }) {
 export function renderSectionContent(section: CompassSection, attendee: Attendee | null, onLogout: () => void) {
   switch (section.id) {
     case 'pasaporte':   return <PasaportePanel attendee={attendee} />;
-    case 'pedidos':     return <MyAppOrders />;
+    case 'pedidos':     return <MyAppOrders attendee={attendee} />;
     case 'actividades': return <MyAppActivities />;
     case 'mapa':       return <Suspense fallback={<MapLoading />}><MyAppMap /></Suspense>;
     case 'lineup':     return <ItinerarioPanel />;

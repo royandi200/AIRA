@@ -1,11 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ShoppingBag, Plus, Minus, Receipt, ChevronLeft, ChevronRight, RefreshCw, ShoppingCart } from 'lucide-react';
+import type { Attendee } from './MyAppAuth';
 
 /**
  * Pedidos — integración real con BarDJ AI (meseroai.com), bar "Joinn".
- * No hay mesa física: cada asistente usa un código propio (AIRA-XXXX,
- * guardado en su celular) como si fuera "su mesa" — así BarDJ agrupa
- * sus pedidos por persona en vez de por mesa, sin tocar su backend.
+ * No hay mesa física: cada asistente usa su propio `orderRef` (el de su
+ * boleta, real y estable) como si fuera "su mesa" — así BarDJ agrupa sus
+ * pedidos por persona en vez de por mesa, sin tocar su backend.
+ *
+ * OJO: antes usábamos un código random guardado en localStorage — eso se
+ * perdía si el usuario reinstalaba la PWA o limpiaba datos del navegador,
+ * y entonces "Mi cuenta" aparecía vacía aunque sí hubiera pedidos (bajo el
+ * código viejo). Usar el orderRef real de su boleta lo hace estable sin
+ * importar el dispositivo/navegador.
  *
  * 3 pantallas (mismo lenguaje visual de AIRA — colores/tipografía —
  * pero replicando el flujo de la app nativa de BarDJ):
@@ -16,7 +23,7 @@ import { ShoppingBag, Plus, Minus, Receipt, ChevronLeft, ChevronRight, RefreshCw
 
 const BARDJ_API = 'https://www.meseroai.com/api/webhook';
 const BAR_SLUG = 'Joinn';
-const CUSTOMER_CODE_KEY = 'aira_customer_code';
+const CUSTOMER_CODE_KEY = 'aira_customer_code'; // fallback legacy, solo si por algún motivo no hay attendee
 
 interface MenuItem {
   name: string;
@@ -32,8 +39,8 @@ interface CuentaLine { name: string; qty: number; price: number; subtotal: numbe
 
 type View = 'carta' | 'confirm' | 'cuenta';
 
-/** Identificador estable por celular — reemplazar por el código real de la boleta cuando esté conectado */
-function getCustomerCode(): string {
+/** Fallback legacy — solo se usa si por algún motivo no hay attendee logueado */
+function getFallbackCode(): string {
   let code = localStorage.getItem(CUSTOMER_CODE_KEY);
   if (!code) {
     code = 'AIRA-' + Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -42,8 +49,9 @@ function getCustomerCode(): string {
   return code;
 }
 
-async function callBarDJ<T = unknown>(action: string, data?: Record<string, unknown>): Promise<{ ok: boolean; data: T | null; mensaje: string | null; error: string | null }> {
-  const code = getCustomerCode();
+async function callBarDJ<T = unknown>(
+  code: string, action: string, data?: Record<string, unknown>
+): Promise<{ ok: boolean; data: T | null; mensaje: string | null; error: string | null }> {
   const res = await fetch(BARDJ_API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -58,7 +66,10 @@ async function callBarDJ<T = unknown>(action: string, data?: Record<string, unkn
 
 const fmt = (n: number) => '$' + Math.round(n).toLocaleString('es-CO');
 
-export default function MyAppOrders() {
+export default function MyAppOrders({ attendee }: { attendee: Attendee | null }) {
+  const code = attendee?.orderRef || getFallbackCode();
+  const customerName = attendee?.name || code;
+
   const [view, setView]     = useState<View>('carta');
   const [items, setItems]   = useState<MenuItem[] | null>(null);
   const [error, setError]   = useState<string | null>(null);
@@ -70,7 +81,7 @@ export default function MyAppOrders() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await callBarDJ<MenuItem[]>('CONSULTAR_CARTA', { query: '', source: 'webapp' });
+        const res = await callBarDJ<MenuItem[]>(code, 'CONSULTAR_CARTA', { query: '', source: 'webapp' });
         if (cancelled) return;
         if (res.ok) setItems(res.data ?? []);
         else setError(res.error || 'No pudimos cargar la carta de Joinn');
@@ -79,7 +90,7 @@ export default function MyAppOrders() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [code]);
 
   const categories = useMemo(() => {
     if (!items) return [];
@@ -108,9 +119,9 @@ export default function MyAppOrders() {
     if (!cart.length) return;
     setStatus('sending');
     try {
-      const res = await callBarDJ('CREAR_PEDIDO', {
+      const res = await callBarDJ(code, 'CREAR_PEDIDO', {
         items: cart.map(l => ({ name: l.name, qty: l.qty, price: l.price })),
-        customer_name: getCustomerCode(),
+        customer_name: customerName,
       });
       if (res.ok) { setStatus('sent'); setCart([]); }
       else { setStatus('idle'); setView('carta'); setError(res.error || 'No se pudo enviar el pedido'); }
@@ -158,7 +169,7 @@ export default function MyAppOrders() {
       </div>
 
       {view === 'cuenta' ? (
-        <CuentaScreen />
+        <CuentaScreen code={code} />
       ) : (
         <>
           {error && <div className="pedidos-error">⚠️ {error}</div>}
@@ -385,7 +396,7 @@ function ConfirmScreen({ cart, total, sending, onBack, onChangeQty, onConfirm }:
 }
 
 // ── Cuenta — todo lo pedido hasta ahora ──────────────────────────────────────
-function CuentaScreen() {
+function CuentaScreen({ code }: { code: string }) {
   const [lines, setLines]     = useState<CuentaLine[] | null>(null);
   const [mensaje, setMensaje] = useState('');
   const [loading, setLoading] = useState(false);
@@ -394,7 +405,7 @@ function CuentaScreen() {
   const fetchCuenta = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const res = await callBarDJ<{ items?: CuentaLine[] }>('CONSULTAR_CUENTA');
+      const res = await callBarDJ<{ items?: CuentaLine[] }>(code, 'CONSULTAR_CUENTA');
       if (res.ok) {
         setLines(res.data?.items ?? []);
         setMensaje(res.mensaje || '');
@@ -405,7 +416,7 @@ function CuentaScreen() {
       setError('No se pudo conectar con Joinn.');
     }
     setLoading(false);
-  }, []);
+  }, [code]);
 
   useEffect(() => { fetchCuenta(); }, [fetchCuenta]);
 
