@@ -884,6 +884,7 @@
   box-shadow: 0 0 0 3px rgba(8,8,11,0.9);
 }
 .pedidos-dish-circle {
+  position: relative;
   width: 208px;
   height: 208px;
   border-radius: 50%;
@@ -900,7 +901,25 @@
   border-color: var(--accent, #10b981);
   box-shadow: 0 0 0 3px var(--accent, #10b981), 0 16px 44px rgba(0,0,0,0.6);
 }
-.pedidos-dish-circle img { width: 100%; height: 100%; object-fit: cover; }
+.pedidos-dish-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+.pedidos-dish-circle img.is-loaded { opacity: 1; }
+.pedidos-dish-skeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, rgba(255,255,255,0.05) 30%, rgba(255,255,255,0.14) 50%, rgba(255,255,255,0.05) 70%);
+  background-size: 200% 100%;
+  animation: pedidos-dish-shimmer 1.2s ease-in-out infinite;
+}
+@keyframes pedidos-dish-shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
 
 /* Entrada del plato — desliza + aparece + escala, dirección según el swipe/flecha */
 .pedidos-dish-anim--left  { animation: pedidos-dish-enter-left  300ms cubic-bezier(0.22, 1, 0.36, 1) both; }

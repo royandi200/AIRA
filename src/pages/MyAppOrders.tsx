@@ -214,11 +214,26 @@ function AiraDishCard({ items, cart, onAdd, onChangeQty }: {
   const [index, setIndex] = useState(0);
   const [added, setAdded] = useState(false);
   const [dir, setDir]     = useState<'left' | 'right'>('left');
+  const [loaded, setLoaded] = useState<Record<string, boolean>>({});
   const touchX = useRef(0);
+  const prefetched = useRef<Set<string>>(new Set());
 
   const safeIndex = Math.min(index, items.length - 1);
   const dish = items[safeIndex];
   const qty = cart.find(l => l.name === dish?.name)?.qty ?? 0;
+
+  // Precarga la imagen del plato siguiente y anterior mientras se ve el
+  // actual — así al deslizar ya está en cache del navegador y no espera
+  // a que baje de nuevo (antes solo se pedía cuando ya tocaba mostrarla).
+  useEffect(() => {
+    const around = [items[(safeIndex + 1) % items.length], items[(safeIndex - 1 + items.length) % items.length]];
+    around.forEach(it => {
+      if (!it?.image_url || prefetched.current.has(it.image_url)) return;
+      prefetched.current.add(it.image_url);
+      const img = new Image();
+      img.src = it.image_url;
+    });
+  }, [safeIndex, items]);
 
   // dir refleja hacia dónde "entra" la siguiente tarjeta — replica el
   // mismo lenguaje de animación (fade + slide + scale) que la app nativa.
@@ -265,9 +280,24 @@ function AiraDishCard({ items, cart, onAdd, onChangeQty }: {
       <div className="pedidos-dish-circle-wrap">
         {qty > 0 && <span className="pedidos-dish-badge">{qty}</span>}
         <div key={`circle-${dish.name}`} className={`pedidos-dish-circle pedidos-dish-anim--${dir} ${qty > 0 ? 'has-qty' : ''}`}>
-          {dish.image_url
-            ? <img src={dish.image_url} alt={dish.name} draggable={false} />
-            : <span className="pedidos-dish-circle-emoji">{dish.category_emoji || '🍽️'}</span>}
+          {dish.image_url ? (
+            <>
+              {!loaded[dish.image_url] && <div className="pedidos-dish-skeleton" />}
+              <img
+                src={dish.image_url}
+                alt={dish.name}
+                draggable={false}
+                loading="eager"
+                decoding="async"
+                // @ts-ignore — fetchPriority no está tipado en este TS/React aún
+                fetchpriority="high"
+                className={loaded[dish.image_url] ? 'is-loaded' : ''}
+                onLoad={() => setLoaded(prev => ({ ...prev, [dish.image_url as string]: true }))}
+              />
+            </>
+          ) : (
+            <span className="pedidos-dish-circle-emoji">{dish.category_emoji || '🍽️'}</span>
+          )}
         </div>
       </div>
 
