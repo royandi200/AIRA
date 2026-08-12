@@ -130,14 +130,6 @@ function PasaportePanel({ attendee }: { attendee: Attendee | null }) {
               <>
                 <RealQr orderRef={attendee.orderRef} qrToken={attendee.qrToken} />
                 <p className="passport-qr-hint">Muestra este QR en la entrada del evento</p>
-                <a
-                  className="passport-qr-link"
-                  href={`/boleta/${attendee.orderRef}?token=${attendee.qrToken}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Abrir en pantalla completa
-                </a>
               </>
             ) : (
               <>
