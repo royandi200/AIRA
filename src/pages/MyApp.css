@@ -810,6 +810,156 @@
   justify-content: center;
 }
 .pedidos-item-stepper span { font-weight: 700; font-size: 13px; min-width: 14px; text-align: center; }
+/* ── Carta inmersiva — imagen circular + descripción (igual app nativa) ── */
+.pedidos-dish {
+  position: relative;
+  width: 100%;
+  min-height: 440px;
+  border-radius: 24px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  touch-action: pan-y;
+}
+.pedidos-dish-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(0px) brightness(0.5) saturate(1.2);
+  transform: scale(1.08);
+}
+.pedidos-dish-bg--placeholder { background: linear-gradient(160deg, #17171d, #0a0a0d); }
+.pedidos-dish-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.25) 35%, rgba(0,0,0,0.92) 100%);
+}
+.pedidos-dish-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(6px);
+  color: rgba(255,255,255,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pedidos-dish-arrow--prev { left: 12px; }
+.pedidos-dish-arrow--next { right: 12px; }
+
+.pedidos-dish-circle-wrap {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  padding-top: 34px;
+}
+.pedidos-dish-badge {
+  position: absolute;
+  top: 20px;
+  right: calc(50% - 106px);
+  z-index: 3;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent, #10b981);
+  color: #06110c;
+  font-weight: 800;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 3px rgba(8,8,11,0.9);
+}
+.pedidos-dish-circle {
+  width: 208px;
+  height: 208px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255,255,255,0.2);
+  box-shadow: 0 16px 44px rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.06);
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+.pedidos-dish-circle.has-qty {
+  border-color: var(--accent, #10b981);
+  box-shadow: 0 0 0 3px var(--accent, #10b981), 0 16px 44px rgba(0,0,0,0.6);
+}
+.pedidos-dish-circle img { width: 100%; height: 100%; object-fit: cover; }
+.pedidos-dish-circle-emoji { font-size: 56px; }
+
+.pedidos-dish-content {
+  position: relative;
+  z-index: 2;
+  margin-top: auto;
+  padding: 18px 20px max(18px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pedidos-dish-cat {
+  align-self: flex-start;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.7);
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+.pedidos-dish-name { font-size: 22px; font-weight: 800; margin: 0; line-height: 1.15; }
+.pedidos-dish-desc {
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+  line-height: 1.4;
+  margin: 0 0 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.pedidos-dish-dots { display: flex; justify-content: center; gap: 6px; margin: 4px 0 6px; }
+.pedidos-dish-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255,255,255,0.25);
+  padding: 0;
+}
+.pedidos-dish-dot.is-active { width: 20px; background: #fff; }
+.pedidos-dish-dot.has-qty:not(.is-active) { background: var(--accent, #10b981); }
+.pedidos-dish-footer { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+.pedidos-dish-price { font-size: 22px; font-weight: 800; flex: 1; }
+.pedidos-dish-add {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 20px;
+  border-radius: 999px;
+  border: none;
+  background: #fff;
+  color: #111;
+  font-weight: 800;
+  font-size: 13px;
+  -webkit-tap-highlight-color: transparent;
+}
+.pedidos-dish-add.is-added { background: var(--accent, #10b981); color: #06110c; }
+.pedidos-dish-stepper { background: rgba(255,255,255,0.14); }
+
 .pedidos-cart-bar {
   position: fixed;
   left: 20px;

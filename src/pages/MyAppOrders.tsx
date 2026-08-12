@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ShoppingBag, Plus, Minus, Receipt, ChevronLeft, RefreshCw } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ShoppingBag, Plus, Minus, Receipt, ChevronLeft, ChevronRight, RefreshCw, ShoppingCart } from 'lucide-react';
 
 /**
  * Pedidos — integración real con BarDJ AI (meseroai.com), bar "Joinn".
@@ -184,34 +184,7 @@ export default function MyAppOrders() {
                 ))}
               </div>
 
-              <div className="pedidos-grid">
-                {filtered.map(item => {
-                  const inCart = cart.find(l => l.name === item.name);
-                  return (
-                    <div key={item.name} className="pedidos-item">
-                      {item.image_url
-                        ? <img src={item.image_url} alt={item.name} className="pedidos-item-img" />
-                        : <div className="pedidos-item-img pedidos-item-img--placeholder">{item.category_emoji || '🍽️'}</div>}
-                      <div className="pedidos-item-body">
-                        <span className="pedidos-item-name">{item.name}</span>
-                        {item.description && <span className="pedidos-item-desc">{item.description}</span>}
-                        <span className="pedidos-item-price">{fmt(item.price)}</span>
-                      </div>
-                      {inCart ? (
-                        <div className="pedidos-item-stepper">
-                          <button onClick={() => changeQty(item.name, -1)} aria-label="Quitar"><Minus size={14} /></button>
-                          <span>{inCart.qty}</span>
-                          <button onClick={() => changeQty(item.name, 1)} aria-label="Agregar"><Plus size={14} /></button>
-                        </div>
-                      ) : (
-                        <button className="pedidos-item-add" onClick={() => addToCart(item)} aria-label="Agregar al carrito">
-                          <Plus size={16} />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              <AiraDishCard key={category} items={filtered} cart={cart} onAdd={addToCart} onChangeQty={changeQty} />
             </>
           )}
         </>
@@ -228,6 +201,105 @@ export default function MyAppOrders() {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Carta — tarjeta inmersiva con imagen circular (igual que la app nativa
+// de BarDJ), un plato a la vez, deslizable. ─────────────────────────────────
+function AiraDishCard({ items, cart, onAdd, onChangeQty }: {
+  items: MenuItem[]; cart: CartLine[];
+  onAdd: (item: MenuItem) => void; onChangeQty: (name: string, delta: number) => void;
+}) {
+  const [index, setIndex] = useState(0);
+  const [added, setAdded] = useState(false);
+  const touchX = useRef(0);
+
+  const safeIndex = Math.min(index, items.length - 1);
+  const dish = items[safeIndex];
+  const qty = cart.find(l => l.name === dish?.name)?.qty ?? 0;
+
+  const go = (delta: number) => setIndex(i => (i + delta + items.length) % items.length);
+
+  const onTouchStart = (e: React.TouchEvent) => { touchX.current = e.touches[0].clientX; };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchX.current;
+    if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+  };
+
+  const handleAdd = () => {
+    onAdd(dish);
+    setAdded(true);
+    window.setTimeout(() => setAdded(false), 1000);
+  };
+
+  if (!dish) return null;
+
+  return (
+    <div className="pedidos-dish" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      {dish.image_url ? (
+        <div className="pedidos-dish-bg" style={{ backgroundImage: `url(${dish.image_url})` }} />
+      ) : (
+        <div className="pedidos-dish-bg pedidos-dish-bg--placeholder" />
+      )}
+      <div className="pedidos-dish-scrim" />
+
+      {items.length > 1 && (
+        <>
+          <button className="pedidos-dish-arrow pedidos-dish-arrow--prev" onClick={() => go(-1)} aria-label="Anterior">
+            <ChevronLeft size={18} />
+          </button>
+          <button className="pedidos-dish-arrow pedidos-dish-arrow--next" onClick={() => go(1)} aria-label="Siguiente">
+            <ChevronRight size={18} />
+          </button>
+        </>
+      )}
+
+      <div className="pedidos-dish-circle-wrap">
+        {qty > 0 && <span className="pedidos-dish-badge">{qty}</span>}
+        <div className={`pedidos-dish-circle ${qty > 0 ? 'has-qty' : ''}`}>
+          {dish.image_url
+            ? <img src={dish.image_url} alt={dish.name} draggable={false} />
+            : <span className="pedidos-dish-circle-emoji">{dish.category_emoji || '🍽️'}</span>}
+        </div>
+      </div>
+
+      <div className="pedidos-dish-content">
+        {dish.category_name && <span className="pedidos-dish-cat">{dish.category_name}</span>}
+        <h3 className="pedidos-dish-name">{dish.name}</h3>
+        {dish.description && <p className="pedidos-dish-desc">{dish.description}</p>}
+
+        {items.length > 1 && (
+          <div className="pedidos-dish-dots">
+            {items.map((it, i) => {
+              const itQty = cart.find(l => l.name === it.name)?.qty ?? 0;
+              return (
+                <button
+                  key={it.name}
+                  className={`pedidos-dish-dot ${i === safeIndex ? 'is-active' : ''} ${itQty > 0 ? 'has-qty' : ''}`}
+                  onClick={() => setIndex(i)}
+                  aria-label={it.name}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        <div className="pedidos-dish-footer">
+          <span className="pedidos-dish-price">{fmt(dish.price)}</span>
+          {qty > 0 ? (
+            <div className="pedidos-item-stepper pedidos-dish-stepper">
+              <button onClick={() => onChangeQty(dish.name, -1)} aria-label="Quitar"><Minus size={14} /></button>
+              <span>{qty}</span>
+              <button onClick={() => onChangeQty(dish.name, 1)} aria-label="Agregar"><Plus size={14} /></button>
+            </div>
+          ) : (
+            <button className={`pedidos-dish-add ${added ? 'is-added' : ''}`} onClick={handleAdd}>
+              {added ? '✓' : <><ShoppingCart size={14} /> Agregar</>}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
