@@ -1,11 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ShoppingBag, Plus, Minus } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ShoppingBag, Plus, Minus, Receipt, ChevronLeft, RefreshCw } from 'lucide-react';
 
 /**
  * Pedidos — integración real con BarDJ AI (meseroai.com), bar "Joinn".
  * No hay mesa física: cada asistente usa un código propio (AIRA-XXXX,
  * guardado en su celular) como si fuera "su mesa" — así BarDJ agrupa
  * sus pedidos por persona en vez de por mesa, sin tocar su backend.
+ *
+ * 3 pantallas (mismo lenguaje visual de AIRA — colores/tipografía —
+ * pero replicando el flujo de la app nativa de BarDJ):
+ *  1. Carta   — platos con imagen, igual que en la app nativa.
+ *  2. Confirmar — antes de enviar, revisa qty/total y confirma.
+ *  3. Cuenta  — todo lo pedido hasta ahora + total (CONSULTAR_CUENTA).
  */
 
 const BARDJ_API = 'https://www.meseroai.com/api/webhook';
@@ -22,6 +28,9 @@ interface MenuItem {
 }
 
 interface CartLine { name: string; price: number; qty: number; }
+interface CuentaLine { name: string; qty: number; price: number; subtotal: number; }
+
+type View = 'carta' | 'confirm' | 'cuenta';
 
 /** Identificador estable por celular — reemplazar por el código real de la boleta cuando esté conectado */
 function getCustomerCode(): string {
@@ -33,7 +42,7 @@ function getCustomerCode(): string {
   return code;
 }
 
-async function callBarDJ<T = unknown>(action: string, data?: Record<string, unknown>): Promise<{ ok: boolean; data: T | null; error: string | null }> {
+async function callBarDJ<T = unknown>(action: string, data?: Record<string, unknown>): Promise<{ ok: boolean; data: T | null; mensaje: string | null; error: string | null }> {
   const code = getCustomerCode();
   const res = await fetch(BARDJ_API, {
     method: 'POST',
@@ -42,12 +51,15 @@ async function callBarDJ<T = unknown>(action: string, data?: Record<string, unkn
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    return { ok: false, data: null, error: err?.error || `HTTP ${res.status}` };
+    return { ok: false, data: null, mensaje: null, error: err?.error || `HTTP ${res.status}` };
   }
   return res.json();
 }
 
+const fmt = (n: number) => '$' + Math.round(n).toLocaleString('es-CO');
+
 export default function MyAppOrders() {
+  const [view, setView]     = useState<View>('carta');
   const [items, setItems]   = useState<MenuItem[] | null>(null);
   const [error, setError]   = useState<string | null>(null);
   const [cart, setCart]     = useState<CartLine[]>([]);
@@ -101,9 +113,10 @@ export default function MyAppOrders() {
         customer_name: getCustomerCode(),
       });
       if (res.ok) { setStatus('sent'); setCart([]); }
-      else { setStatus('idle'); setError(res.error || 'No se pudo enviar el pedido'); }
+      else { setStatus('idle'); setView('carta'); setError(res.error || 'No se pudo enviar el pedido'); }
     } catch {
       setStatus('idle');
+      setView('carta');
       setError('No se pudo conectar con Joinn. Intenta de nuevo.');
     }
   };
@@ -115,76 +128,218 @@ export default function MyAppOrders() {
         <h3>¡Pedido enviado a Joinn!</h3>
         <p>Te lo llevan en un momento — no necesitas estar en ninguna mesa fija.</p>
         <button className="pedidos-again-btn" onClick={() => setStatus('idle')}>Hacer otro pedido</button>
+        <button className="pedidos-again-btn" onClick={() => { setStatus('idle'); setView('cuenta'); }}>Ver mi cuenta</button>
       </div>
+    );
+  }
+
+  if (view === 'confirm') {
+    return (
+      <ConfirmScreen
+        cart={cart}
+        total={total}
+        sending={status === 'sending'}
+        onBack={() => setView('carta')}
+        onChangeQty={changeQty}
+        onConfirm={submitOrder}
+      />
     );
   }
 
   return (
     <div className="pedidos-panel">
-      {error && <div className="pedidos-error">⚠️ {error}</div>}
+      <div className="pedidos-tabs">
+        <button className={`pedidos-tab ${view === 'carta' ? 'is-active' : ''}`} onClick={() => setView('carta')}>
+          🍽️ Carta
+        </button>
+        <button className={`pedidos-tab ${view === 'cuenta' ? 'is-active' : ''}`} onClick={() => setView('cuenta')}>
+          <Receipt size={13} /> Mi cuenta
+        </button>
+      </div>
 
-      {items === null && !error && (
-        <div className="pedidos-loading"><div className="spinner" /><span>Cargando la carta de Joinn…</span></div>
-      )}
-
-      {items !== null && items.length === 0 && !error && (
-        <div className="pedidos-empty">
-          <span>🍹</span>
-          <p>Joinn todavía está preparando su carta. Vuelve pronto.</p>
-        </div>
-      )}
-
-      {items !== null && items.length > 0 && (
+      {view === 'cuenta' ? (
+        <CuentaScreen />
+      ) : (
         <>
-          <div className="pedidos-cats">
-            {categories.map(c => (
-              <button key={c} className={`pedidos-cat ${c === category ? 'is-active' : ''}`} onClick={() => setCategory(c)}>
-                {c}
-              </button>
-            ))}
-          </div>
+          {error && <div className="pedidos-error">⚠️ {error}</div>}
 
-          <div className="pedidos-grid">
-            {filtered.map(item => {
-              const inCart = cart.find(l => l.name === item.name);
-              return (
-                <div key={item.name} className="pedidos-item">
-                  {item.image_url
-                    ? <img src={item.image_url} alt={item.name} className="pedidos-item-img" />
-                    : <div className="pedidos-item-img pedidos-item-img--placeholder">{item.category_emoji || '🍽️'}</div>}
-                  <div className="pedidos-item-body">
-                    <span className="pedidos-item-name">{item.name}</span>
-                    {item.description && <span className="pedidos-item-desc">{item.description}</span>}
-                    <span className="pedidos-item-price">${Number(item.price).toLocaleString('es-CO')}</span>
-                  </div>
-                  {inCart ? (
-                    <div className="pedidos-item-stepper">
-                      <button onClick={() => changeQty(item.name, -1)} aria-label="Quitar"><Minus size={14} /></button>
-                      <span>{inCart.qty}</span>
-                      <button onClick={() => changeQty(item.name, 1)} aria-label="Agregar"><Plus size={14} /></button>
+          {items === null && !error && (
+            <div className="pedidos-loading"><div className="spinner" /><span>Cargando la carta de Joinn…</span></div>
+          )}
+
+          {items !== null && items.length === 0 && !error && (
+            <div className="pedidos-empty">
+              <span>🍹</span>
+              <p>Joinn todavía está preparando su carta. Vuelve pronto.</p>
+            </div>
+          )}
+
+          {items !== null && items.length > 0 && (
+            <>
+              <div className="pedidos-cats">
+                {categories.map(c => (
+                  <button key={c} className={`pedidos-cat ${c === category ? 'is-active' : ''}`} onClick={() => setCategory(c)}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+
+              <div className="pedidos-grid">
+                {filtered.map(item => {
+                  const inCart = cart.find(l => l.name === item.name);
+                  return (
+                    <div key={item.name} className="pedidos-item">
+                      {item.image_url
+                        ? <img src={item.image_url} alt={item.name} className="pedidos-item-img" />
+                        : <div className="pedidos-item-img pedidos-item-img--placeholder">{item.category_emoji || '🍽️'}</div>}
+                      <div className="pedidos-item-body">
+                        <span className="pedidos-item-name">{item.name}</span>
+                        {item.description && <span className="pedidos-item-desc">{item.description}</span>}
+                        <span className="pedidos-item-price">{fmt(item.price)}</span>
+                      </div>
+                      {inCart ? (
+                        <div className="pedidos-item-stepper">
+                          <button onClick={() => changeQty(item.name, -1)} aria-label="Quitar"><Minus size={14} /></button>
+                          <span>{inCart.qty}</span>
+                          <button onClick={() => changeQty(item.name, 1)} aria-label="Agregar"><Plus size={14} /></button>
+                        </div>
+                      ) : (
+                        <button className="pedidos-item-add" onClick={() => addToCart(item)} aria-label="Agregar al carrito">
+                          <Plus size={16} />
+                        </button>
+                      )}
                     </div>
-                  ) : (
-                    <button className="pedidos-item-add" onClick={() => addToCart(item)} aria-label="Agregar al carrito">
-                      <Plus size={16} />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </>
       )}
 
-      {cart.length > 0 && (
+      {view === 'carta' && cart.length > 0 && (
         <div className="pedidos-cart-bar">
           <div className="pedidos-cart-summary">
             <ShoppingBag size={16} />
-            <span>{cart.reduce((s, l) => s + l.qty, 0)} · ${total.toLocaleString('es-CO')}</span>
+            <span>{cart.reduce((s, l) => s + l.qty, 0)} · {fmt(total)}</span>
           </div>
-          <button className="pedidos-cart-btn" disabled={status === 'sending'} onClick={submitOrder}>
-            {status === 'sending' ? 'Enviando…' : 'Enviar pedido a Joinn'}
+          <button className="pedidos-cart-btn" onClick={() => setView('confirm')}>
+            Revisar pedido
           </button>
         </div>
+      )}
+    </div>
+  );
+}
+
+// ── Confirmar antes de enviar ────────────────────────────────────────────────
+function ConfirmScreen({ cart, total, sending, onBack, onChangeQty, onConfirm }: {
+  cart: CartLine[]; total: number; sending: boolean;
+  onBack: () => void; onChangeQty: (name: string, delta: number) => void; onConfirm: () => void;
+}) {
+  return (
+    <div className="pedidos-panel">
+      <button className="pedidos-confirm-back" onClick={onBack}>
+        <ChevronLeft size={16} /> Volver a la carta
+      </button>
+
+      <h3 className="pedidos-confirm-title">Confirma tu pedido</h3>
+      <p className="pedidos-confirm-sub">Se enviará directo a la barra de Joinn</p>
+
+      <div className="pedidos-confirm-list">
+        {cart.map(l => (
+          <div key={l.name} className="pedidos-confirm-row">
+            <div className="pedidos-confirm-row-info">
+              <span className="pedidos-confirm-row-name">{l.name}</span>
+              <span className="pedidos-confirm-row-price">{fmt(l.price)} c/u</span>
+            </div>
+            <div className="pedidos-item-stepper">
+              <button onClick={() => onChangeQty(l.name, -1)} aria-label="Quitar"><Minus size={14} /></button>
+              <span>{l.qty}</span>
+              <button onClick={() => onChangeQty(l.name, 1)} aria-label="Agregar"><Plus size={14} /></button>
+            </div>
+            <span className="pedidos-confirm-row-subtotal">{fmt(l.price * l.qty)}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="pedidos-confirm-total">
+        <span>Total</span>
+        <span>{fmt(total)}</span>
+      </div>
+
+      <button className="pedidos-cart-btn pedidos-confirm-submit" disabled={sending || !cart.length} onClick={onConfirm}>
+        {sending ? 'Enviando…' : `Confirmar y enviar a Joinn`}
+      </button>
+    </div>
+  );
+}
+
+// ── Cuenta — todo lo pedido hasta ahora ──────────────────────────────────────
+function CuentaScreen() {
+  const [lines, setLines]     = useState<CuentaLine[] | null>(null);
+  const [mensaje, setMensaje] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState('');
+
+  const fetchCuenta = useCallback(async () => {
+    setLoading(true); setError('');
+    try {
+      const res = await callBarDJ<{ items?: CuentaLine[] }>('CONSULTAR_CUENTA');
+      if (res.ok) {
+        setLines(res.data?.items ?? []);
+        setMensaje(res.mensaje || '');
+      } else {
+        setError(res.error || 'No se pudo cargar la cuenta');
+      }
+    } catch {
+      setError('No se pudo conectar con Joinn.');
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchCuenta(); }, [fetchCuenta]);
+
+  const total = (lines ?? []).reduce((s, l) => s + l.subtotal, 0);
+
+  return (
+    <div className="pedidos-cuenta">
+      <div className="pedidos-cuenta-header">
+        <span className="pedidos-cuenta-title">Mi cuenta en Joinn</span>
+        <button className="pedidos-cuenta-refresh" onClick={fetchCuenta} disabled={loading} aria-label="Actualizar">
+          <RefreshCw size={14} className={loading ? 'is-spinning' : ''} />
+        </button>
+      </div>
+
+      {loading && lines === null && (
+        <div className="pedidos-loading"><div className="spinner" /><span>Cargando tu cuenta…</span></div>
+      )}
+
+      {error && <div className="pedidos-error">⚠️ {error}</div>}
+
+      {!loading && lines !== null && lines.length === 0 && !error && (
+        <div className="pedidos-empty">
+          <span>🧾</span>
+          <p>{mensaje || 'Todavía no tienes pedidos en Joinn.'}</p>
+        </div>
+      )}
+
+      {lines !== null && lines.length > 0 && (
+        <>
+          <div className="pedidos-cuenta-list">
+            {lines.map((l, i) => (
+              <div key={i} className="pedidos-cuenta-row">
+                <span>{l.name} × {l.qty}</span>
+                <span>{fmt(l.subtotal)}</span>
+              </div>
+            ))}
+          </div>
+          <div className="pedidos-cuenta-divider" />
+          <div className="pedidos-cuenta-row pedidos-cuenta-total">
+            <span>Total</span>
+            <span>{fmt(total)}</span>
+          </div>
+        </>
       )}
     </div>
   );
