@@ -64,8 +64,19 @@ const BOLETA_BASE = 'https://www.viveaira.live';
  */
 function RealQr({ orderRef, qrToken }: { orderRef: string; qrToken: string }) {
   const boletaUrl = `${BOLETA_BASE}/boleta/${orderRef}?token=${qrToken}`;
+  // El QR en sí queda en blanco y negro puro (mejor contraste = escanea
+  // más confiable en la puerta) — el look "amarillo" de marca vuelve con
+  // el marco/esquinas alrededor, no recoloreando los módulos del QR.
   const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(boletaUrl)}`;
-  return <img src={qrImgUrl} alt="Tu QR de acceso a AIRA" width={150} height={150} className="passport-qr-svg" />;
+  return (
+    <div className="passport-qr-frame">
+      <span className="passport-qr-corner passport-qr-corner--tl" />
+      <span className="passport-qr-corner passport-qr-corner--tr" />
+      <span className="passport-qr-corner passport-qr-corner--bl" />
+      <span className="passport-qr-corner passport-qr-corner--br" />
+      <img src={qrImgUrl} alt="Tu QR de acceso a AIRA" width={150} height={150} className="passport-qr-svg" />
+    </div>
+  );
 }
 
 /** Icono de "bloqueado" — se muestra en vez de un QR mientras no hay token real (evita mostrar algo que parezca escaneable sin serlo) */

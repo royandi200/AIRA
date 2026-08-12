@@ -659,7 +659,28 @@
   border-top: 1px dashed rgba(255,255,255,0.15);
   margin-top: 4px;
 }
-.passport-qr-svg { border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,0.5); background: #fff; }
+.passport-qr-frame {
+  position: relative;
+  padding: 14px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow:
+    0 0 0 2px rgba(225,254,82,0.75),
+    0 0 30px rgba(225,254,82,0.3),
+    0 10px 30px rgba(0,0,0,0.55);
+}
+.passport-qr-svg { display: block; border-radius: 4px; }
+.passport-qr-corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 3px solid #e1fe52;
+  filter: drop-shadow(0 0 4px rgba(225,254,82,0.7));
+}
+.passport-qr-corner--tl { top: -8px; left: -8px; border-right: none; border-bottom: none; border-radius: 8px 0 0 0; }
+.passport-qr-corner--tr { top: -8px; right: -8px; border-left: none; border-bottom: none; border-radius: 0 8px 0 0; }
+.passport-qr-corner--bl { bottom: -8px; left: -8px; border-right: none; border-top: none; border-radius: 0 0 0 8px; }
+.passport-qr-corner--br { bottom: -8px; right: -8px; border-left: none; border-top: none; border-radius: 0 0 8px 0; }
 .passport-qr-locked {
   display: flex;
   align-items: center;
