@@ -1,7 +1,7 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
 import {
-  Fingerprint, UtensilsCrossed, Sailboat, CalendarClock, Radar, Aperture, Gem, Bus, ScanFace,
-  X, CheckCircle2, MapPinned, ArrowRight, Bell, LogOut, ChevronRight, ChevronDown, ShieldCheck,
+  Fingerprint, UtensilsCrossed, Sailboat, CalendarClock, Radar, Aperture, Gem, ScanFace,
+  X, CheckCircle2, MapPinned, Bell, LogOut, ChevronRight, ChevronDown, ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
 import { SCHEDULE, ACTIVITIES, useLiveSchedule, formatHM, colorForPlace, type ScheduleItem } from './MyAppSchedule';
@@ -51,7 +51,6 @@ export const SECTIONS: CompassSection[] = [
   { id: 'lineup',      label: 'Itinerario',   Icon: CalendarClock,   image: '/dj-console.jpg',     color: '#a855f7' },
   { id: 'mapa',        label: 'Mapa',         Icon: Radar,           image: '/venue-map.jpg',      color: '#38bdf8' },
   { id: 'galeria',     label: 'Galería',      Icon: Aperture,        image: '/crowd-1.jpg',        color: '#f97316' },
-  { id: 'transporte',  label: 'Transporte',   Icon: Bus,             image: '/yacht-party.jpg',    color: '#ef4444' },
   { id: 'perfil',      label: 'Mi Perfil',    Icon: ScanFace,        image: '/dj-portrait.jpg',    color: '#ec4899' },
 ];
 
@@ -389,37 +388,6 @@ function GaleriaPanel() {
   );
 }
 
-// ── Transporte ───────────────────────────────────────────────────────────────
-const ROUTES = [
-  { id: 'r1', from: 'Terminal Norte, Medellín',    to: 'Joinn Houtel, Guatapé',    depart: 'Vie 10:00 AM', duration: '1h 45min', seats: 12 },
-  { id: 'r2', from: 'C.C. Santafé, Medellín',       to: 'Joinn Houtel, Guatapé',    depart: 'Vie 12:30 PM', duration: '1h 30min', seats: 4  },
-  { id: 'r3', from: 'Joinn Houtel, Guatapé',        to: 'Terminal Norte, Medellín', depart: 'Dom 8:00 AM',  duration: '1h 45min', seats: 20 },
-];
-
-function TransportePanel() {
-  return (
-    <div className="transporte-panel">
-      <p className="transporte-hint">Rutas incluidas en tu paquete de transporte</p>
-      {ROUTES.map(r => (
-        <div key={r.id} className="transporte-card">
-          <div className="transporte-route">
-            <span className="transporte-point">{r.from}</span>
-            <ArrowRight size={14} className="transporte-arrow" />
-            <span className="transporte-point">{r.to}</span>
-          </div>
-          <div className="transporte-meta">
-            <span className="transporte-time">{r.depart}</span>
-            <span className="transporte-dur">{r.duration}</span>
-            <span className={`transporte-seats ${r.seats <= 5 ? 'is-low' : ''}`}>
-              {r.seats} cupos
-            </span>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 // ── Mi Perfil ────────────────────────────────────────────────────────────────
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -503,14 +471,6 @@ function PerfilPanel({ attendee, onLogout }: { attendee: Attendee | null; onLogo
       </div>
 
       <div className="perfil-menu">
-        <button className="perfil-menu-item">
-          <span>Editar datos</span>
-          <ChevronRight size={16} />
-        </button>
-        <button className="perfil-menu-item">
-          <span>Historial de pedidos</span>
-          <ChevronRight size={16} />
-        </button>
         {!installed && canInstall && (
           <button className="perfil-menu-item" onClick={install}>
             <span>📲 Instalar app en el celular</span>
@@ -554,7 +514,6 @@ export function renderSectionContent(section: CompassSection, attendee: Attendee
     case 'mapa':       return <Suspense fallback={<MapLoading />}><MyAppMap attendee={attendee} /></Suspense>;
     case 'lineup':     return <ItinerarioPanel />;
     case 'galeria':    return <GaleriaPanel />;
-    case 'transporte': return <TransportePanel />;
     case 'perfil':     return <PerfilPanel attendee={attendee} onLogout={onLogout} />;
     default:           return <ComingSoonPanel section={section} />;
   }
