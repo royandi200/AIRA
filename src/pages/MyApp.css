@@ -1603,11 +1603,121 @@
   margin-bottom: 6px;
 }
 .itin-column-empty { font-size: 11.5px; color: rgba(255,255,255,0.35); padding: 10px 0; margin: 0; }
-.itin-column .lineup-set { gap: 6px; padding: 9px 0; flex-wrap: wrap; }
-.itin-column .lineup-set-time { width: auto; font-size: 10.5px; }
-.itin-column .lineup-set-artist { font-size: 12px; white-space: normal; }
-.itin-column .lineup-set-stage { font-size: 10px; }
-.itin-column .lineup-set-badge { position: static; margin-left: 13px; }
+
+/* ── Tarjetas del cronograma — hora arriba, glow difuminado del color
+   del lugar/escenario detrás. Mismo lenguaje en Actividades y Line-up. ── */
+.sched-list { display: flex; flex-direction: column; gap: 10px; }
+.sched-item { display: flex; flex-direction: column; gap: 4px; }
+.sched-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: rgba(255,255,255,0.5);
+  padding-left: 2px;
+}
+.sched-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--card-color) 35%, rgba(255,255,255,0.1));
+  background: rgba(255,255,255,0.03);
+  padding: 10px 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: border-color 200ms ease, background 200ms ease;
+}
+.sched-card-glow {
+  position: absolute;
+  inset: -40%;
+  background: radial-gradient(circle at 30% 30%, var(--card-color) 0%, transparent 65%);
+  opacity: 0.22;
+  filter: blur(16px);
+  pointer-events: none;
+  z-index: 0;
+}
+.sched-card.is-live {
+  border-color: var(--card-color);
+  background: color-mix(in srgb, var(--card-color) 10%, rgba(255,255,255,0.04));
+}
+.sched-card.is-live .sched-card-glow { opacity: 0.4; }
+.sched-card.is-past { opacity: 0.45; }
+.sched-card.is-past .sched-card-glow { opacity: 0.08; }
+.sched-card-body { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sched-card-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #fff;
+}
+.sched-card.is-past .sched-card-title { text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.3); }
+.sched-card-place {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  color: rgba(255,255,255,0.5);
+}
+.sched-card-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--card-color); flex-shrink: 0; }
+.sched-card-live {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #06110c;
+  background: var(--card-color);
+  padding: 3px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* ── Acordeón por escenario (Line-up) ─────────────────────────────────── */
+.stage-accordion { display: flex; flex-direction: column; gap: 8px; }
+.stage-group {
+  border: 1px solid color-mix(in srgb, var(--card-color) 30%, rgba(255,255,255,0.1));
+  border-radius: 14px;
+  background: rgba(255,255,255,0.025);
+  overflow: hidden;
+}
+.stage-group.is-open { background: color-mix(in srgb, var(--card-color) 6%, rgba(255,255,255,0.03)); }
+.stage-group-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 12px;
+  background: none;
+  border: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.stage-group-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--card-color); box-shadow: 0 0 8px var(--card-color); flex-shrink: 0; }
+.stage-group-name { font-size: 12.5px; font-weight: 800; color: #fff; flex: 1; text-align: left; }
+.stage-group-live {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #06110c;
+  background: var(--card-color);
+  padding: 2px 6px;
+  border-radius: 999px;
+  animation: myapp-clock-live-pulse 1.8s ease-in-out infinite;
+}
+.stage-group-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.06);
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+.stage-group-chevron { color: rgba(255,255,255,0.4); transition: transform 200ms ease; flex-shrink: 0; }
+.stage-group.is-open .stage-group-chevron { transform: rotate(180deg); color: var(--card-color); }
+.stage-group-body { padding: 0 10px 10px; display: flex; flex-direction: column; gap: 8px; }
 
 .lineup-timeline { display: flex; flex-direction: column; }
 .lineup-set {

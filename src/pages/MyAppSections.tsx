@@ -1,7 +1,7 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import {
   Fingerprint, UtensilsCrossed, Sailboat, CalendarClock, Radar, Aperture, Gem, Bus, ScanFace,
-  X, CheckCircle2, MapPinned, ArrowRight, Bell, LogOut, ChevronRight, ShieldCheck,
+  X, CheckCircle2, MapPinned, ArrowRight, Bell, LogOut, ChevronRight, ChevronDown, ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
 import { SCHEDULE, ACTIVITIES, useLiveSchedule, formatHM, type ScheduleItem } from './MyAppSchedule';
@@ -186,6 +186,94 @@ function PasaportePanel({ attendee }: { attendee: Attendee | null }) {
 // de los 3 días para saber qué viene — todo con el mismo reloj real.
 const ITIN_DAYS: ScheduleItem['day'][] = ['Sábado', 'Domingo', 'Lunes'];
 
+// Un color de marca distinto por escenario/lugar — el mismo lenguaje de
+// acentos que ya usa el dial principal. Se usa para el glow difuminado
+// de cada tarjeta y el punto de los acordeones, no para el fondo sólido.
+const PLACE_COLORS: Record<string, string> = {
+  'Japi Stage':    '#e1fe52',
+  'Joinn Stage':   '#38bdf8',
+  'Playa Aïra':    '#f97316',
+  'Majestic':      '#a855f7',
+  'Stage Playa':   '#22c55e',
+};
+const DEFAULT_COLOR = '#38bdf8';
+function colorFor(place: string): string {
+  return PLACE_COLORS[place] ?? DEFAULT_COLOR;
+}
+
+function groupByPlace(items: ScheduleItem[]): { place: string; color: string; items: ScheduleItem[] }[] {
+  const order: string[] = [];
+  const map = new Map<string, ScheduleItem[]>();
+  for (const it of items) {
+    if (!map.has(it.place)) { map.set(it.place, []); order.push(it.place); }
+    map.get(it.place)!.push(it);
+  }
+  return order.map(place => ({ place, color: colorFor(place), items: map.get(place)! }));
+}
+
+/** Tarjeta de un ítem del cronograma — hora arriba, glow difuminado del color del lugar detrás */
+function ScheduleCard({ item, isLive, isPast }: { item: ScheduleItem; isLive: boolean; isPast: boolean }) {
+  const color = colorFor(item.place);
+  return (
+    <div className="sched-item">
+      <span className="sched-time">{formatHM(item.start)}</span>
+      <div
+        className={`sched-card ${isLive ? 'is-live' : ''} ${isPast ? 'is-past' : ''}`}
+        style={{ ['--card-color' as any]: color }}
+      >
+        <span className="sched-card-glow" />
+        <div className="sched-card-body">
+          <span className="sched-card-title">{item.title}</span>
+          <span className="sched-card-place"><span className="sched-card-dot" />{item.place}</span>
+        </div>
+        {isLive && <span className="sched-card-live">EN VIVO</span>}
+      </div>
+    </div>
+  );
+}
+
+/** Acordeón por escenario — colapsado por defecto salvo el que tiene un set en vivo */
+function StageAccordion({ groups, now, liveIds }: {
+  groups: { place: string; color: string; items: ScheduleItem[] }[];
+  now: Date; liveIds: Set<string>;
+}) {
+  const liveStage = groups.find(g => g.items.some(it => liveIds.has(it.id)))?.place;
+  const [open, setOpen] = useState<Set<string>>(() => new Set(liveStage ? [liveStage] : [groups[0]?.place].filter(Boolean) as string[]));
+
+  const toggle = (place: string) => setOpen(prev => {
+    const next = new Set(prev);
+    next.has(place) ? next.delete(place) : next.add(place);
+    return next;
+  });
+
+  return (
+    <div className="stage-accordion">
+      {groups.map(g => {
+        const isOpen = open.has(g.place);
+        const hasLive = g.items.some(it => liveIds.has(it.id));
+        return (
+          <div key={g.place} className={`stage-group ${isOpen ? 'is-open' : ''}`} style={{ ['--card-color' as any]: g.color }}>
+            <button className="stage-group-head" onClick={() => toggle(g.place)}>
+              <span className="stage-group-dot" />
+              <span className="stage-group-name">{g.place}</span>
+              {hasLive && <span className="stage-group-live">EN VIVO</span>}
+              <span className="stage-group-count">{g.items.length}</span>
+              <ChevronDown size={15} className="stage-group-chevron" />
+            </button>
+            {isOpen && (
+              <div className="stage-group-body">
+                {g.items.map(it => (
+                  <ScheduleCard key={it.id} item={it} isLive={liveIds.has(it.id)} isPast={it.end <= now && !liveIds.has(it.id)} />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function ItinerarioPanel() {
   const { now, current, currentList, next, currentActivity, nextActivity } = useLiveSchedule();
   const [dayFilter, setDayFilter] = useState<ScheduleItem['day']>(current?.day ?? next?.day ?? 'Sábado');
@@ -193,6 +281,7 @@ function ItinerarioPanel() {
   const activities = ACTIVITIES.filter(it => it.day === dayFilter);
   const lineup = SCHEDULE.filter(it => it.day === dayFilter);
   const liveIds = new Set(currentList.map(it => it.id));
+  const lineupGroups = useMemo(() => groupByPlace(lineup), [lineup]);
 
   return (
     <div className="itin-panel">
@@ -245,46 +334,19 @@ function ItinerarioPanel() {
       <div className="itin-columns">
         <div className="itin-column">
           <span className="itin-column-title">🎯 Actividades</span>
-          <div className="lineup-timeline">
-            {activities.map(it => {
-              const isLive = currentActivity?.id === it.id;
-              const isPast = it.end <= now && !isLive;
-              return (
-                <div key={it.id} className={`lineup-set ${isLive ? 'is-headliner' : ''} ${isPast ? 'is-past' : ''}`}>
-                  <span className="lineup-set-time">{formatHM(it.start)}</span>
-                  <div className="lineup-set-dot" />
-                  <div className="lineup-set-body">
-                    <span className="lineup-set-artist">{it.title}</span>
-                    <span className="lineup-set-stage">{it.place}</span>
-                  </div>
-                  {isLive && <span className="lineup-set-badge">EN VIVO</span>}
-                </div>
-              );
-            })}
+          <div className="sched-list">
+            {activities.map(it => (
+              <ScheduleCard key={it.id} item={it} isLive={currentActivity?.id === it.id} isPast={it.end <= now && currentActivity?.id !== it.id} />
+            ))}
             {activities.length === 0 && <p className="itin-column-empty">Sin actividades este día</p>}
           </div>
         </div>
 
         <div className="itin-column">
           <span className="itin-column-title">🎧 Line-up</span>
-          <div className="lineup-timeline">
-            {lineup.map(it => {
-              const isLive = liveIds.has(it.id);
-              const isPast = it.end <= now && !isLive;
-              return (
-                <div key={it.id} className={`lineup-set ${isLive ? 'is-headliner' : ''} ${isPast ? 'is-past' : ''}`}>
-                  <span className="lineup-set-time">{formatHM(it.start)}</span>
-                  <div className="lineup-set-dot" />
-                  <div className="lineup-set-body">
-                    <span className="lineup-set-artist">{it.title}</span>
-                    <span className="lineup-set-stage">{it.place}</span>
-                  </div>
-                  {isLive && <span className="lineup-set-badge">EN VIVO</span>}
-                </div>
-              );
-            })}
-            {lineup.length === 0 && <p className="itin-column-empty">Sin sets este día</p>}
-          </div>
+          {lineupGroups.length > 0
+            ? <StageAccordion groups={lineupGroups} now={now} liveIds={liveIds} />
+            : <p className="itin-column-empty">Sin sets este día</p>}
         </div>
       </div>
     </div>
