@@ -662,6 +662,20 @@
   touch-action: pan-y;
 }
 
+/* ── Deslizar para refrescar ──────────────────────────────────────────── */
+.ptr-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: height 180ms ease;
+  position: relative;
+  z-index: 4;
+}
+.ptr-icon { color: var(--accent, #e1fe52); }
+.ptr-icon.is-spinning { animation: ptr-spin 700ms linear infinite; }
+@keyframes ptr-spin { to { transform: rotate(360deg); } }
+
 .myapp-sheet-bg {
   position: fixed;
   inset: 0;

@@ -5,6 +5,8 @@ import MyAppClock from './MyAppClock';
 import MyAppLogin from './MyAppLogin';
 import MyAppConsent from './MyAppConsent';
 import { useMyAppSession, type Attendee } from './MyAppAuth';
+import { usePullToRefresh } from './usePullToRefresh';
+import PullIndicator from './PullIndicator';
 
 /**
  * MyApp — Webapp para asistentes al evento AIRA.
@@ -102,6 +104,8 @@ function SectionSheet({ section, origin, onClose, attendee, onLogout }: {
   const haptic = useHaptic();
   const closingRef = useRef(false);
   const swipeRef = useRef<{ x: number; y: number; active: boolean } | null>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const { pull, refreshing, progress, handlers: pullHandlers } = usePullToRefresh(sheetRef);
 
   useEffect(() => {
     const t = window.setTimeout(() => setExpanded(true), 20);
@@ -155,8 +159,13 @@ function SectionSheet({ section, origin, onClose, attendee, onLogout }: {
     ? `circle(150% at ${origin.x}px ${origin.y}px)`
     : `circle(${origin.r}px at ${origin.x}px ${origin.y}px)`;
 
+  // El mapa usa el mismo gesto de arrastrar para orbitar la cámara 3D —
+  // el pull-to-refresh no aplica ahí, chocaría con eso.
+  const isMapa = section.id === 'mapa';
+
   return (
     <div
+      ref={sheetRef}
       className="myapp-sheet"
       style={{
         clipPath: clip,
@@ -167,7 +176,10 @@ function SectionSheet({ section, origin, onClose, attendee, onLogout }: {
       data-no-drag
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
+      {...(isMapa ? {} : pullHandlers)}
     >
+      {!isMapa && <PullIndicator pull={pull} progress={progress} refreshing={refreshing} />}
+
       {section.id !== 'mapa' && (
         <>
           <div className="myapp-sheet-bg" style={{ backgroundImage: `url(${section.image})` }} />
