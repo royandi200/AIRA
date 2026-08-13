@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import {
   Fingerprint, UtensilsCrossed, Sailboat, CalendarClock, Radar, Aperture, Gem, ScanFace,
   X, CheckCircle2, MapPinned, Bell, LogOut, ChevronRight, ChevronDown, ShieldCheck,
@@ -47,10 +47,10 @@ export interface CompassSection {
 export const SECTIONS: CompassSection[] = [
   { id: 'pasaporte',   label: 'ID',           Icon: Fingerprint,     image: '/AIRA.png',           color: '#22c55e' },
   { id: 'pedidos',     label: 'Bar',          Icon: UtensilsCrossed, image: '/bar.jpg',            color: '#10b981' },
-  { id: 'actividades', label: 'Vibes',        Icon: Sailboat,        image: '/beach-party.jpg',    color: '#0ea5e9' },
+  { id: 'actividades', label: 'Xperience',    Icon: Sailboat,        image: '/beach-party.jpg',    color: '#0ea5e9' },
   { id: 'lineup',      label: 'Timeline',     Icon: CalendarClock,   image: '/dj-console.jpg',     color: '#a855f7' },
   { id: 'mapa',        label: 'Radar',        Icon: Radar,           image: '/venue-map.jpg',      color: '#38bdf8' },
-  { id: 'galeria',     label: 'Frames',       Icon: Aperture,        image: '/crowd-1.jpg',        color: '#f97316' },
+  { id: 'galeria',     label: 'Pics',         Icon: Aperture,        image: '/crowd-1.jpg',        color: '#f97316' },
   { id: 'perfil',      label: 'Yo',           Icon: ScanFace,        image: '/dj-portrait.jpg',    color: '#ec4899' },
 ];
 
@@ -361,16 +361,73 @@ const GALLERY_ITEMS = [
   { src: '/dj-female.jpg',  caption: 'Set al atardecer' },
 ];
 
-function GaleriaPanel() {
+interface UserPhoto { id: number; nombre: string; image_url: string; created_at: string; }
+interface GalleryEntry { src: string; caption: string; mine?: boolean; id?: number; }
+
+function GaleriaPanel({ attendee, token }: { attendee: Attendee | null; token: string | null }) {
   const [open, setOpen] = useState<number | null>(null);
+  const [userPhotos, setUserPhotos] = useState<UserPhoto[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
+
+  const loadPhotos = () => {
+    fetch('/api/myapp-gallery')
+      .then(r => r.json())
+      .then(json => { if (json.ok) setUserPhotos(json.photos); })
+      .catch(() => {});
+  };
+
+  useEffect(() => { loadPhotos(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const items: GalleryEntry[] = [
+    ...userPhotos.map(p => ({ src: p.image_url, caption: `Foto de ${p.nombre.split(' ')[0]}`, mine: p.nombre === attendee?.name, id: p.id })),
+    ...GALLERY_ITEMS,
+  ];
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !token) return;
+    setError('');
+    setUploading(true);
+    try {
+      const res = await fetch(`/api/myapp-gallery?token=${encodeURIComponent(token)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': file.type || 'image/jpeg' },
+        body: file,
+      });
+      const json = await res.json();
+      if (json.ok) loadPhotos();
+      else setError(json.error || 'No se pudo subir la foto');
+    } catch {
+      setError('No se pudo conectar. Intenta de nuevo.');
+    }
+    setUploading(false);
+  };
 
   return (
     <div className="galeria-panel">
-      <p className="galeria-hint">Toca una foto para verla completa</p>
+      <div className="galeria-upload-row">
+        <p className="galeria-hint">Toca una foto para verla completa</p>
+        <label className={`galeria-upload-btn ${uploading ? 'is-uploading' : ''}`}>
+          {uploading ? 'Subiendo…' : '📸 Subir foto'}
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleUpload}
+            disabled={uploading || !token}
+            hidden
+          />
+        </label>
+      </div>
+      {error && <p className="galeria-upload-error">⚠️ {error}</p>}
+
       <div className="galeria-grid">
-        {GALLERY_ITEMS.map((g, i) => (
-          <button key={g.src} className="galeria-thumb" onClick={() => setOpen(i)}>
+        {items.map((g, i) => (
+          <button key={g.id ?? g.src} className={`galeria-thumb ${g.mine ? 'is-mine' : ''}`} onClick={() => setOpen(i)}>
             <img src={g.src} alt={g.caption} loading="lazy" />
+            {g.mine && <span className="galeria-thumb-mine">Tuya</span>}
           </button>
         ))}
       </div>
@@ -380,8 +437,8 @@ function GaleriaPanel() {
           <button className="galeria-lightbox-close" onClick={() => setOpen(null)} aria-label="Cerrar">
             <X size={20} />
           </button>
-          <img src={GALLERY_ITEMS[open].src} alt={GALLERY_ITEMS[open].caption} />
-          <p className="galeria-lightbox-caption">{GALLERY_ITEMS[open].caption}</p>
+          <img src={items[open].src} alt={items[open].caption} />
+          <p className="galeria-lightbox-caption">{items[open].caption}</p>
         </div>
       )}
     </div>
@@ -506,14 +563,14 @@ function ComingSoonPanel({ section }: { section: CompassSection }) {
   );
 }
 
-export function renderSectionContent(section: CompassSection, attendee: Attendee | null, onLogout: () => void) {
+export function renderSectionContent(section: CompassSection, attendee: Attendee | null, onLogout: () => void, token: string | null = null) {
   switch (section.id) {
     case 'pasaporte':   return <PasaportePanel attendee={attendee} />;
     case 'pedidos':     return <MyAppOrders attendee={attendee} />;
     case 'actividades': return <MyAppActivities />;
     case 'mapa':       return <Suspense fallback={<MapLoading />}><MyAppMap attendee={attendee} /></Suspense>;
     case 'lineup':     return <ItinerarioPanel />;
-    case 'galeria':    return <GaleriaPanel />;
+    case 'galeria':    return <GaleriaPanel attendee={attendee} token={token} />;
     case 'perfil':     return <PerfilPanel attendee={attendee} onLogout={onLogout} />;
     default:           return <ComingSoonPanel section={section} />;
   }

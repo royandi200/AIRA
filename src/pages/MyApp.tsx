@@ -96,9 +96,9 @@ const SHEET_CLOSE_MS = 420;
  * o celular (sin salir de /myapp — solo cierra la sección), y deslizando
  * desde el borde izquierdo hacia la derecha (gesto tipo iOS).
  */
-function SectionSheet({ section, origin, onClose, attendee, onLogout }: {
+function SectionSheet({ section, origin, onClose, attendee, token, onLogout }: {
   section: CompassSection; origin: SheetOrigin; onClose: () => void;
-  attendee: Attendee | null; onLogout: () => void;
+  attendee: Attendee | null; token: string | null; onLogout: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const haptic = useHaptic();
@@ -196,7 +196,7 @@ function SectionSheet({ section, origin, onClose, attendee, onLogout }: {
       </div>
 
       <div className={`myapp-sheet-content ${section.id === 'mapa' ? 'myapp-sheet-content--flush' : ''}`}>
-        {renderSectionContent(section, attendee, onLogout)}
+        {renderSectionContent(section, attendee, onLogout, token)}
       </div>
     </div>
   );
@@ -502,6 +502,7 @@ export default function MyApp() {
           origin={openSection.origin}
           onClose={closeSection}
           attendee={attendee}
+          token={token}
           onLogout={logout}
         />
       )}
