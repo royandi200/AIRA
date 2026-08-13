@@ -274,9 +274,12 @@ function StageAccordion({ groups, now, liveIds }: {
   );
 }
 
+type ItinView = 'actividades' | 'lineup';
+
 function ItinerarioPanel() {
   const { now, current, currentList, next, currentActivity, nextActivity } = useLiveSchedule();
   const [dayFilter, setDayFilter] = useState<ScheduleItem['day']>(current?.day ?? next?.day ?? 'Sábado');
+  const [view, setView] = useState<ItinView>(() => (currentActivity && !current ? 'actividades' : 'lineup'));
 
   const activities = ACTIVITIES.filter(it => it.day === dayFilter);
   const lineup = SCHEDULE.filter(it => it.day === dayFilter);
@@ -331,24 +334,27 @@ function ItinerarioPanel() {
         ))}
       </div>
 
-      <div className="itin-columns">
-        <div className="itin-column">
-          <span className="itin-column-title">🎯 Actividades</span>
-          <div className="sched-list">
-            {activities.map(it => (
-              <ScheduleCard key={it.id} item={it} isLive={currentActivity?.id === it.id} isPast={it.end <= now && currentActivity?.id !== it.id} />
-            ))}
-            {activities.length === 0 && <p className="itin-column-empty">Sin actividades este día</p>}
-          </div>
-        </div>
-
-        <div className="itin-column">
-          <span className="itin-column-title">🎧 Line-up</span>
-          {lineupGroups.length > 0
-            ? <StageAccordion groups={lineupGroups} now={now} liveIds={liveIds} />
-            : <p className="itin-column-empty">Sin sets este día</p>}
-        </div>
+      <div className="itin-tabs">
+        <button className={`itin-tab ${view === 'actividades' ? 'is-active' : ''}`} onClick={() => setView('actividades')}>
+          🎯 Actividades
+        </button>
+        <button className={`itin-tab ${view === 'lineup' ? 'is-active' : ''}`} onClick={() => setView('lineup')}>
+          🎧 Line-up
+        </button>
       </div>
+
+      {view === 'actividades' ? (
+        <div className="sched-list">
+          {activities.map(it => (
+            <ScheduleCard key={it.id} item={it} isLive={currentActivity?.id === it.id} isPast={it.end <= now && currentActivity?.id !== it.id} />
+          ))}
+          {activities.length === 0 && <p className="itin-column-empty">Sin actividades este día</p>}
+        </div>
+      ) : (
+        lineupGroups.length > 0
+          ? <StageAccordion groups={lineupGroups} now={now} liveIds={liveIds} />
+          : <p className="itin-column-empty">Sin sets este día</p>
+      )}
     </div>
   );
 }

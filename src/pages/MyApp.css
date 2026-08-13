@@ -1604,6 +1604,28 @@
 }
 .itin-column-empty { font-size: 11.5px; color: rgba(255,255,255,0.35); padding: 10px 0; margin: 0; }
 
+/* ── Pestañas Actividades / Line-up — ancho completo, sin mezclar horas ── */
+.itin-tabs {
+  display: flex;
+  gap: 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  padding: 4px;
+}
+.itin-tab {
+  flex: 1;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: none;
+  background: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 13px;
+  font-weight: 700;
+  -webkit-tap-highlight-color: transparent;
+}
+.itin-tab.is-active { background: #a855f7; color: #fff; }
+
 /* ── Tarjetas del cronograma — hora arriba, glow difuminado del color
    del lugar/escenario detrás. Mismo lenguaje en Actividades y Line-up. ── */
 .sched-list { display: flex; flex-direction: column; gap: 10px; }
@@ -1650,6 +1672,10 @@
   font-weight: 700;
   line-height: 1.25;
   color: #fff;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .sched-card.is-past .sched-card-title { text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.3); }
 .sched-card-place {
