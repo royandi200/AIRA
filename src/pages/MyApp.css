@@ -371,6 +371,7 @@
   align-items: center;
   justify-content: center;
   padding: 2px 20px 0;
+  margin-bottom: 22px; /* más separación del aro, para que no se vea pegado */
   flex-shrink: 0;
   z-index: 5;
   pointer-events: none;
@@ -390,8 +391,11 @@
   overflow: hidden;
 }
 @keyframes myapp-current-label-in {
-  from { opacity: 0; filter: blur(6px); transform: translateY(-4px); }
-  to   { opacity: 1; filter: blur(0);   transform: translateY(0); }
+  from { opacity: 0;   filter: blur(6px);   transform: translateY(-4px); }
+  /* Queda con un blur leve permanente (estilo, no ilegible) — el logo
+     AIRA arriba se mantiene 100% nítido, solo el nombre de sección se
+     ve así de "vidrio esmerilado". */
+  to   { opacity: 1;   filter: blur(0.6px); transform: translateY(0); }
 }
 
 /* ── Zona central — la rueda ocupa el centro de la pantalla ─────────────── */

@@ -481,10 +481,6 @@ export default function MyApp() {
       </div>
 
       <div className="myapp-footer">
-        <div className="myapp-preview-label">
-          <activeSection.Icon className="myapp-preview-icon" size={16} strokeWidth={1.6} />
-          <span className="myapp-preview-text">{activeSection.label}</span>
-        </div>
         <div className="myapp-hint">Toca el círculo para abrir · Desliza para girar</div>
       </div>
 
