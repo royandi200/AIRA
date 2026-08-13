@@ -24,8 +24,6 @@ const pool = mysql.createPool({
   ssl:                { rejectUnauthorized: false },
 });
 
-const MAX_ENVIOS_24H = 5;
-
 async function ensureTable() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS myapp_otp_tokens (
@@ -78,14 +76,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({
         error: 'No encontramos ninguna boleta con ese número. Verifica que sea el mismo que usaste para comprar.',
       });
-    }
-
-    const [rateRows]: any = await pool.query(
-      `SELECT COUNT(*) as total FROM myapp_otp_tokens WHERE phone = ? AND created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)`,
-      [phoneClean]
-    );
-    if (rateRows[0].total >= MAX_ENVIOS_24H) {
-      return res.status(429).json({ error: 'Límite de envíos alcanzado. Intenta en 24 horas.' });
     }
 
     await pool.query('UPDATE myapp_otp_tokens SET usado = 1 WHERE phone = ? AND usado = 0', [phoneClean]);

@@ -32,13 +32,18 @@ async function ensureSessionTable() {
     CREATE TABLE IF NOT EXISTS myapp_sessions (
       token       VARCHAR(64)  PRIMARY KEY,
       phone       VARCHAR(30)  NOT NULL,
-      order_ref   VARCHAR(20)  NOT NULL,
+      order_ref   VARCHAR(50)  NOT NULL,
       name        VARCHAR(150) NOT NULL,
       source      VARCHAR(10)  NOT NULL,
       expires_at  DATETIME     NOT NULL,
       created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  // La tabla ya existía con order_ref VARCHAR(20) — los order_ref del
+  // import masivo (AIRA-M-...) son más largos y quedaban truncados en
+  // silencio al guardar la sesión, rompiendo el refresh (myapp-me) justo
+  // después del login. Se ensancha la columna si aún no lo está.
+  await pool.query(`ALTER TABLE myapp_sessions MODIFY COLUMN order_ref VARCHAR(50) NOT NULL`).catch(() => {});
 }
 
 // Mismo criterio que myapp-auth-enviar.ts: match por los últimos 10
