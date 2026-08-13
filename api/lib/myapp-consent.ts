@@ -10,9 +10,14 @@ import { createHash } from 'crypto';
  *
  * content_hash: SHA-256 del texto legal completo (clausulas +
  * declaraciones) tal como existia en el momento de la aceptacion.
- * Sirve como huella inmutable independiente de futuras ediciones del
- * texto en el codigo — si alguien pregunta "esto es lo que acepte?",
- * se puede recalcular el hash del texto vigente y compararlo.
+ *
+ * content_text: el texto legal completo EN CRUDO, archivado tal cual
+ * en cada fila. Sin esto, el hash por si solo no sirve para nada una
+ * vez el documento cambie en el codigo (no hay contra que comparar).
+ * Con content_text guardado, cada aceptacion queda autocontenida: se
+ * puede recalcular sha256(content_text) y verificar que sigue
+ * coincidiendo con content_hash, sin depender de ningun archivo
+ * externo ni de que el codigo actual siga teniendo ese texto.
  *
  * OJO: este MySQL/MariaDB no soporta "ADD COLUMN IF NOT EXISTS" (ver
  * error #1064 ya visto con va_en_bus) — cada ALTER va envuelto en su
@@ -34,6 +39,7 @@ export async function ensureConsentSchema(pool: Pool) {
       nombre      VARCHAR(200) NOT NULL,
       version     VARCHAR(20)  NOT NULL DEFAULT '2026-08',
       content_hash VARCHAR(64) NULL,
+      content_text LONGTEXT NULL,
       ip          VARCHAR(64)  NULL,
       user_agent  VARCHAR(300) NULL,
       accepted_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -41,17 +47,12 @@ export async function ensureConsentSchema(pool: Pool) {
   `).catch(() => {});
 
   await pool.query(`ALTER TABLE myapp_consentimientos ADD COLUMN content_hash VARCHAR(64) NULL`).catch(() => {});
+  await pool.query(`ALTER TABLE myapp_consentimientos ADD COLUMN content_text LONGTEXT NULL`).catch(() => {});
 }
 
 export const CONSENT_VERSION = '2026-08';
 
-/**
- * Texto legal completo (clausulas + declaraciones) usado para calcular
- * el hash de integridad. Debe mantenerse en sincronia con el contenido
- * real mostrado en MyAppConsent.tsx — si se edita el texto ahi, este
- * mismo texto se debe actualizar aqui para que el hash siga siendo fiel
- * a lo que el usuario ve y acepta.
- */
+/** SHA-256 del texto legal completo aceptado, para verificar integridad. */
 export function hashConsentText(fullText: string): string {
   return createHash('sha256').update(fullText, 'utf8').digest('hex');
 }
