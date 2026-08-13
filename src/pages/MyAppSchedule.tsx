@@ -113,6 +113,28 @@ export const SCHEDULE: ScheduleItem[] = [
   item('s3-joinn-7', 17, 'Lunes', '17 Agosto', '16:00', '17:00', 'HarrySoul', 'Joinn Stage'),
 ].sort((a, b) => a.start.getTime() - b.start.getTime());
 
+// ── Itinerario general del evento (recorridos, yoga, torneos, etc.) —
+// paralelo al line-up de DJs, se muestran lado a lado en ItinerarioPanel.
+export const ACTIVITIES: ScheduleItem[] = [
+  // ── Sábado 15 ──────────────────────────────────────────────────────────
+  item('s1', 15, 'Sábado', '15 Agosto', '09:00', '10:00', 'Recorrido turístico por el embalse y sesión de meditación', 'Barco Veroni'),
+  item('s2', 15, 'Sábado', '15 Agosto', '10:00', '11:00', 'Recorrido turístico Guatapé', 'Guatapé'),
+  item('s3', 15, 'Sábado', '15 Agosto', '11:30', '12:00', 'Recorrido turístico por el embalse', 'Barco Veroni'),
+  item('s4', 15, 'Sábado', '15 Agosto', '12:00', '13:30', 'Apertura del evento', 'Pandora Stage'),
+  item('s6', 15, 'Sábado', '15 Agosto', '16:00', '17:00', 'Sesión de estiramiento y relajación', 'Playa Aira'),
+
+  // ── Domingo 16 ─────────────────────────────────────────────────────────
+  item('d1', 16, 'Domingo', '16 Agosto', '08:00', '10:00', 'Actividades acuáticas', 'Pandora Stage'),
+  item('d2', 16, 'Domingo', '16 Agosto', '09:00', '10:00', 'Sesión de yoga / entrenamiento funcional', 'Playa Aira'),
+  item('d3', 16, 'Domingo', '16 Agosto', '10:00', '18:00', 'Torneo de voleibol', 'Playa Aira'),
+  item('d5', 16, 'Domingo', '16 Agosto', '20:00', '00:00', 'Noche blanca y antifaz', 'Main Stage Majestic'),
+
+  // ── Lunes 17 ───────────────────────────────────────────────────────────
+  item('l1', 17, 'Lunes', '17 Agosto', '09:00', '10:00', 'Entrenamiento funcional', 'Playa Aira'),
+  item('l2', 17, 'Lunes', '17 Agosto', '10:00', '15:00', 'Torneo de voleibol', 'Playa Aira'),
+  item('l4', 17, 'Lunes', '17 Agosto', '17:00', '18:00', 'Sesión de yoga', 'Playa Aira'),
+].sort((a, b) => a.start.getTime() - b.start.getTime());
+
 export function formatHM(d: Date): string {
   let h = d.getHours();
   const m = d.getMinutes();
@@ -139,5 +161,8 @@ export function useLiveSchedule() {
   const current = currentList[0] ?? null;
   const next = SCHEDULE.filter(it => it.start > now).sort((a, b) => a.start.getTime() - b.start.getTime())[0] ?? null;
 
-  return { now, current, currentList, next };
+  const currentActivity = ACTIVITIES.find(it => now >= it.start && now < it.end) ?? null;
+  const nextActivity = ACTIVITIES.filter(it => it.start > now).sort((a, b) => a.start.getTime() - b.start.getTime())[0] ?? null;
+
+  return { now, current, currentList, next, currentActivity, nextActivity };
 }

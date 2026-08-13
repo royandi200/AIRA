@@ -4,7 +4,7 @@ import {
   X, CheckCircle2, MapPinned, ArrowRight, Bell, LogOut, ChevronRight, ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
-import { SCHEDULE, useLiveSchedule, formatHM, type ScheduleItem } from './MyAppSchedule';
+import { SCHEDULE, ACTIVITIES, useLiveSchedule, formatHM, type ScheduleItem } from './MyAppSchedule';
 import type { Attendee } from './MyAppAuth';
 import MyAppOrders from './MyAppOrders';
 import MyAppActivities from './MyAppActivities';
@@ -187,16 +187,27 @@ function PasaportePanel({ attendee }: { attendee: Attendee | null }) {
 const ITIN_DAYS: ScheduleItem['day'][] = ['Sábado', 'Domingo', 'Lunes'];
 
 function ItinerarioPanel() {
-  const { now, current, currentList, next } = useLiveSchedule();
+  const { now, current, currentList, next, currentActivity, nextActivity } = useLiveSchedule();
   const [dayFilter, setDayFilter] = useState<ScheduleItem['day']>(current?.day ?? next?.day ?? 'Sábado');
 
-  const items = SCHEDULE.filter(it => it.day === dayFilter);
+  const activities = ACTIVITIES.filter(it => it.day === dayFilter);
+  const lineup = SCHEDULE.filter(it => it.day === dayFilter);
   const liveIds = new Set(currentList.map(it => it.id));
 
   return (
     <div className="itin-panel">
-      {currentList.length > 0 && (
+      {(currentList.length > 0 || currentActivity) && (
         <div className="itin-live-stack">
+          {currentActivity && (
+            <div className="itin-live-banner itin-live-banner--activity">
+              <span className="itin-live-dot" />
+              <div className="itin-live-text">
+                <span className="itin-live-kicker">Actividad ahora · {currentActivity.place}</span>
+                <span className="itin-live-title">{currentActivity.title}</span>
+                <span className="itin-live-place">hasta las {formatHM(currentActivity.end)}</span>
+              </div>
+            </div>
+          )}
           {currentList.map(it => (
             <div key={it.id} className="itin-live-banner">
               <span className="itin-live-dot" />
@@ -209,12 +220,12 @@ function ItinerarioPanel() {
           ))}
         </div>
       )}
-      {currentList.length === 0 && next && (
+      {currentList.length === 0 && !currentActivity && (next || nextActivity) && (
         <div className="itin-live-banner itin-live-banner--next">
           <div className="itin-live-text">
             <span className="itin-live-kicker">Próximo</span>
-            <span className="itin-live-title">{next.title}</span>
-            <span className="itin-live-place">{next.place} · {formatHM(next.start)}</span>
+            <span className="itin-live-title">{(next ?? nextActivity)!.title}</span>
+            <span className="itin-live-place">{(next ?? nextActivity)!.place} · {formatHM((next ?? nextActivity)!.start)}</span>
           </div>
         </div>
       )}
@@ -231,22 +242,50 @@ function ItinerarioPanel() {
         ))}
       </div>
 
-      <div className="lineup-timeline">
-        {items.map((it) => {
-          const isLive = liveIds.has(it.id);
-          const isPast = it.end <= now && !isLive;
-          return (
-            <div key={it.id} className={`lineup-set ${isLive ? 'is-headliner' : ''} ${isPast ? 'is-past' : ''}`}>
-              <span className="lineup-set-time">{formatHM(it.start)}</span>
-              <div className="lineup-set-dot" />
-              <div className="lineup-set-body">
-                <span className="lineup-set-artist">{it.title}</span>
-                <span className="lineup-set-stage">{it.place}</span>
-              </div>
-              {isLive && <span className="lineup-set-badge">EN VIVO</span>}
-            </div>
-          );
-        })}
+      <div className="itin-columns">
+        <div className="itin-column">
+          <span className="itin-column-title">🎯 Actividades</span>
+          <div className="lineup-timeline">
+            {activities.map(it => {
+              const isLive = currentActivity?.id === it.id;
+              const isPast = it.end <= now && !isLive;
+              return (
+                <div key={it.id} className={`lineup-set ${isLive ? 'is-headliner' : ''} ${isPast ? 'is-past' : ''}`}>
+                  <span className="lineup-set-time">{formatHM(it.start)}</span>
+                  <div className="lineup-set-dot" />
+                  <div className="lineup-set-body">
+                    <span className="lineup-set-artist">{it.title}</span>
+                    <span className="lineup-set-stage">{it.place}</span>
+                  </div>
+                  {isLive && <span className="lineup-set-badge">EN VIVO</span>}
+                </div>
+              );
+            })}
+            {activities.length === 0 && <p className="itin-column-empty">Sin actividades este día</p>}
+          </div>
+        </div>
+
+        <div className="itin-column">
+          <span className="itin-column-title">🎧 Line-up</span>
+          <div className="lineup-timeline">
+            {lineup.map(it => {
+              const isLive = liveIds.has(it.id);
+              const isPast = it.end <= now && !isLive;
+              return (
+                <div key={it.id} className={`lineup-set ${isLive ? 'is-headliner' : ''} ${isPast ? 'is-past' : ''}`}>
+                  <span className="lineup-set-time">{formatHM(it.start)}</span>
+                  <div className="lineup-set-dot" />
+                  <div className="lineup-set-body">
+                    <span className="lineup-set-artist">{it.title}</span>
+                    <span className="lineup-set-stage">{it.place}</span>
+                  </div>
+                  {isLive && <span className="lineup-set-badge">EN VIVO</span>}
+                </div>
+              );
+            })}
+            {lineup.length === 0 && <p className="itin-column-empty">Sin sets este día</p>}
+          </div>
+        </div>
       </div>
     </div>
   );

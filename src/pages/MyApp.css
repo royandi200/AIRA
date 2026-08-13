@@ -1579,6 +1579,36 @@
   letter-spacing: 0.08em;
   color: rgba(255,255,255,0.4);
 }
+/* ── Actividades y Line-up en paralelo (2 columnas) ──────────────────── */
+.itin-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: start;
+}
+.itin-column {
+  min-width: 0;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 12px 10px;
+}
+.itin-column-title {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255,255,255,0.55);
+  margin-bottom: 6px;
+}
+.itin-column-empty { font-size: 11.5px; color: rgba(255,255,255,0.35); padding: 10px 0; margin: 0; }
+.itin-column .lineup-set { gap: 6px; padding: 9px 0; flex-wrap: wrap; }
+.itin-column .lineup-set-time { width: auto; font-size: 10.5px; }
+.itin-column .lineup-set-artist { font-size: 12px; white-space: normal; }
+.itin-column .lineup-set-stage { font-size: 10px; }
+.itin-column .lineup-set-badge { position: static; margin-left: 13px; }
+
 .lineup-timeline { display: flex; flex-direction: column; }
 .lineup-set {
   display: flex;
