@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { formatHM, useLiveSchedule } from './MyAppSchedule';
+import { getNow } from './timeDebug';
 
 /**
  * Reloj en vivo — visible en el home (rueda) y encima de cualquier
@@ -8,9 +9,9 @@ import { formatHM, useLiveSchedule } from './MyAppSchedule';
  * itinerario, o la próxima si todavía no empieza nada.
  */
 export default function MyAppClock() {
-  const [now, setNow] = useState(() => new Date());
+  const [now, setNow] = useState(() => getNow());
   useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 1000);
+    const id = window.setInterval(() => setNow(getNow()), 1000);
     return () => window.clearInterval(id);
   }, []);
 

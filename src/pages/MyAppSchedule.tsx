@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getNow } from './timeDebug';
 
 /**
  * Line-up real de AIRA 2026 (Guatapé, 15-17 de agosto) — 3 escenarios
@@ -151,9 +152,9 @@ export function formatHM(d: Date): string {
  * para quien necesite un único valor rápido (ej. compatibilidad).
  */
 export function useLiveSchedule() {
-  const [now, setNow] = useState(() => new Date());
+  const [now, setNow] = useState(() => getNow());
   useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 30_000);
+    const id = window.setInterval(() => setNow(getNow()), 5_000); // suficiente para el cronograma, sin recargar el render
     return () => window.clearInterval(id);
   }, []);
 
