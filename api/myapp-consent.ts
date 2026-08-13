@@ -120,11 +120,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const ip = (req.headers['x-forwarded-for'] as string || req.socket?.remoteAddress || '').toString().split(',')[0].trim();
     const userAgent = String(req.headers['user-agent'] || '').slice(0, 300);
-    const contentHash = hashConsentText(buildConsentText());
+    const contentText = buildConsentText();
+    const contentHash = hashConsentText(contentText);
 
     await pool.query(
-      `INSERT INTO myapp_consentimientos (order_ref, nombre, version, content_hash, ip, user_agent) VALUES (?, ?, ?, ?, ?, ?)`,
-      [order_ref, name, CONSENT_VERSION, contentHash, ip || null, userAgent || null]
+      `INSERT INTO myapp_consentimientos (order_ref, nombre, version, content_hash, content_text, ip, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [order_ref, name, CONSENT_VERSION, contentHash, contentText, ip || null, userAgent || null]
     );
 
     const [rows]: any = await pool.query(
