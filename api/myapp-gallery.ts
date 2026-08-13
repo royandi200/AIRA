@@ -135,7 +135,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   } catch (err: any) {
-    console.error('[myapp-gallery]', err.message);
-    return res.status(500).json({ ok: false, error: 'Error interno' });
+    console.error('[myapp-gallery]', err);
+    // TEMPORAL: se ve el error real en la respuesta para diagnosticar el
+    // fallo del Blob. Cuando quede funcionando, volver a "Error interno".
+    return res.status(500).json({ ok: false, error: `Error interno: ${err?.message || String(err)}` });
   }
 }
