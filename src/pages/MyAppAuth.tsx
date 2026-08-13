@@ -35,18 +35,27 @@ export function useMyAppSession() {
     (async () => {
       try {
         const res = await fetch(`/api/myapp-me?token=${encodeURIComponent(token)}`);
-        const json = await res.json();
+        const json = await res.json().catch(() => null);
         if (cancelled) return;
-        if (json.ok) {
+        if (res.ok && json?.ok) {
           setAttendee(json.attendee);
           setStatus('authed');
-        } else {
+        } else if (res.status === 401) {
+          // Único caso real de "cerrar sesión" — token inválido o expirado.
+          console.warn('[myapp] sesión inválida/expirada, cerrando sesión');
           localStorage.removeItem(TOKEN_KEY);
           setToken(null);
           setStatus('anon');
+        } else {
+          // Cualquier otro error (500, hiccup de DB, etc.) es transitorio —
+          // NO cerramos la sesión por esto. Si ya había un attendee en
+          // memoria (ej. recién logueado), lo dejamos como está.
+          console.warn('[myapp] myapp-me falló de forma transitoria, se mantiene la sesión', res.status, json);
+          setStatus(prev => (prev === 'checking' ? 'authed' : prev));
         }
-      } catch {
+      } catch (err) {
         // Sin conexión — no cerramos la sesión, solo no confirmamos datos frescos
+        console.warn('[myapp] myapp-me sin conexión', err);
         if (!cancelled) setStatus(prev => (prev === 'checking' ? 'anon' : prev));
       }
     })();
