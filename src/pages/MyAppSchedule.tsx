@@ -136,6 +136,22 @@ export const ACTIVITIES: ScheduleItem[] = [
   item('l4', 17, 'Lunes', '17 Agosto', '17:00', '18:00', 'Sesión de yoga', 'Playa Aira'),
 ].sort((a, b) => a.start.getTime() - b.start.getTime());
 
+// Un color de marca distinto por escenario/lugar — mismo lenguaje de
+// acentos que el dial principal. Se usa en el reloj (MyAppClock), el
+// acordeón y las tarjetas del itinerario, así el color de cada escenario
+// es consistente en toda la app, no solo en una pantalla.
+export const PLACE_COLORS: Record<string, string> = {
+  'Japi Stage':  '#e1fe52',
+  'Joinn Stage': '#38bdf8',
+  'Playa Aïra':  '#f97316',
+  'Majestic':    '#a855f7',
+  'Stage Playa': '#22c55e',
+};
+const DEFAULT_PLACE_COLOR = '#38bdf8';
+export function colorForPlace(place: string): string {
+  return PLACE_COLORS[place] ?? DEFAULT_PLACE_COLOR;
+}
+
 export function formatHM(d: Date): string {
   let h = d.getHours();
   const m = d.getMinutes();

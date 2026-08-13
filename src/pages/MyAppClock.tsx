@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { formatHM, useLiveSchedule } from './MyAppSchedule';
+import { formatHM, useLiveSchedule, colorForPlace } from './MyAppSchedule';
 import { getNow } from './timeDebug';
 
 /**
@@ -33,7 +33,7 @@ export default function MyAppClock() {
         <span className="myapp-clock-ampm">{ampm}</span>
       </div>
       {current ? (
-        <div className="myapp-clock-status myapp-clock-status--live">
+        <div className="myapp-clock-status myapp-clock-status--live" style={{ ['--card-color' as any]: colorForPlace(current.place) }}>
           <span className="myapp-clock-live-dot" />
           <span className="myapp-clock-status-text">
             {current.title} · {current.place}

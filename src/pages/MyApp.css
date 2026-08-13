@@ -106,14 +106,14 @@
   text-overflow: ellipsis;
 }
 .myapp-clock-status--live .myapp-clock-status-text {
-  color: #e1fe52;
+  color: var(--card-color, #e1fe52);
 }
 .myapp-clock-live-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #e1fe52;
-  box-shadow: 0 0 6px #e1fe52;
+  background: var(--card-color, #e1fe52);
+  box-shadow: 0 0 6px var(--card-color, #e1fe52);
   flex-shrink: 0;
   animation: myapp-clock-live-pulse 1.4s ease-in-out infinite;
 }

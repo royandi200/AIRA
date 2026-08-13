@@ -4,7 +4,7 @@ import {
   X, CheckCircle2, MapPinned, ArrowRight, Bell, LogOut, ChevronRight, ChevronDown, ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
-import { SCHEDULE, ACTIVITIES, useLiveSchedule, formatHM, type ScheduleItem } from './MyAppSchedule';
+import { SCHEDULE, ACTIVITIES, useLiveSchedule, formatHM, colorForPlace, type ScheduleItem } from './MyAppSchedule';
 import type { Attendee } from './MyAppAuth';
 import MyAppOrders from './MyAppOrders';
 import MyAppActivities from './MyAppActivities';
@@ -187,20 +187,7 @@ function PasaportePanel({ attendee }: { attendee: Attendee | null }) {
 // de los 3 días para saber qué viene — todo con el mismo reloj real.
 const ITIN_DAYS: ScheduleItem['day'][] = ['Sábado', 'Domingo', 'Lunes'];
 
-// Un color de marca distinto por escenario/lugar — el mismo lenguaje de
-// acentos que ya usa el dial principal. Se usa para el glow difuminado
-// de cada tarjeta y el punto de los acordeones, no para el fondo sólido.
-const PLACE_COLORS: Record<string, string> = {
-  'Japi Stage':    '#e1fe52',
-  'Joinn Stage':   '#38bdf8',
-  'Playa Aïra':    '#f97316',
-  'Majestic':      '#a855f7',
-  'Stage Playa':   '#22c55e',
-};
-const DEFAULT_COLOR = '#38bdf8';
-function colorFor(place: string): string {
-  return PLACE_COLORS[place] ?? DEFAULT_COLOR;
-}
+const colorFor = colorForPlace;
 
 function groupByPlace(items: ScheduleItem[]): { place: string; color: string; items: ScheduleItem[] }[] {
   const order: string[] = [];
