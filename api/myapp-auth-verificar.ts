@@ -3,7 +3,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import mysql from 'mysql2/promise';
 import { randomBytes } from 'crypto';
 import { hashOTP } from './lib/otp.js';
-import { ensureConsentSchema } from './lib/myapp-consent.js';
 
 /**
  * Login de /myapp — paso 2: verificar OTP y abrir sesión.
@@ -92,7 +91,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     await ensureSessionTable();
-    await ensureConsentSchema(pool);
 
     const [tokens]: any = await pool.query(
       `SELECT id, otp_hash, intentos, bloqueado, expires_at FROM myapp_otp_tokens

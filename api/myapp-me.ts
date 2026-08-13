@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import mysql from 'mysql2/promise';
-import { ensureConsentSchema } from './lib/myapp-consent.js';
 
 /**
  * Refresca la sesión de /myapp sin volver a pedir OTP — el celular
@@ -27,8 +26,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!token) return res.status(400).json({ error: 'token requerido' });
 
   try {
-    await ensureConsentSchema(pool);
-
     const [sessions]: any = await pool.query(
       `SELECT phone, order_ref, source, expires_at FROM myapp_sessions WHERE token = ? LIMIT 1`,
       [token]
