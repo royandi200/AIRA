@@ -3,6 +3,7 @@ import './MyApp.css';
 import { SECTIONS, renderSectionContent, type CompassSection } from './MyAppSections';
 import MyAppClock from './MyAppClock';
 import MyAppLogin from './MyAppLogin';
+import MyAppConsent from './MyAppConsent';
 import { useMyAppSession, type Attendee } from './MyAppAuth';
 
 /**
@@ -190,7 +191,7 @@ function SectionSheet({ section, origin, onClose, attendee, onLogout }: {
 }
 
 export default function MyApp() {
-  const { status: sessionStatus, attendee, login, logout } = useMyAppSession();
+  const { status: sessionStatus, attendee, token, login, logout, patchAttendee } = useMyAppSession();
 
   // Manifest de /myapp + botón "instalar" — antes vivía SOLO en MyAppLogin,
   // pero con sesión de 7 días la mayoría de las veces el usuario nunca pasa
@@ -391,6 +392,18 @@ export default function MyApp() {
   }
   if (sessionStatus === 'anon') {
     return <MyAppLogin onLogin={login} />;
+  }
+
+  // Consentimiento informado — obligatorio una sola vez, después del OTP
+  // y antes de ver el menú real. Se consulta después en Mi Perfil.
+  if (attendee && token && !attendee.consentAcceptedAt) {
+    return (
+      <MyAppConsent
+        attendee={attendee}
+        token={token}
+        onAccepted={(consentAcceptedAt) => patchAttendee({ consentAcceptedAt })}
+      />
+    );
   }
 
   return (

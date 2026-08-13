@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState } from 'react';
 import {
   Fingerprint, UtensilsCrossed, Sailboat, CalendarClock, Radar, Aperture, Gem, Bus, ScanFace,
-  X, CheckCircle2, MapPinned, ArrowRight, Bell, LogOut, ChevronRight,
+  X, CheckCircle2, MapPinned, ArrowRight, Bell, LogOut, ChevronRight, ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
 import { SCHEDULE, useLiveSchedule, formatHM, type ScheduleItem } from './MyAppSchedule';
@@ -348,6 +348,15 @@ function PerfilPanel({ attendee, onLogout }: { attendee: Attendee | null; onLogo
           <Bell size={16} className="perfil-stat-icon" />
           <span className="perfil-stat-label">Notificaciones</span>
           <span className="perfil-stat-value">Activas</span>
+        </div>
+        <div className="perfil-stat">
+          <ShieldCheck size={16} className="perfil-stat-icon" />
+          <span className="perfil-stat-label">Consentimiento</span>
+          <span className="perfil-stat-value">
+            {attendee?.consentAcceptedAt
+              ? `✅ Aceptado ${new Date(attendee.consentAcceptedAt).toLocaleDateString('es-CO')}`
+              : '— Pendiente —'}
+          </span>
         </div>
       </div>
 

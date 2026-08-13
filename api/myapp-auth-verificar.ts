@@ -3,6 +3,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import mysql from 'mysql2/promise';
 import { randomBytes } from 'crypto';
 import { hashOTP } from './lib/otp.js';
+import { ensureConsentSchema } from './lib/myapp-consent.js';
 
 /**
  * Login de /myapp — paso 2: verificar OTP y abrir sesión.
@@ -54,12 +55,13 @@ interface AttendeeFull {
   qr_token: string | null;
   paquete: string | null;
   monto_pendiente: number;
+  consent_accepted_at: string | null;
 }
 
 async function findAttendeeFull(phone: string): Promise<AttendeeFull | null> {
   const suffix = last10(phone);
   const [rows]: any = await pool.query(
-    `SELECT order_ref, nombre AS name, qr_token, paquete, monto_pendiente
+    `SELECT order_ref, nombre AS name, qr_token, paquete, monto_pendiente, consent_accepted_at
      FROM manual_registros WHERE movil LIKE CONCAT('%', ?) ORDER BY created_at DESC LIMIT 1`,
     [suffix]
   );
@@ -76,6 +78,7 @@ async function findAttendeeFull(phone: string): Promise<AttendeeFull | null> {
     qr_token:        r.qr_token || null,
     paquete:         r.paquete || null,
     monto_pendiente: Number(r.monto_pendiente || 0),
+    consent_accepted_at: r.consent_accepted_at || null,
   };
 }
 
@@ -89,6 +92,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     await ensureSessionTable();
+    await ensureConsentSchema(pool);
 
     const [tokens]: any = await pool.query(
       `SELECT id, otp_hash, intentos, bloqueado, expires_at FROM myapp_otp_tokens
@@ -143,6 +147,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         qrToken:        hasBalance ? null : attendee.qr_token,
         paquete:        attendee.paquete,
         montoPendiente: attendee.monto_pendiente,
+        consentAcceptedAt: attendee.consent_accepted_at,
+        emergencyName: null,
+        emergencyPhone: null,
+        medicalConditions: null,
       },
     });
   } catch (err: any) {

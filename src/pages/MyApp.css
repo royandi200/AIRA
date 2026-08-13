@@ -241,6 +241,130 @@
 }
 .myapp-login-install-hint strong { color: rgba(255,255,255,0.7); }
 
+/* ── Consentimiento informado ─────────────────────────────────────────── */
+.myapp-consent {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at 50% 0%, #14141c 0%, #08080b 55%, #000 100%);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.myapp-consent-head {
+  flex-shrink: 0;
+  text-align: center;
+  padding: max(28px, env(safe-area-inset-top)) 24px 18px;
+}
+.myapp-consent-logo { height: 46px; margin-bottom: 14px; }
+.myapp-consent-title { font-size: 20px; font-weight: 800; margin: 0 0 6px; color: #fff; }
+.myapp-consent-sub { font-size: 13px; color: rgba(255,255,255,0.55); margin: 0 auto; max-width: 320px; line-height: 1.5; }
+
+.myapp-consent-body {
+  flex: 1;
+  padding: 4px 20px max(32px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.myapp-consent-clause {
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.03);
+  overflow: hidden;
+}
+.myapp-consent-clause-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 14px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.85);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+}
+.myapp-consent-clause-head svg { flex-shrink: 0; color: rgba(255,255,255,0.4); }
+.myapp-consent-clause-body {
+  padding: 0 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.myapp-consent-clause-body p {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: rgba(255,255,255,0.6);
+  margin: 0;
+}
+
+.myapp-consent-extra {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+.myapp-consent-extra-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255,255,255,0.45);
+}
+.myapp-consent-input {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+}
+.myapp-consent-input::placeholder { color: rgba(255,255,255,0.3); }
+
+.myapp-consent-decls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.myapp-consent-decl {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: rgba(255,255,255,0.75);
+}
+.myapp-consent-decl input {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  accent-color: #e1fe52;
+}
+.myapp-consent-submit {
+  width: 100%;
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.myapp-consent-note {
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+  text-align: center;
+  margin: 12px 0 0;
+  line-height: 1.5;
+}
+
 /* ── Nombre de la sección activa — grande y difuminado, entre el logo y el aro ── */
 .myapp-current-label {
   display: flex;

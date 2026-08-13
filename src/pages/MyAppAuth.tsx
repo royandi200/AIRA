@@ -16,6 +16,10 @@ export interface Attendee {
   qrToken: string | null;
   paquete: string | null;
   montoPendiente: number;
+  consentAcceptedAt: string | null;
+  emergencyName: string | null;
+  emergencyPhone: string | null;
+  medicalConditions: string | null;
 }
 
 export type SessionStatus = 'checking' | 'authed' | 'anon';
@@ -63,5 +67,11 @@ export function useMyAppSession() {
     setStatus('anon');
   }, []);
 
-  return { status, attendee, login, logout };
+  // Actualiza el attendee en memoria sin volver a pegarle al backend —
+  // usado justo después de aceptar el consentimiento informado.
+  const patchAttendee = useCallback((patch: Partial<Attendee>) => {
+    setAttendee(prev => (prev ? { ...prev, ...patch } : prev));
+  }, []);
+
+  return { status, attendee, token, login, logout, patchAttendee };
 }

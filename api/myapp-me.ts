@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import mysql from 'mysql2/promise';
+import { ensureConsentSchema } from './lib/myapp-consent.js';
 
 /**
  * Refresca la sesión de /myapp sin volver a pedir OTP — el celular
@@ -26,6 +27,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!token) return res.status(400).json({ error: 'token requerido' });
 
   try {
+    await ensureConsentSchema(pool);
+
     const [sessions]: any = await pool.query(
       `SELECT phone, order_ref, source, expires_at FROM myapp_sessions WHERE token = ? LIMIT 1`,
       [token]
@@ -36,7 +39,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Fuente única de verdad: manual_registros
     const [rows]: any = await pool.query(
-      `SELECT order_ref, nombre AS name, qr_token, paquete, monto_pendiente
+      `SELECT order_ref, nombre AS name, qr_token, paquete, monto_pendiente,
+              consent_accepted_at, contacto_emergencia_nombre, contacto_emergencia_telefono, condiciones_medicas
        FROM manual_registros WHERE order_ref = ? LIMIT 1`,
       [session.order_ref]
     );
@@ -53,6 +57,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       qrToken:        montoPendiente > 0 ? null : (r.qr_token || null),
       paquete:        r.paquete || null,
       montoPendiente,
+      consentAcceptedAt:  r.consent_accepted_at || null,
+      emergencyName:      r.contacto_emergencia_nombre || null,
+      emergencyPhone:     r.contacto_emergencia_telefono || null,
+      medicalConditions:  r.condiciones_medicas || null,
     };
 
     return res.status(200).json({ ok: true, attendee });
