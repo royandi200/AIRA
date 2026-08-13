@@ -45,13 +45,13 @@ export interface CompassSection {
 }
 
 export const SECTIONS: CompassSection[] = [
-  { id: 'pasaporte',   label: 'Mi Pasaporte', Icon: Fingerprint,     image: '/AIRA.png',           color: '#22c55e' },
-  { id: 'pedidos',     label: 'Pedidos',      Icon: UtensilsCrossed, image: '/bar.jpg',            color: '#10b981' },
-  { id: 'actividades', label: 'Actividades',  Icon: Sailboat,        image: '/beach-party.jpg',    color: '#0ea5e9' },
-  { id: 'lineup',      label: 'Itinerario',   Icon: CalendarClock,   image: '/dj-console.jpg',     color: '#a855f7' },
-  { id: 'mapa',        label: 'Mapa',         Icon: Radar,           image: '/venue-map.jpg',      color: '#38bdf8' },
-  { id: 'galeria',     label: 'Galería',      Icon: Aperture,        image: '/crowd-1.jpg',        color: '#f97316' },
-  { id: 'perfil',      label: 'Mi Perfil',    Icon: ScanFace,        image: '/dj-portrait.jpg',    color: '#ec4899' },
+  { id: 'pasaporte',   label: 'ID',           Icon: Fingerprint,     image: '/AIRA.png',           color: '#22c55e' },
+  { id: 'pedidos',     label: 'Bar',          Icon: UtensilsCrossed, image: '/bar.jpg',            color: '#10b981' },
+  { id: 'actividades', label: 'Vibes',        Icon: Sailboat,        image: '/beach-party.jpg',    color: '#0ea5e9' },
+  { id: 'lineup',      label: 'Timeline',     Icon: CalendarClock,   image: '/dj-console.jpg',     color: '#a855f7' },
+  { id: 'mapa',        label: 'Radar',        Icon: Radar,           image: '/venue-map.jpg',      color: '#38bdf8' },
+  { id: 'galeria',     label: 'Frames',       Icon: Aperture,        image: '/crowd-1.jpg',        color: '#f97316' },
+  { id: 'perfil',      label: 'Yo',           Icon: ScanFace,        image: '/dj-portrait.jpg',    color: '#ec4899' },
 ];
 
 const BOLETA_BASE = 'https://www.viveaira.live';
