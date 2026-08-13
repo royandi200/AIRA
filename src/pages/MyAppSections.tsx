@@ -123,6 +123,10 @@ function PasaportePanel({ attendee }: { attendee: Attendee | null }) {
             <span className="passport-field-value">{isVip ? 'VIP' : 'General'}</span>
           </div>
         </div>
+        <div className="passport-field">
+          <span className="passport-field-label">Alojamiento</span>
+          <span className="passport-field-value">{attendee?.paquete ?? '—'}</span>
+        </div>
 
         {attendee && attendee.montoPendiente > 0 ? (
           <div className="passport-pending">
@@ -341,8 +345,8 @@ function PerfilPanel({ attendee, onLogout }: { attendee: Attendee | null; onLogo
       <div className="perfil-stats">
         <div className="perfil-stat">
           <MapPinned size={16} className="perfil-stat-icon" />
-          <span className="perfil-stat-label">Cabaña asignada</span>
-          <span className="perfil-stat-value">— Pendiente —</span>
+          <span className="perfil-stat-label">Alojamiento</span>
+          <span className="perfil-stat-value">{attendee?.paquete || '— Pendiente —'}</span>
         </div>
         <div className="perfil-stat">
           <Bell size={16} className="perfil-stat-icon" />
@@ -407,7 +411,7 @@ export function renderSectionContent(section: CompassSection, attendee: Attendee
     case 'pasaporte':   return <PasaportePanel attendee={attendee} />;
     case 'pedidos':     return <MyAppOrders attendee={attendee} />;
     case 'actividades': return <MyAppActivities />;
-    case 'mapa':       return <Suspense fallback={<MapLoading />}><MyAppMap /></Suspense>;
+    case 'mapa':       return <Suspense fallback={<MapLoading />}><MyAppMap attendee={attendee} /></Suspense>;
     case 'lineup':     return <ItinerarioPanel />;
     case 'galeria':    return <GaleriaPanel />;
     case 'transporte': return <TransportePanel />;

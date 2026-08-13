@@ -57,13 +57,24 @@ const CABANAS: MapPoint[] = [
   { id: 'cabana-20', label: 'Cabaña 20', emoji: '🏠', x: -0.716, z: 0.714,  color: '#22c55e' },
 ];
 
-// Demo: resalta una cabaña como "la tuya" mientras se conecta el dato real
-const DEMO_MINE_ID = 'cabana-9';
-
-const POINTS: MapPoint[] = [
+const BASE_POINTS: MapPoint[] = [
   ...LANDMARKS,
   ...CABANAS.map(p => ({ ...p, kind: 'cabana' as const })),
-].map(p => (p.id === DEMO_MINE_ID ? { ...p, isMine: true } : p));
+];
+
+/**
+ * Marca como "isMine" la cabaña real del asistente, extrayendo el número
+ * de `attendee.paquete` (ej. "Cabaña 9 - Río Arriba" -> cabana-9). Si el
+ * paquete es una suite o pasadía (no hay marcador para esos todavía) o no
+ * matchea ninguna cabaña, no se resalta nada — mejor que apuntar a la
+ * cabaña equivocada.
+ */
+function buildPoints(paquete: string | null | undefined): MapPoint[] {
+  const match = paquete?.match(/Caba[ñn]a\s*(\d+)/i);
+  const myId = match ? `cabana-${match[1]}` : null;
+  if (!myId) return BASE_POINTS;
+  return BASE_POINTS.map(p => (p.id === myId ? { ...p, isMine: true } : p));
+}
 
 const PLANE_W = 6;
 const PLANE_D = 4.2;
@@ -341,13 +352,14 @@ function GuideLine({ from, to, color }: { from: [number, number]; to: [number, n
   );
 }
 
-function Scene({ image, selectedIdx, onSelect, geo }: {
+function Scene({ image, points, selectedIdx, onSelect, geo }: {
   image: string;
+  points: MapPoint[];
   selectedIdx: number;
   onSelect: (i: number) => void;
   geo: GeoState;
 }) {
-  const selected = POINTS[selectedIdx];
+  const selected = points[selectedIdx];
   const targetWorld: [number, number] = [(selected.x * PLANE_W) / 2, (selected.z * PLANE_D) / 2];
   const hasGeo = geo.status === 'active' && geo.lat !== null && geo.lon !== null;
   const userWorld = hasGeo ? latLonToWorld(geo.lat!, geo.lon!) : null;
@@ -359,7 +371,7 @@ function Scene({ image, selectedIdx, onSelect, geo }: {
       <Suspense fallback={null}>
         <Terrain image={image} />
       </Suspense>
-      {POINTS.map((p, i) => {
+      {points.map((p, i) => {
         const MarkerComp = MARKERS[p.kind ?? 'landmark'];
         return <MarkerComp key={p.id} point={p} index={i} selected={selectedIdx === i} onSelect={onSelect} />;
       })}
@@ -443,13 +455,14 @@ function UserLocationMarker({ lat, lon, accuracy }: { lat: number; lon: number; 
   );
 }
 
-export default function MyAppMap({ image = '/venue-map.jpg' }: { image?: string }) {
+export default function MyAppMap({ image = '/venue-map.jpg', attendee }: { image?: string; attendee?: { paquete: string | null } | null }) {
+  const points = useMemo(() => buildPoints(attendee?.paquete), [attendee?.paquete]);
   const [selectedIdx, setSelectedIdx] = useState<number>(() => {
-    const i = POINTS.findIndex(p => p.isMine);
+    const i = points.findIndex(p => p.isMine);
     return i >= 0 ? i : 0;
   });
   const geo = useGeolocation();
-  const selected = POINTS[selectedIdx];
+  const selected = points[selectedIdx];
   const swipeRef = useRef<{ x: number; y: number; active: boolean } | null>(null);
 
   const initialCamPos = useMemo<[number, number, number]>(() => [0, 2.1, 2.3], []);
@@ -459,8 +472,8 @@ export default function MyAppMap({ image = '/venue-map.jpg' }: { image?: string 
     else geo.start();
   };
 
-  const goPrev = () => setSelectedIdx(i => (i - 1 + POINTS.length) % POINTS.length);
-  const goNext = () => setSelectedIdx(i => (i + 1) % POINTS.length);
+  const goPrev = () => setSelectedIdx(i => (i - 1 + points.length) % points.length);
+  const goNext = () => setSelectedIdx(i => (i + 1) % points.length);
 
   // Swipe horizontal sobre el mapa — igual de intuitivo que las flechas
   const onPointerDown = (e: React.PointerEvent) => {
@@ -489,7 +502,7 @@ export default function MyAppMap({ image = '/venue-map.jpg' }: { image?: string 
           dpr={[1, 1.5]}
           gl={{ antialias: true, alpha: true }}
         >
-          <Scene image={image} selectedIdx={selectedIdx} onSelect={setSelectedIdx} geo={geo} />
+          <Scene image={image} points={points} selectedIdx={selectedIdx} onSelect={setSelectedIdx} geo={geo} />
         </Canvas>
 
         {geo.supported && (
