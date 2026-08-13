@@ -290,9 +290,10 @@ function ItinerarioPanel() {
   return (
     <div className="itin-panel">
       {(currentList.length > 0 || currentActivity) && (
-        <div className="itin-live-stack">
+        <div className={`itin-live-stack ${currentList.length > 1 ? 'itin-live-stack--multi' : ''}`}>
           {currentActivity && (
-            <div className="itin-live-banner itin-live-banner--activity">
+            <div className="itin-live-banner itin-live-banner--activity" style={{ ['--card-color' as any]: colorFor(currentActivity.place) }}>
+              <span className="itin-live-banner-glow" />
               <span className="itin-live-dot" />
               <div className="itin-live-text">
                 <span className="itin-live-kicker">Actividad ahora · {currentActivity.place}</span>
@@ -302,7 +303,8 @@ function ItinerarioPanel() {
             </div>
           )}
           {currentList.map(it => (
-            <div key={it.id} className="itin-live-banner">
+            <div key={it.id} className="itin-live-banner" style={{ ['--card-color' as any]: colorFor(it.place) }}>
+              <span className="itin-live-banner-glow" />
               <span className="itin-live-dot" />
               <div className="itin-live-text">
                 <span className="itin-live-kicker">Sucediendo ahora · {it.place}</span>

@@ -1494,41 +1494,60 @@
 .itin-panel { margin-top: 8px; display: flex; flex-direction: column; gap: 16px; }
 
 .itin-live-stack { display: flex; flex-direction: column; gap: 8px; }
+/* Con 2+ escenarios sonando a la vez, las tarjetas se estiran y se ven
+   más grandes/llamativas — cada una a todo el ancho, no en miniatura. */
+.itin-live-stack--multi .itin-live-banner { padding: 18px 18px; }
+.itin-live-stack--multi .itin-live-title { font-size: 18px; white-space: normal; }
+.itin-live-stack--multi .itin-live-dot { width: 12px; height: 12px; }
 
 .itin-live-banner {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(225,254,82,0.16), rgba(225,254,82,0.03));
-  border: 1px solid rgba(225,254,82,0.35);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid color-mix(in srgb, var(--card-color, #e1fe52) 45%, rgba(255,255,255,0.15));
+}
+.itin-live-banner-glow {
+  position: absolute;
+  inset: -50%;
+  background: radial-gradient(circle at 25% 30%, var(--card-color, #e1fe52) 0%, transparent 65%);
+  opacity: 0.28;
+  filter: blur(20px);
+  pointer-events: none;
+  z-index: 0;
 }
 .itin-live-banner--next {
   background: rgba(255,255,255,0.04);
   border-color: rgba(255,255,255,0.12);
 }
 .itin-live-dot {
+  position: relative;
+  z-index: 1;
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #e1fe52;
-  box-shadow: 0 0 10px #e1fe52;
+  background: var(--card-color, #e1fe52);
+  box-shadow: 0 0 10px var(--card-color, #e1fe52);
   flex-shrink: 0;
   animation: myapp-clock-live-pulse 1.4s ease-in-out infinite;
 }
-.itin-live-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.itin-live-text { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .itin-live-kicker {
   font-size: 9.5px;
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #e1fe52;
+  color: var(--card-color, #e1fe52);
 }
 .itin-live-banner--next .itin-live-kicker { color: rgba(255,255,255,0.5); }
 .itin-live-title {
   font-size: 15px;
   font-weight: 700;
+  color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
