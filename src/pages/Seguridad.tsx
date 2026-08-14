@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import jsQR from 'jsqr';
-import { Bus, X } from 'lucide-react';
+import { Bus, X, List as ListIcon } from 'lucide-react';
 import { useInstallPrompt } from './useInstallPrompt';
 import './Seguridad.css';
 
@@ -18,16 +18,18 @@ type ResultState =
   | { status: 'checking' }
   | { status: 'result'; color: 'green' | 'red' | 'orange'; message: string; name?: string; ref?: string; vaEnBus?: boolean };
 
-interface TransportePersona { nombre: string; movil: string; paquete: string | null; hora?: string; }
+interface ListaPersona { nombre: string; movil: string; paquete: string | null; hora?: string; pendiente?: boolean; vaEnBus?: boolean; }
+type ListaTab = 'transporte' | 'todos';
 
 export default function Seguridad() {
   const [scannerKey, setScannerKey] = useState(() => localStorage.getItem(KEY_STORAGE) || '');
   const [keyInput, setKeyInput]     = useState('');
   const [cameraError, setCameraError] = useState('');
   const [result, setResult] = useState<ResultState>({ status: 'idle' });
-  const [showTransporte, setShowTransporte] = useState(false);
-  const [transporte, setTransporte] = useState<{ total: number; faltan: TransportePersona[]; llegaron: TransportePersona[] } | null>(null);
-  const [loadingTransporte, setLoadingTransporte] = useState(false);
+  const [showLista, setShowLista] = useState(false);
+  const [listaTab, setListaTab] = useState<ListaTab>('transporte');
+  const [listaData, setListaData] = useState<Record<ListaTab, { total: number; faltan: ListaPersona[]; llegaron: ListaPersona[] } | null>>({ transporte: null, todos: null });
+  const [loadingLista, setLoadingLista] = useState(false);
 
   const videoRef  = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -158,15 +160,21 @@ export default function Seguridad() {
     }, 2200);
   };
 
-  const loadTransporte = async () => {
-    setShowTransporte(true);
-    setLoadingTransporte(true);
+  const loadLista = async (tab: ListaTab) => {
+    setShowLista(true);
+    setListaTab(tab);
+    setLoadingLista(true);
     try {
-      const res = await fetch('/api/seguridad-transporte', { headers: { 'x-scanner-key': scannerKey } });
+      const endpoint = tab === 'transporte' ? '/api/seguridad-transporte' : '/api/seguridad-lista';
+      const res = await fetch(endpoint, { headers: { 'x-scanner-key': scannerKey } });
       const json = await res.json();
-      if (json.ok) setTransporte(json);
+      if (json.ok) setListaData(prev => ({ ...prev, [tab]: json }));
     } catch { /* silencioso — se puede reintentar */ }
-    setLoadingTransporte(false);
+    setLoadingLista(false);
+  };
+  const switchListaTab = (tab: ListaTab) => {
+    setListaTab(tab);
+    if (!listaData[tab]) loadLista(tab);
   };
 
   const saveKey = () => {
@@ -220,8 +228,8 @@ export default function Seguridad() {
       <div className="seg-header">
         <span>AIRA · Seguridad</span>
         <div className="seg-header-actions">
-          <button className="seg-bus-btn" onClick={loadTransporte}>
-            <Bus size={14} /> Transporte
+          <button className="seg-bus-btn" onClick={() => loadLista('todos')}>
+            <ListIcon size={14} /> Lista
           </button>
           <button className="seg-logout" onClick={() => { localStorage.removeItem(KEY_STORAGE); setScannerKey(''); }}>
             Salir
@@ -250,43 +258,61 @@ export default function Seguridad() {
         )}
       </div>
 
-      {showTransporte && (
-        <div className="seg-transporte-overlay" onClick={() => setShowTransporte(false)}>
+      {showLista && (
+        <div className="seg-transporte-overlay" onClick={() => setShowLista(false)}>
           <div className="seg-transporte-sheet" onClick={e => e.stopPropagation()}>
             <div className="seg-transporte-head">
-              <span><Bus size={16} /> Transporte</span>
-              <button onClick={() => setShowTransporte(false)} aria-label="Cerrar"><X size={18} /></button>
+              <span><ListIcon size={16} /> Lista</span>
+              <button onClick={() => setShowLista(false)} aria-label="Cerrar"><X size={18} /></button>
             </div>
 
-            {loadingTransporte && <p className="seg-transporte-loading">Cargando…</p>}
+            <div className="seg-transporte-tabs">
+              <button
+                className={`seg-transporte-tab ${listaTab === 'transporte' ? 'is-active' : ''}`}
+                onClick={() => switchListaTab('transporte')}
+              >
+                <Bus size={13} /> Transporte
+              </button>
+              <button
+                className={`seg-transporte-tab ${listaTab === 'todos' ? 'is-active' : ''}`}
+                onClick={() => switchListaTab('todos')}
+              >
+                <ListIcon size={13} /> Todos
+              </button>
+            </div>
 
-            {transporte && !loadingTransporte && (
+            {loadingLista && <p className="seg-transporte-loading">Cargando…</p>}
+
+            {listaData[listaTab] && !loadingLista && (
               <div className="seg-transporte-body">
                 <div className="seg-transporte-summary">
-                  <span className="seg-transporte-count is-missing">{transporte.faltan.length} faltan</span>
-                  <span className="seg-transporte-count is-here">{transporte.llegaron.length} ya llegaron</span>
-                  <span className="seg-transporte-total">de {transporte.total} en total</span>
+                  <span className="seg-transporte-count is-missing">{listaData[listaTab]!.faltan.length} faltan</span>
+                  <span className="seg-transporte-count is-here">{listaData[listaTab]!.llegaron.length} ya llegaron</span>
+                  <span className="seg-transporte-total">de {listaData[listaTab]!.total} en total</span>
                 </div>
 
-                {transporte.faltan.length > 0 && (
+                {listaData[listaTab]!.faltan.length > 0 && (
                   <>
-                    <p className="seg-transporte-section-title">Faltan ({transporte.faltan.length})</p>
+                    <p className="seg-transporte-section-title">Faltan ({listaData[listaTab]!.faltan.length})</p>
                     <div className="seg-transporte-list">
-                      {transporte.faltan.map((p, i) => (
+                      {listaData[listaTab]!.faltan.map((p, i) => (
                         <div key={i} className="seg-transporte-row is-missing">
                           <span className="seg-transporte-name">{p.nombre}</span>
-                          <span className="seg-transporte-meta">{p.paquete || '—'}</span>
+                          <span className="seg-transporte-meta">
+                            {p.paquete || '—'}
+                            {p.pendiente && <span className="seg-transporte-flag">$ pendiente</span>}
+                          </span>
                         </div>
                       ))}
                     </div>
                   </>
                 )}
 
-                {transporte.llegaron.length > 0 && (
+                {listaData[listaTab]!.llegaron.length > 0 && (
                   <>
-                    <p className="seg-transporte-section-title">Ya llegaron ({transporte.llegaron.length})</p>
+                    <p className="seg-transporte-section-title">Ya llegaron ({listaData[listaTab]!.llegaron.length})</p>
                     <div className="seg-transporte-list">
-                      {transporte.llegaron.map((p, i) => (
+                      {listaData[listaTab]!.llegaron.map((p, i) => (
                         <div key={i} className="seg-transporte-row is-here">
                           <span className="seg-transporte-name">✓ {p.nombre}</span>
                           <span className="seg-transporte-meta">{p.paquete || '—'}</span>
@@ -296,7 +322,7 @@ export default function Seguridad() {
                   </>
                 )}
 
-                {transporte.total === 0 && <p className="seg-transporte-loading">Nadie marcado con transporte en bus.</p>}
+                {listaData[listaTab]!.total === 0 && <p className="seg-transporte-loading">Sin registros.</p>}
               </div>
             )}
           </div>
