@@ -35,6 +35,13 @@ type ResultState =
 
 interface ListaPersona { nombre: string; movil: string; paquete: string | null; hora?: string; pendiente?: boolean; vaEnBus?: boolean; }
 
+/** "2026-08-15 22:03:11" (o ISO) → "10:03 PM" — hora del check-in */
+function formatHora(iso: string): string {
+  const d = new Date(iso.includes('T') ? iso : iso.replace(' ', 'T'));
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
 export default function Seguridad() {
   const [scannerKey, setScannerKey] = useState(() => localStorage.getItem(KEY_STORAGE) || '');
   const [keyInput, setKeyInput]     = useState('');
@@ -355,7 +362,10 @@ export default function Seguridad() {
                       {listaData[listaTab]!.llegaron.map((p, i) => (
                         <div key={i} className="seg-transporte-row is-here">
                           <span className="seg-transporte-name">✓ {p.nombre}</span>
-                          <span className="seg-transporte-meta">{p.paquete || '—'}</span>
+                          <span className="seg-transporte-meta">
+                            {p.paquete || '—'}
+                            {p.hora && <span className="seg-transporte-hora">{formatHora(p.hora)}</span>}
+                          </span>
                         </div>
                       ))}
                     </div>
