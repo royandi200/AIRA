@@ -40,7 +40,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   `).catch(() => { /* columna ya existe */ });
 
   const [[registro]]: any = await pool.query(
-    `SELECT id, order_ref, nombre, movil, qr_token, qr_used_at, monto_pendiente, paquete
+    `SELECT id, order_ref, nombre, movil, qr_token, qr_used_at, monto_pendiente, paquete, va_en_bus
      FROM manual_registros
      WHERE qr_token = ?`,
     [token]
@@ -80,5 +80,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ref:     registro.order_ref,
     paquete: registro.paquete,
     phone:   registro.movil,
+    vaEnBus: !!registro.va_en_bus,
   });
 }

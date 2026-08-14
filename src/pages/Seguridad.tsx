@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import jsQR from 'jsqr';
+import { Bus, X } from 'lucide-react';
 import { useInstallPrompt } from './useInstallPrompt';
 import './Seguridad.css';
 
@@ -15,13 +16,18 @@ const KEY_STORAGE = 'aira_scanner_key';
 type ResultState =
   | { status: 'idle' }
   | { status: 'checking' }
-  | { status: 'result'; color: 'green' | 'red' | 'orange'; message: string; name?: string; ref?: string };
+  | { status: 'result'; color: 'green' | 'red' | 'orange'; message: string; name?: string; ref?: string; vaEnBus?: boolean };
+
+interface TransportePersona { nombre: string; movil: string; paquete: string | null; hora?: string; }
 
 export default function Seguridad() {
   const [scannerKey, setScannerKey] = useState(() => localStorage.getItem(KEY_STORAGE) || '');
   const [keyInput, setKeyInput]     = useState('');
   const [cameraError, setCameraError] = useState('');
   const [result, setResult] = useState<ResultState>({ status: 'idle' });
+  const [showTransporte, setShowTransporte] = useState(false);
+  const [transporte, setTransporte] = useState<{ total: number; faltan: TransportePersona[]; llegaron: TransportePersona[] } | null>(null);
+  const [loadingTransporte, setLoadingTransporte] = useState(false);
 
   const videoRef  = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -138,6 +144,7 @@ export default function Seguridad() {
         message: json.message || (json.valid ? 'Acceso válido' : 'QR inválido'),
         name: json.name,
         ref: json.ref,
+        vaEnBus: json.vaEnBus,
       });
     } catch {
       setResult({ status: 'result', color: 'red', message: '❌ Sin conexión — intenta de nuevo' });
@@ -149,6 +156,17 @@ export default function Seguridad() {
       lastTokenRef.current = null;
       setResult({ status: 'idle' });
     }, 2200);
+  };
+
+  const loadTransporte = async () => {
+    setShowTransporte(true);
+    setLoadingTransporte(true);
+    try {
+      const res = await fetch('/api/seguridad-transporte', { headers: { 'x-scanner-key': scannerKey } });
+      const json = await res.json();
+      if (json.ok) setTransporte(json);
+    } catch { /* silencioso — se puede reintentar */ }
+    setLoadingTransporte(false);
   };
 
   const saveKey = () => {
@@ -201,9 +219,14 @@ export default function Seguridad() {
     <div className="seg-root">
       <div className="seg-header">
         <span>AIRA · Seguridad</span>
-        <button className="seg-logout" onClick={() => { localStorage.removeItem(KEY_STORAGE); setScannerKey(''); }}>
-          Salir
-        </button>
+        <div className="seg-header-actions">
+          <button className="seg-bus-btn" onClick={loadTransporte}>
+            <Bus size={14} /> Transporte
+          </button>
+          <button className="seg-logout" onClick={() => { localStorage.removeItem(KEY_STORAGE); setScannerKey(''); }}>
+            Salir
+          </button>
+        </div>
       </div>
 
       <div className="seg-camera-wrap">
@@ -220,9 +243,65 @@ export default function Seguridad() {
           <>
             <p className="seg-result-message">{result.message}</p>
             {result.name && <p className="seg-result-name">{result.name}{result.ref ? ` · ${result.ref}` : ''}</p>}
+            {result.vaEnBus && (
+              <span className="seg-result-bus"><Bus size={13} /> Va en bus</span>
+            )}
           </>
         )}
       </div>
+
+      {showTransporte && (
+        <div className="seg-transporte-overlay" onClick={() => setShowTransporte(false)}>
+          <div className="seg-transporte-sheet" onClick={e => e.stopPropagation()}>
+            <div className="seg-transporte-head">
+              <span><Bus size={16} /> Transporte</span>
+              <button onClick={() => setShowTransporte(false)} aria-label="Cerrar"><X size={18} /></button>
+            </div>
+
+            {loadingTransporte && <p className="seg-transporte-loading">Cargando…</p>}
+
+            {transporte && !loadingTransporte && (
+              <div className="seg-transporte-body">
+                <div className="seg-transporte-summary">
+                  <span className="seg-transporte-count is-missing">{transporte.faltan.length} faltan</span>
+                  <span className="seg-transporte-count is-here">{transporte.llegaron.length} ya llegaron</span>
+                  <span className="seg-transporte-total">de {transporte.total} en total</span>
+                </div>
+
+                {transporte.faltan.length > 0 && (
+                  <>
+                    <p className="seg-transporte-section-title">Faltan ({transporte.faltan.length})</p>
+                    <div className="seg-transporte-list">
+                      {transporte.faltan.map((p, i) => (
+                        <div key={i} className="seg-transporte-row is-missing">
+                          <span className="seg-transporte-name">{p.nombre}</span>
+                          <span className="seg-transporte-meta">{p.paquete || '—'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {transporte.llegaron.length > 0 && (
+                  <>
+                    <p className="seg-transporte-section-title">Ya llegaron ({transporte.llegaron.length})</p>
+                    <div className="seg-transporte-list">
+                      {transporte.llegaron.map((p, i) => (
+                        <div key={i} className="seg-transporte-row is-here">
+                          <span className="seg-transporte-name">✓ {p.nombre}</span>
+                          <span className="seg-transporte-meta">{p.paquete || '—'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {transporte.total === 0 && <p className="seg-transporte-loading">Nadie marcado con transporte en bus.</p>}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
