@@ -462,6 +462,15 @@ export default function MyAppMap({ image = '/venue-map.jpg', attendee }: { image
   const selected = points[selectedIdx];
   const swipeRef = useRef<{ x: number; y: number; active: boolean } | null>(null);
 
+  // Al entrar al Radar se pide el permiso de ubicación de una vez —
+  // antes había que tocar el botón "Ubícame" manualmente. Si el usuario
+  // ya lo negó antes, el navegador simplemente no vuelve a preguntar
+  // (geo.status pasa a 'denied' y se muestra el aviso de siempre).
+  useEffect(() => {
+    if (geo.supported) geo.start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const initialCamPos = useMemo<[number, number, number]>(() => [0, 2.1, 2.3], []);
 
   const toggleLocate = () => {

@@ -10,7 +10,6 @@ import type { Attendee } from './MyAppAuth';
 import MyAppOrders from './MyAppOrders';
 import MyAppActivities from './MyAppActivities';
 import { useInstallPrompt } from './useInstallPrompt';
-import { setSimTime, clearSimTime, isSimActive } from './timeDebug';
 
 // Three.js (react-three-fiber + drei) solo se descarga cuando el usuario
 // realmente abre "Mapa" — evita que todo /myapp cargue esa dependencia
@@ -536,47 +535,6 @@ function initials(name: string): string {
   return ((parts[0]?.[0] ?? 'A') + (parts[1]?.[0] ?? '')).toUpperCase();
 }
 
-// ── Simulador de hora — solo para probar el "en vivo" sin esperar al
-// evento real. Mueve el reloj de toda la app (clock + itinerario) a un
-// momento del 15-17 de agosto y lo deja corriendo normal desde ahí.
-const SIM_PRESETS: { label: string; date: string }[] = [
-  { label: 'Sáb · Apertura (12:30)',      date: '2026-08-15T12:30:00' },
-  { label: 'Sáb · Noche, 3 escenarios',    date: '2026-08-15T22:00:00' },
-  { label: 'Dom · Torneo + line-up (15:00)', date: '2026-08-16T15:00:00' },
-  { label: 'Dom · Noche blanca Majestic',  date: '2026-08-16T20:30:00' },
-  { label: 'Lun · Cierre (12:30)',         date: '2026-08-17T12:30:00' },
-];
-
-function SimTimePanel() {
-  const [active, setActive] = useState(() => isSimActive());
-  const [, force] = useState(0);
-
-  const apply = (dateStr: string) => {
-    setSimTime(new Date(dateStr));
-    setActive(true);
-    force(n => n + 1);
-  };
-  const clear = () => {
-    clearSimTime();
-    setActive(false);
-    force(n => n + 1);
-  };
-
-  return (
-    <div className="perfil-sim">
-      <span className="perfil-sim-title">🧪 Probar "en vivo" (simular hora del evento)</span>
-      <div className="perfil-sim-grid">
-        {SIM_PRESETS.map(p => (
-          <button key={p.date} className="perfil-sim-btn" onClick={() => apply(p.date)}>{p.label}</button>
-        ))}
-      </div>
-      {active && (
-        <button className="perfil-sim-clear" onClick={clear}>Volver a la hora real</button>
-      )}
-    </div>
-  );
-}
-
 function PerfilPanel({ attendee, onLogout }: { attendee: Attendee | null; onLogout: () => void }) {
   const name = attendee?.name ?? 'Invitado AIRA';
   const { canInstall, isIOS, isAndroid, installed, install } = useInstallPrompt();
@@ -654,8 +612,6 @@ function PerfilPanel({ attendee, onLogout }: { attendee: Attendee | null; onLogo
           )}
         </div>
       )}
-
-      <SimTimePanel />
     </div>
   );
 }
