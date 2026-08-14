@@ -10,8 +10,9 @@ import './index.css'
 const App       = lazy(() => import('./App.tsx'))
 const Partners  = lazy(() => import('./sections/Partners.tsx'))
 const Promotor  = lazy(() => import('./pages/Promotor'))
-const MyApp     = lazy(() => import('./pages/MyApp'))
-const Seguridad = lazy(() => import('./pages/Seguridad'))
+const MyApp      = lazy(() => import('./pages/MyApp'))
+const Seguridad  = lazy(() => import('./pages/Seguridad'))
+const MyAppAdmin = lazy(() => import('./pages/MyAppAdmin'))
 
 const path = window.location.pathname.replace(/\/$/, '')
 
@@ -20,6 +21,7 @@ function pickRoute() {
   if (path === '/promotor') return Promotor
   if (path === '/myapp')    return MyApp
   if (path === '/seguridad') return Seguridad
+  if (path === '/myapp-admin') return MyAppAdmin
   return App
 }
 
@@ -28,7 +30,7 @@ const Route = pickRoute()
 // Fallback minimalista — fondo oscuro a juego con cada página,
 // para que no haya parpadeo blanco mientras carga el chunk.
 function RouteFallback() {
-  const bg = path === '/myapp' ? '#08080b' : path === '/seguridad' ? '#000' : '#00164c'
+  const bg = path === '/myapp' ? '#08080b' : (path === '/seguridad' || path === '/myapp-admin') ? '#000' : '#00164c'
   return <div style={{ position: 'fixed', inset: 0, background: bg }} />
 }
 
