@@ -94,7 +94,10 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  max-width: 150px;
+  /* Se estira si el contenido lo pide, pero nunca invade el área del
+     botón de cerrar / título de una sección abierta (izquierda de la
+     pantalla) — deja siempre ese margen libre. */
+  max-width: min(320px, calc(100vw - 110px));
 }
 .myapp-clock-status-text {
   font-size: 9.5px;
@@ -104,52 +107,16 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: block;
 }
-/* ── Reloj "en vivo" — se estira hasta el ancho completo cuando hay
-   varios escenarios simultáneos, y cada uno se muestra en su propio
-   color (mismo mapeo de colores que el Itinerario). ─────────────── */
-.myapp-clock--live-wide {
-  left: 14px;
-  align-items: flex-end;
-}
-.myapp-clock-status--live {
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 3px;
-  max-width: 100%;
-}
-.myapp-clock-status--multi {
-  align-self: stretch;
-  align-items: flex-end;
+/* ── Reloj "en vivo" — una sola línea siempre; con 2+ escenarios
+   simultáneos cada uno aparece en su color, separados por "·", dentro
+   de la misma línea (se recorta con ellipsis si no cabe). ─────────── */
+.myapp-clock-live-sep {
+  color: rgba(255,255,255,0.3);
 }
 .myapp-clock-live-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  max-width: 100%;
-}
-.myapp-clock-status--multi .myapp-clock-live-item {
-  width: 100%;
-  justify-content: flex-end;
-}
-.myapp-clock-status--live .myapp-clock-status-text {
-  color: var(--card-color, #e1fe52);
-  white-space: normal;
-  overflow: visible;
-  text-overflow: unset;
-  text-align: right;
-}
-.myapp-clock-status--multi .myapp-clock-status-text {
-  white-space: normal;
-}
-.myapp-clock-live-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--card-color, #e1fe52);
-  box-shadow: 0 0 6px var(--card-color, #e1fe52);
-  flex-shrink: 0;
-  animation: myapp-clock-live-pulse 1.4s ease-in-out infinite;
+  font-weight: 700;
 }
 @keyframes myapp-clock-live-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
