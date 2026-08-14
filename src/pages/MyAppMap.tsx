@@ -24,12 +24,14 @@ interface MapPoint {
   kind?: 'cabana' | 'landmark' | 'balloon'; // cambia el tipo de marcador 3D
 }
 
-// Puntos generales del venue — coordenadas aproximadas, pendientes de
-// ubicar con /map-editor.html igual que se hizo con las cabañas.
+// Puntos generales del venue — los 3 escenarios ya son coordenadas reales
+// (map-editor.html); entrada y VIP siguen aproximados, pendientes de ubicar.
 const LANDMARKS: MapPoint[] = [
-  { id: 'entrada',   label: 'Entrada',   emoji: '🚪', x: 0.75,  z: -0.21, color: '#38bdf8', kind: 'landmark' },
-  { id: 'escenario', label: 'Escenario', emoji: '🎈', x: -0.05, z: -0.10, color: '#a855f7', kind: 'balloon' },
-  { id: 'vip',       label: 'Zona VIP',  emoji: '👑', x: 0.26,  z: 0.16,  color: '#facc15', kind: 'landmark' },
+  { id: 'entrada',     label: 'Entrada',     emoji: '🚪', x: 0.75,   z: -0.21,  color: '#38bdf8', kind: 'landmark' },
+  { id: 'vip',         label: 'Zona VIP',    emoji: '👑', x: 0.26,   z: 0.16,   color: '#facc15', kind: 'landmark' },
+  { id: 'japi-stage',  label: 'Japi Stage',  emoji: '🎈', x: -0.156, z: 0.053,  color: '#22c55e', kind: 'balloon' },
+  { id: 'aira-stage',  label: 'AIRA Stage',  emoji: '🎈', x: 0.040,  z: 0.268,  color: '#ef4444', kind: 'balloon' },
+  { id: 'joinn-stage', label: 'Joinn Stage', emoji: '🎈', x: 0.268,  z: 0.743,  color: '#ec4899', kind: 'balloon' },
 ];
 
 // Las 19 cabañas reales del venue — ubicadas con /map-editor.html sobre
