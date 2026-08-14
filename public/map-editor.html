@@ -189,8 +189,10 @@
 
     const label = prompt('Nombre del punto (ej. Entrada, Cabaña 3, Escenario):');
     if (!label) return;
-    const emoji = prompt('Emoji (ej. 🚪 🏠 🎧 👑 🚻):', '📍') || '📍';
-    const isMine = confirm('¿Es la cabaña del asistente actual (se resalta con glow)?');
+    const emoji = prompt('Emoji (ej. 🚪 🏠 👑 🎈):', '📍') || '📍';
+    // "isMine" ya no se marca a mano — el mapa calcula solo cuál cabaña
+    // resaltar según el paquete real de cada asistente logueado.
+    const isMine = false;
 
     // Normalizado igual que en MyAppMap.tsx: ((px/dim)*2-1) * 0.9
     const nx = ((px / rect.width) * 2 - 1) * 0.9;
