@@ -41,6 +41,40 @@
   font-size: 14.5px;
 }
 .seg-gate-logo { height: 44px; margin-bottom: 8px; }
+.seg-checkpoint-list {
+  width: 100%;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+.seg-checkpoint-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13.5px;
+}
+.seg-checkpoint-btn:active { background: rgba(225,254,82,0.15); border-color: #e1fe52; }
+.seg-checkpoint-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(225,254,82,0.12);
+  border: 1px solid rgba(225,254,82,0.35);
+  color: #e1fe52;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
 .seg-install {
   width: 100%;
   max-width: 280px;

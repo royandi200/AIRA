@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import mysql from 'mysql2/promise';
-import { ensureQrUsedColumn } from './lib/ensure-qr-used-column.js';
+import { ensureCheckinsTable } from './lib/checkins.js';
 
 const pool = mysql.createPool({
   host:               process.env.DB_HOST,
@@ -17,9 +17,9 @@ const pool = mysql.createPool({
 /**
  * GET /api/seguridad-transporte
  * Lista de todos los que van en bus (va_en_bus=1) — separa quiénes ya
- * pasaron por la puerta (qr_used_at) de quiénes faltan. Reusa la misma
- * marca del escaneo de entrada, no es un check aparte.
- * Requiere header x-scanner-key, mismo candado que validate-qr.
+ * pasaron por el punto de control "transporte" (tabla checkins) de
+ * quiénes faltan. Punto de control fijo — el bus siempre es el mismo,
+ * a diferencia de los ingresos que pueden ser 1/2/3.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).end();
@@ -31,22 +31,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    await ensureQrUsedColumn(pool);
+    await ensureCheckinsTable(pool);
+
     const [rows]: any = await pool.query(
-      `SELECT nombre, movil, paquete, qr_used_at
-       FROM manual_registros
-       WHERE va_en_bus = 1
-       ORDER BY (qr_used_at IS NULL) DESC, nombre ASC`
+      `SELECT r.nombre, r.movil, r.paquete, c.scanned_at
+       FROM manual_registros r
+       LEFT JOIN checkins c ON c.order_ref = r.order_ref AND c.checkpoint = 'transporte'
+       WHERE r.va_en_bus = 1
+       ORDER BY (c.scanned_at IS NULL) DESC, r.nombre ASC`
     );
 
-    const faltan   = rows.filter((r: any) => !r.qr_used_at);
-    const llegaron = rows.filter((r: any) => !!r.qr_used_at);
+    const faltan   = rows.filter((r: any) => !r.scanned_at);
+    const llegaron = rows.filter((r: any) => !!r.scanned_at);
 
     return res.status(200).json({
       ok: true,
       total: rows.length,
       faltan: faltan.map((r: any) => ({ nombre: r.nombre, movil: r.movil, paquete: r.paquete })),
-      llegaron: llegaron.map((r: any) => ({ nombre: r.nombre, movil: r.movil, paquete: r.paquete, hora: r.qr_used_at })),
+      llegaron: llegaron.map((r: any) => ({ nombre: r.nombre, movil: r.movil, paquete: r.paquete, hora: r.scanned_at })),
     });
   } catch (err: any) {
     console.error('[seguridad-transporte]', err.message);

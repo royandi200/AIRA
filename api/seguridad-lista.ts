@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import mysql from 'mysql2/promise';
-import { ensureQrUsedColumn } from './lib/ensure-qr-used-column.js';
+import { ensureCheckinsTable, CHECKPOINT_IDS } from './lib/checkins.js';
 
 const pool = mysql.createPool({
   host:               process.env.DB_HOST,
@@ -15,9 +15,10 @@ const pool = mysql.createPool({
 });
 
 /**
- * GET /api/seguridad-lista
- * Lista general de TODOS los registrados (no solo transporte) — separa
- * quiénes ya escanearon su QR en la puerta de quiénes faltan.
+ * GET /api/seguridad-lista?checkpoint=ingreso-1
+ * Lista general de TODOS los registrados para UN punto de control
+ * específico — separa quiénes ya escanearon ahí de quiénes faltan.
+ * Cada punto de control lleva su propia lista (tabla checkins).
  * Requiere header x-scanner-key, mismo candado que validate-qr.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -29,12 +30,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ ok: false, error: 'Sin autorización' });
   }
 
+  const checkpointRaw = req.query.checkpoint as string | undefined;
+  const checkpoint = checkpointRaw && CHECKPOINT_IDS.includes(checkpointRaw) ? checkpointRaw : 'ingreso-1';
+
   try {
-    await ensureQrUsedColumn(pool);
+    await ensureCheckinsTable(pool);
+
     const [rows]: any = await pool.query(
-      `SELECT nombre, movil, paquete, monto_pendiente, va_en_bus, qr_used_at
-       FROM manual_registros
-       ORDER BY (qr_used_at IS NULL) DESC, nombre ASC`
+      `SELECT r.nombre, r.movil, r.paquete, r.monto_pendiente, r.va_en_bus, c.scanned_at
+       FROM manual_registros r
+       LEFT JOIN checkins c ON c.order_ref = r.order_ref AND c.checkpoint = ?
+       ORDER BY (c.scanned_at IS NULL) DESC, r.nombre ASC`,
+      [checkpoint]
     );
 
     const map = (r: any) => ({
@@ -43,11 +50,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       paquete: r.paquete,
       pendiente: Number(r.monto_pendiente || 0) > 0,
       vaEnBus: !!r.va_en_bus,
-      hora: r.qr_used_at,
+      hora: r.scanned_at,
     });
 
-    const faltan   = rows.filter((r: any) => !r.qr_used_at).map(map);
-    const llegaron = rows.filter((r: any) => !!r.qr_used_at).map(map);
+    const faltan   = rows.filter((r: any) => !r.scanned_at).map(map);
+    const llegaron = rows.filter((r: any) => !!r.scanned_at).map(map);
 
     return res.status(200).json({ ok: true, total: rows.length, faltan, llegaron });
   } catch (err: any) {

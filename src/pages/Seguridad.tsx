@@ -1,17 +1,30 @@
 import { useEffect, useRef, useState } from 'react';
 import jsQR from 'jsqr';
-import { Bus, X, List as ListIcon } from 'lucide-react';
+import { Bus, X, List as ListIcon, MapPin } from 'lucide-react';
 import { useInstallPrompt } from './useInstallPrompt';
 import './Seguridad.css';
 
 /**
  * /seguridad — app de escaneo para el staff de la entrada.
  * Cámara del celular + jsQR (decodifica en el navegador, sin libs
- * nativas) → valida cada QR contra /api/validate-qr (que ya revisa
- * manual_registros: existe, saldo en $0, no usado antes).
+ * nativas) → valida cada QR contra /api/validate-qr, que ya revisa
+ * manual_registros (existe, saldo en $0) y registra el check-in en la
+ * tabla `checkins`, ligado al PUNTO DE CONTROL activo (Transporte,
+ * Ingreso 1/2/3, …) — el mismo QR puede pasar por varios puntos sin
+ * bloquearse entre sí.
  */
 
 const KEY_STORAGE = 'aira_scanner_key';
+const CHECKPOINT_STORAGE = 'aira_scanner_checkpoint';
+
+// Misma lista que api/lib/checkins.ts — agregar un punto de control es
+// sumar una línea acá y otra allá.
+const CHECKPOINTS: { id: string; label: string }[] = [
+  { id: 'transporte', label: 'Transporte (bus)' },
+  { id: 'ingreso-1',  label: 'Ingreso 1' },
+  { id: 'ingreso-2',  label: 'Ingreso 2' },
+  { id: 'ingreso-3',  label: 'Ingreso 3' },
+];
 
 type ResultState =
   | { status: 'idle' }
@@ -24,6 +37,7 @@ type ListaTab = 'transporte' | 'todos';
 export default function Seguridad() {
   const [scannerKey, setScannerKey] = useState(() => localStorage.getItem(KEY_STORAGE) || '');
   const [keyInput, setKeyInput]     = useState('');
+  const [checkpoint, setCheckpoint] = useState(() => localStorage.getItem(CHECKPOINT_STORAGE) || '');
   const [cameraError, setCameraError] = useState('');
   const [result, setResult] = useState<ResultState>({ status: 'idle' });
   const [showLista, setShowLista] = useState(false);
@@ -62,7 +76,7 @@ export default function Seguridad() {
 
   // ── Cámara ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!scannerKey) return;
+    if (!scannerKey || !checkpoint) return;
     let cancelled = false;
 
     (async () => {
@@ -88,7 +102,7 @@ export default function Seguridad() {
       streamRef.current?.getTracks().forEach(t => t.stop());
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scannerKey]);
+  }, [scannerKey, checkpoint]);
 
   const tick = () => {
     const video = videoRef.current;
@@ -127,7 +141,7 @@ export default function Seguridad() {
     cooldownRef.current = true;
     setResult({ status: 'checking' });
     try {
-      const res = await fetch(`/api/validate-qr?token=${encodeURIComponent(token)}`, {
+      const res = await fetch(`/api/validate-qr?token=${encodeURIComponent(token)}&checkpoint=${encodeURIComponent(checkpoint)}`, {
         headers: { 'x-scanner-key': scannerKey },
       });
       const json = await res.json();
@@ -165,7 +179,9 @@ export default function Seguridad() {
     setListaTab(tab);
     setLoadingLista(true);
     try {
-      const endpoint = tab === 'transporte' ? '/api/seguridad-transporte' : '/api/seguridad-lista';
+      const endpoint = tab === 'transporte'
+        ? '/api/seguridad-transporte'
+        : `/api/seguridad-lista?checkpoint=${encodeURIComponent(checkpoint)}`;
       const res = await fetch(endpoint, { headers: { 'x-scanner-key': scannerKey } });
       const json = await res.json();
       if (json.ok) setListaData(prev => ({ ...prev, [tab]: json }));
@@ -174,13 +190,18 @@ export default function Seguridad() {
   };
   const switchListaTab = (tab: ListaTab) => {
     setListaTab(tab);
-    if (!listaData[tab]) loadLista(tab);
+    loadLista(tab); // siempre refresca — "todos" depende del checkpoint activo
   };
 
   const saveKey = () => {
     if (!keyInput.trim()) return;
     localStorage.setItem(KEY_STORAGE, keyInput.trim());
     setScannerKey(keyInput.trim());
+  };
+
+  const chooseCheckpoint = (id: string) => {
+    localStorage.setItem(CHECKPOINT_STORAGE, id);
+    setCheckpoint(id);
   };
 
   if (!scannerKey) {
@@ -223,10 +244,33 @@ export default function Seguridad() {
     );
   }
 
+  // ── Paso 2: elegir qué punto de control va a validar este celular ──────
+  if (!checkpoint) {
+    return (
+      <div className="seg-gate">
+        <img src="/AIRA.png" alt="AIRA" className="seg-gate-logo" />
+        <h1 className="seg-gate-title">📍 ¿Qué vas a validar?</h1>
+        <p className="seg-gate-sub">Elige el punto de control de este celular — puedes cambiarlo cuando quieras</p>
+        <div className="seg-checkpoint-list">
+          {CHECKPOINTS.map(c => (
+            <button key={c.id} className="seg-checkpoint-btn" onClick={() => chooseCheckpoint(c.id)}>
+              {c.id === 'transporte' ? <Bus size={16} /> : <MapPin size={16} />}
+              {c.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const checkpointLabel = CHECKPOINTS.find(c => c.id === checkpoint)?.label || checkpoint;
+
   return (
     <div className="seg-root">
       <div className="seg-header">
-        <span>AIRA · Seguridad</span>
+        <button className="seg-checkpoint-pill" onClick={() => { localStorage.removeItem(CHECKPOINT_STORAGE); setCheckpoint(''); }}>
+          <MapPin size={12} /> {checkpointLabel}
+        </button>
         <div className="seg-header-actions">
           <button className="seg-bus-btn" onClick={() => loadLista('todos')}>
             <ListIcon size={14} /> Lista
@@ -277,7 +321,7 @@ export default function Seguridad() {
                 className={`seg-transporte-tab ${listaTab === 'todos' ? 'is-active' : ''}`}
                 onClick={() => switchListaTab('todos')}
               >
-                <ListIcon size={13} /> Todos
+                <ListIcon size={13} /> {checkpointLabel}
               </button>
             </div>
 
