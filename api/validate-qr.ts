@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import mysql from 'mysql2/promise';
+import { ensureQrUsedColumn } from './lib/ensure-qr-used-column.js';
 
 const pool = mysql.createPool({
   host:               process.env.DB_HOST,
@@ -34,10 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const token = (req.query.token || req.body?.token) as string | undefined;
   if (!token) return res.status(400).json({ valid: false, error: 'token requerido' });
 
-  // Columna qr_used_at — idempotente, mismo patrón que el resto del código
-  await pool.query(`
-    ALTER TABLE manual_registros ADD COLUMN IF NOT EXISTS qr_used_at DATETIME NULL
-  `).catch(() => { /* columna ya existe */ });
+  await ensureQrUsedColumn(pool);
 
   const [[registro]]: any = await pool.query(
     `SELECT id, order_ref, nombre, movil, qr_token, qr_used_at, monto_pendiente, paquete, va_en_bus

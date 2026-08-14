@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import mysql from 'mysql2/promise';
+import { ensureQrUsedColumn } from './lib/ensure-qr-used-column.js';
 
 const pool = mysql.createPool({
   host:               process.env.DB_HOST,
@@ -30,6 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    await ensureQrUsedColumn(pool);
     const [rows]: any = await pool.query(
       `SELECT nombre, movil, paquete, qr_used_at
        FROM manual_registros
