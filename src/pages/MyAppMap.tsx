@@ -32,29 +32,30 @@ const LANDMARKS: MapPoint[] = [
   { id: 'vip',       label: 'Zona VIP',  emoji: '👑', x: 0.26,  z: 0.16,  color: '#facc15', kind: 'landmark' },
 ];
 
-// Las 19 cabañas reales del venue — ubicadas con /map-editor.html
-// sobre venue-map.jpg. La cabaña asignada a cada asistente (isMine)
-// se decide dinámicamente cuando se conecte al backend (orders.cabana_id).
+// Las 19 cabañas reales del venue — ubicadas con /map-editor.html sobre
+// venue-map.jpg (coordenadas reales, no aproximadas). El id `cabana-N`
+// es lo que usa buildPoints() para resaltar la cabaña real de cada
+// asistente según su `paquete` — no cambiar el patrón del id.
 const CABANAS: MapPoint[] = [
-  { id: 'cabana-1',  label: 'Cabaña 1',  emoji: '🏠', x: 0.220,  z: -0.889, color: '#22c55e' },
-  { id: 'cabana-2',  label: 'Cabaña 2',  emoji: '🏠', x: 0.361,  z: -0.736, color: '#22c55e' },
-  { id: 'cabana-3',  label: 'Cabaña 3',  emoji: '🏠', x: 0.442,  z: -0.614, color: '#22c55e' },
-  { id: 'cabana-4',  label: 'Cabaña 4',  emoji: '🏠', x: 0.533,  z: -0.487, color: '#22c55e' },
-  { id: 'cabana-5',  label: 'Cabaña 5',  emoji: '🏠', x: 0.596,  z: -0.327, color: '#22c55e' },
-  { id: 'cabana-6',  label: 'Cabaña 6',  emoji: '🏠', x: 0.661,  z: -0.159, color: '#22c55e' },
-  { id: 'cabana-7',  label: 'Cabaña 7',  emoji: '🏠', x: 0.740,  z: 0.025,  color: '#22c55e' },
-  { id: 'cabana-8',  label: 'Cabaña 8',  emoji: '🏠', x: 0.783,  z: 0.264,  color: '#22c55e' },
-  { id: 'cabana-9',  label: 'Cabaña 9',  emoji: '🏠', x: 0.742,  z: 0.482,  color: '#22c55e' },
-  { id: 'cabana-10', label: 'Cabaña 10', emoji: '🏠', x: 0.555,  z: 0.573,  color: '#22c55e' },
-  { id: 'cabana-11', label: 'Cabaña 11', emoji: '🏠', x: 0.198,  z: 0.451,  color: '#22c55e' },
-  { id: 'cabana-12', label: 'Cabaña 12', emoji: '🏠', x: 0.018,  z: 0.494,  color: '#22c55e' },
-  { id: 'cabana-13', label: 'Cabaña 13', emoji: '🏠', x: -0.156, z: 0.525,  color: '#22c55e' },
-  { id: 'cabana-14', label: 'Cabaña 14', emoji: '🏠', x: -0.339, z: 0.518,  color: '#22c55e' },
-  { id: 'cabana-15', label: 'Cabaña 15', emoji: '🏠', x: -0.506, z: 0.446,  color: '#22c55e' },
-  { id: 'cabana-16', label: 'Cabaña 16', emoji: '🏠', x: -0.645, z: 0.379,  color: '#22c55e' },
-  { id: 'cabana-17', label: 'Cabaña 17', emoji: '🏠', x: -0.776, z: 0.281,  color: '#22c55e' },
-  { id: 'cabana-19', label: 'Cabaña 19', emoji: '🏠', x: -0.831, z: 0.628,  color: '#22c55e' },
-  { id: 'cabana-20', label: 'Cabaña 20', emoji: '🏠', x: -0.716, z: 0.714,  color: '#22c55e' },
+  { id: 'cabana-1',  label: 'Cabaña 1 - La Roca',              emoji: '🏠', x: 0.211,  z: -0.333, color: '#38bdf8' },
+  { id: 'cabana-2',  label: 'Cabaña 2 - El Mirador',           emoji: '🏠', x: 0.261,  z: -0.245, color: '#a855f7' },
+  { id: 'cabana-3',  label: 'Cabaña 3 - Aguas Vivas',          emoji: '🏠', x: 0.305,  z: -0.159, color: '#facc15' },
+  { id: 'cabana-4',  label: 'Cabaña 4 - La Cumbre',            emoji: '🏠', x: 0.343,  z: -0.052, color: '#22c55e' },
+  { id: 'cabana-5',  label: 'Cabaña 5 - Deluxe',               emoji: '🏠', x: 0.362,  z: 0.164,  color: '#ef4444' },
+  { id: 'cabana-6',  label: 'Cabaña 6 - Beatlink',             emoji: '🏠', x: 0.375,  z: 0.268,  color: '#ec4899' },
+  { id: 'cabana-7',  label: 'Cabaña 7 - Selva Adentro',        emoji: '🏠', x: 0.369,  z: 0.404,  color: '#f97316' },
+  { id: 'cabana-8',  label: 'Cabaña 8 - La Fogata',            emoji: '🏠', x: 0.307,  z: 0.512,  color: '#10b981' },
+  { id: 'cabana-9',  label: 'Cabaña 9 - Río Arriba',           emoji: '🏠', x: -0.539, z: 0.088,  color: '#38bdf8' },
+  { id: 'cabana-10', label: 'Cabaña 10 - Aïra',                emoji: '🏠', x: -0.003, z: 0.401,  color: '#a855f7' },
+  { id: 'cabana-11', label: 'Cabaña 11 - Punta Sur',           emoji: '🏠', x: -0.115, z: 0.382,  color: '#facc15' },
+  { id: 'cabana-12', label: 'Cabaña 12 - La Terraza',          emoji: '🏠', x: -0.222, z: 0.353,  color: '#22c55e' },
+  { id: 'cabana-13', label: 'Cabaña 13 - Viento Sur',          emoji: '🏠', x: -0.328, z: 0.312,  color: '#ef4444' },
+  { id: 'cabana-14', label: 'Cabaña 14 - Casa Volcán',         emoji: '🏠', x: -0.416, z: 0.233,  color: '#ec4899' },
+  { id: 'cabana-15', label: 'Cabaña 15 - El Faro Individual',  emoji: '👑', x: -0.613, z: 0.255,  color: '#f97316' },
+  { id: 'cabana-16', label: 'Cabaña 16 - La Bahía',            emoji: '👑', x: -0.597, z: 0.268,  color: '#10b981' },
+  { id: 'cabana-17', label: 'Cabaña 17 - Monte Alto',          emoji: '👑', x: -0.558, z: 0.315,  color: '#38bdf8' },
+  { id: 'cabana-18', label: 'Cabaña 18 - Casa Piedra',         emoji: '👑', x: -0.539, z: 0.334,  color: '#a855f7' },
+  { id: 'cabana-19', label: 'Cabaña 19 - El Retiro',           emoji: '👑', x: 0.197,  z: 0.534,  color: '#facc15' },
 ];
 
 const BASE_POINTS: MapPoint[] = [
