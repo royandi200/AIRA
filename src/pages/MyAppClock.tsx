@@ -25,7 +25,7 @@ export default function MyAppClock() {
   const blink = now.getSeconds() % 2 === 0;
 
   return (
-    <div className="myapp-clock" data-no-drag>
+    <div className={`myapp-clock${current ? ' myapp-clock--live-wide' : ''}`} data-no-drag>
       <div className="myapp-clock-time">
         <span>{hh}</span>
         <span className="myapp-clock-colon" style={{ opacity: blink ? 1 : 0.25 }}>:</span>
@@ -33,12 +33,16 @@ export default function MyAppClock() {
         <span className="myapp-clock-ampm">{ampm}</span>
       </div>
       {current ? (
-        <div className="myapp-clock-status myapp-clock-status--live" style={{ ['--card-color' as any]: colorForPlace(current.place) }}>
-          <span className="myapp-clock-live-dot" />
-          <span className="myapp-clock-status-text">
-            {current.title} · {current.place}
-            {extraStages > 0 ? ` +${extraStages} escenario${extraStages > 1 ? 's' : ''}` : ''}
-          </span>
+        // Cuando hay 1 solo escenario activo se ve como una pill compacta;
+        // con 2+ simultáneos la caja se estira (hasta el ancho completo)
+        // y cada escenario aparece en su propia línea con su color.
+        <div className={`myapp-clock-status myapp-clock-status--live${extraStages > 0 ? ' myapp-clock-status--multi' : ''}`}>
+          {currentList.map((item, i) => (
+            <span key={i} className="myapp-clock-live-item" style={{ ['--card-color' as any]: colorForPlace(item.place) }}>
+              <span className="myapp-clock-live-dot" />
+              <span className="myapp-clock-status-text">{item.title} · {item.place}</span>
+            </span>
+          ))}
         </div>
       ) : next ? (
         <div className="myapp-clock-status">

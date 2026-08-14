@@ -105,8 +105,42 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* ── Reloj "en vivo" — se estira hasta el ancho completo cuando hay
+   varios escenarios simultáneos, y cada uno se muestra en su propio
+   color (mismo mapeo de colores que el Itinerario). ─────────────── */
+.myapp-clock--live-wide {
+  left: 14px;
+  align-items: flex-end;
+}
+.myapp-clock-status--live {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  max-width: 100%;
+}
+.myapp-clock-status--multi {
+  align-self: stretch;
+  align-items: flex-end;
+}
+.myapp-clock-live-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+}
+.myapp-clock-status--multi .myapp-clock-live-item {
+  width: 100%;
+  justify-content: flex-end;
+}
 .myapp-clock-status--live .myapp-clock-status-text {
   color: var(--card-color, #e1fe52);
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  text-align: right;
+}
+.myapp-clock-status--multi .myapp-clock-status-text {
+  white-space: normal;
 }
 .myapp-clock-live-dot {
   width: 6px;
