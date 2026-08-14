@@ -86,20 +86,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(500).json({ ok: false, error: 'BLOB_READ_WRITE_TOKEN no configurado en Vercel' });
       }
 
-      const original = await readBody(req);
-      if (!original.length) return res.status(400).json({ ok: false, error: 'Imagen vacía' });
+      const original = await readBody(req, 20 * 1024 * 1024);
+      if (!original.length) return res.status(400).json({ ok: false, error: 'Archivo vacío' });
 
       let buffer = original;
       let contentType: string = req.headers['content-type'] || 'image/jpeg';
-      try {
-        const optimizada = await optimizarImagen(original);
-        buffer = optimizada.buffer;
-        contentType = optimizada.contentType;
-      } catch (optErr: any) {
-        console.warn('[myapp-gallery] optimización falló, se sube el original:', optErr.message);
+      const isVideo = contentType.startsWith('video/');
+
+      // sharp solo sabe de imágenes — los videos (clips cortos, ya
+      // validados en el navegador antes de subir) se guardan tal cual.
+      if (!isVideo) {
+        try {
+          const optimizada = await optimizarImagen(original);
+          buffer = optimizada.buffer;
+          contentType = optimizada.contentType;
+        } catch (optErr: any) {
+          console.warn('[myapp-gallery] optimización falló, se sube el original:', optErr.message);
+        }
       }
 
-      const ext = contentType.includes('webp') ? 'webp' : contentType.includes('png') ? 'png' : 'jpg';
+      const ext = isVideo
+        ? (contentType.includes('webm') ? 'webm' : contentType.includes('quicktime') ? 'mov' : 'mp4')
+        : contentType.includes('webp') ? 'webp' : contentType.includes('png') ? 'png' : 'jpg';
       const { url } = await put(`myapp-gallery/${session.order_ref}-${Date.now()}.${ext}`, buffer, {
         access: 'public',
         contentType,

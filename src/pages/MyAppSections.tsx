@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import {
   Fingerprint, UtensilsCrossed, Sailboat, CalendarClock, Radar, Aperture, Gem, ScanFace,
   X, CheckCircle2, MapPinned, Bell, LogOut, ChevronRight, ChevronDown, ShieldCheck,
+  Trash2, Play,
   type LucideIcon,
 } from 'lucide-react';
 import { SCHEDULE, ACTIVITIES, useLiveSchedule, formatHM, colorForPlace, type ScheduleItem } from './MyAppSchedule';
@@ -362,12 +363,33 @@ const GALLERY_ITEMS = [
 ];
 
 interface UserPhoto { id: number; nombre: string; image_url: string; created_at: string; }
-interface GalleryEntry { src: string; caption: string; mine?: boolean; id?: number; }
+interface GalleryEntry { src: string; caption: string; mine?: boolean; id?: number; isVideo?: boolean; }
+
+// Videos: máximo 6s de duración (se pide "5 segundos", dejamos 1s de
+// margen para no rechazar por decimales) y 20MB de peso — un clip corto
+// a resolución de teléfono normalmente pesa 2-6MB, así que da margen de
+// sobra sin arriesgar el límite de payload de la función serverless.
+const VIDEO_MAX_SECONDS = 6;
+const VIDEO_MAX_BYTES = 20 * 1024 * 1024;
+
+const isVideoUrl = (src: string) => /\.(mp4|mov|webm)(\?.*)?$/i.test(src);
+
+/** Lee la duración de un video local antes de subirlo, sin tocar el servidor. */
+function readVideoDuration(file: File): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => { URL.revokeObjectURL(video.src); resolve(video.duration); };
+    video.onerror = () => { URL.revokeObjectURL(video.src); reject(new Error('No se pudo leer el video')); };
+    video.src = URL.createObjectURL(file);
+  });
+}
 
 function GaleriaPanel({ attendee, token }: { attendee: Attendee | null; token: string | null }) {
   const [open, setOpen] = useState<number | null>(null);
   const [userPhotos, setUserPhotos] = useState<UserPhoto[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [error, setError] = useState('');
 
   const loadPhotos = () => {
@@ -380,7 +402,13 @@ function GaleriaPanel({ attendee, token }: { attendee: Attendee | null; token: s
   useEffect(() => { loadPhotos(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const items: GalleryEntry[] = [
-    ...userPhotos.map(p => ({ src: p.image_url, caption: `Foto de ${p.nombre.split(' ')[0]}`, mine: p.nombre === attendee?.name, id: p.id })),
+    ...userPhotos.map(p => ({
+      src: p.image_url,
+      caption: `De ${p.nombre.split(' ')[0]}`,
+      mine: p.nombre === attendee?.name,
+      id: p.id,
+      isVideo: isVideoUrl(p.image_url),
+    })),
     ...GALLERY_ITEMS,
   ];
 
@@ -389,6 +417,24 @@ function GaleriaPanel({ attendee, token }: { attendee: Attendee | null; token: s
     e.target.value = '';
     if (!file || !token) return;
     setError('');
+
+    if (file.type.startsWith('video/')) {
+      if (file.size > VIDEO_MAX_BYTES) {
+        setError(`El video pesa demasiado (máx ${VIDEO_MAX_BYTES / 1024 / 1024}MB)`);
+        return;
+      }
+      try {
+        const duration = await readVideoDuration(file);
+        if (duration > VIDEO_MAX_SECONDS) {
+          setError(`El video dura ${duration.toFixed(1)}s — máximo ${VIDEO_MAX_SECONDS}s`);
+          return;
+        }
+      } catch {
+        setError('No se pudo leer ese video, intenta con otro');
+        return;
+      }
+    }
+
     setUploading(true);
     try {
       const res = await fetch(`/api/myapp-gallery?token=${encodeURIComponent(token)}`, {
@@ -398,47 +444,86 @@ function GaleriaPanel({ attendee, token }: { attendee: Attendee | null; token: s
       });
       const json = await res.json();
       if (json.ok) loadPhotos();
-      else setError(json.error || 'No se pudo subir la foto');
+      else setError(json.error || 'No se pudo subir el archivo');
     } catch {
       setError('No se pudo conectar. Intenta de nuevo.');
     }
     setUploading(false);
   };
 
+  const handleDelete = async (id: number) => {
+    if (!token) return;
+    setDeletingId(id);
+    setError('');
+    try {
+      const res = await fetch(`/api/myapp-gallery?token=${encodeURIComponent(token)}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const json = await res.json();
+      if (json.ok) { setUserPhotos(prev => prev.filter(p => p.id !== id)); setOpen(null); }
+      else setError(json.error || 'No se pudo borrar');
+    } catch {
+      setError('No se pudo conectar. Intenta de nuevo.');
+    }
+    setDeletingId(null);
+  };
+
+  const openItem = open !== null ? items[open] : null;
+
   return (
     <div className="galeria-panel">
       <div className="galeria-upload-row">
         <p className="galeria-hint">Toca una foto para verla completa</p>
         <label className={`galeria-upload-btn ${uploading ? 'is-uploading' : ''}`}>
-          {uploading ? 'Subiendo…' : '📸 Subir foto'}
+          {uploading ? 'Subiendo…' : '📸 Subir'}
           <input
             type="file"
-            accept="image/*"
-            capture="environment"
+            accept="image/*,video/*"
             onChange={handleUpload}
             disabled={uploading || !token}
             hidden
           />
         </label>
       </div>
+      <p className="galeria-hint galeria-hint--video">Fotos o videos cortos (máx {VIDEO_MAX_SECONDS}s) desde tu cámara o carrete</p>
       {error && <p className="galeria-upload-error">⚠️ {error}</p>}
 
       <div className="galeria-grid">
         {items.map((g, i) => (
           <button key={g.id ?? g.src} className={`galeria-thumb ${g.mine ? 'is-mine' : ''}`} onClick={() => setOpen(i)}>
-            <img src={g.src} alt={g.caption} loading="lazy" />
+            {g.isVideo ? (
+              <video src={g.src} muted playsInline preload="metadata" />
+            ) : (
+              <img src={g.src} alt={g.caption} loading="lazy" />
+            )}
+            {g.isVideo && <span className="galeria-thumb-play"><Play size={14} fill="#fff" /></span>}
             {g.mine && <span className="galeria-thumb-mine">Tuya</span>}
           </button>
         ))}
       </div>
 
-      {open !== null && (
+      {openItem && (
         <div className="galeria-lightbox" onClick={() => setOpen(null)}>
           <button className="galeria-lightbox-close" onClick={() => setOpen(null)} aria-label="Cerrar">
             <X size={20} />
           </button>
-          <img src={items[open].src} alt={items[open].caption} />
-          <p className="galeria-lightbox-caption">{items[open].caption}</p>
+          {openItem.isVideo ? (
+            <video src={openItem.src} controls autoPlay playsInline onClick={e => e.stopPropagation()} />
+          ) : (
+            <img src={openItem.src} alt={openItem.caption} onClick={e => e.stopPropagation()} />
+          )}
+          <p className="galeria-lightbox-caption">{openItem.caption}</p>
+          {openItem.mine && openItem.id !== undefined && (
+            <button
+              className="galeria-lightbox-delete"
+              onClick={e => { e.stopPropagation(); handleDelete(openItem.id!); }}
+              disabled={deletingId === openItem.id}
+            >
+              <Trash2 size={14} /> {deletingId === openItem.id ? 'Borrando…' : 'Borrar mi foto'}
+            </button>
+          )}
         </div>
       )}
     </div>
