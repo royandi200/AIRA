@@ -10,6 +10,7 @@ import type { Attendee } from './MyAppAuth';
 import MyAppOrders from './MyAppOrders';
 import MyAppActivities from './MyAppActivities';
 import { useInstallPrompt } from './useInstallPrompt';
+import { usePushNotifications } from './usePushNotifications';
 
 // Three.js (react-three-fiber + drei) solo se descarga cuando el usuario
 // realmente abre "Mapa" — evita que todo /myapp cargue esa dependencia
@@ -535,9 +536,10 @@ function initials(name: string): string {
   return ((parts[0]?.[0] ?? 'A') + (parts[1]?.[0] ?? '')).toUpperCase();
 }
 
-function PerfilPanel({ attendee, onLogout }: { attendee: Attendee | null; onLogout: () => void }) {
+function PerfilPanel({ attendee, onLogout, token }: { attendee: Attendee | null; onLogout: () => void; token: string | null }) {
   const name = attendee?.name ?? 'Invitado AIRA';
   const { canInstall, isIOS, isAndroid, installed, install } = useInstallPrompt();
+  const push = usePushNotifications(token);
   return (
     <div className="perfil-panel">
       <div className="perfil-avatar-row">
@@ -557,7 +559,9 @@ function PerfilPanel({ attendee, onLogout }: { attendee: Attendee | null; onLogo
         <div className="perfil-stat">
           <Bell size={16} className="perfil-stat-icon" />
           <span className="perfil-stat-label">Notificaciones</span>
-          <span className="perfil-stat-value">Activas</span>
+          <span className="perfil-stat-value">
+            {push.subscribed ? '🔔 Activas' : push.permission === 'denied' ? '🔕 Bloqueadas' : '🔕 Inactivas'}
+          </span>
         </div>
         <div className="perfil-stat">
           <ShieldCheck size={16} className="perfil-stat-icon" />
@@ -577,11 +581,25 @@ function PerfilPanel({ attendee, onLogout }: { attendee: Attendee | null; onLogo
             <ChevronRight size={16} />
           </button>
         )}
+        {push.supported && !push.subscribed && !push.iosNeedsInstall && push.permission !== 'denied' && (
+          <button className="perfil-menu-item" onClick={push.subscribe} disabled={push.busy}>
+            <span>{push.busy ? 'Activando…' : '🔔 Activar notificaciones'}</span>
+            <ChevronRight size={16} />
+          </button>
+        )}
         <button className="perfil-menu-item perfil-menu-item--danger" onClick={onLogout}>
           <LogOut size={16} />
           <span>Cerrar sesión</span>
         </button>
       </div>
+
+      {push.error && <p className="perfil-install-hint" style={{ color: '#fca5a5' }}>⚠️ {push.error}</p>}
+      {push.supported && push.iosNeedsInstall && !push.subscribed && (
+        <p className="perfil-install-hint">📲 Para recibir notificaciones en iPhone primero instala la app (pasos abajo) — Apple solo las permite así.</p>
+      )}
+      {push.permission === 'denied' && (
+        <p className="perfil-install-hint">🔕 Bloqueaste las notificaciones del navegador — actívalas desde los ajustes del sitio para recibir avisos.</p>
+      )}
 
       {/* Instrucciones de instalación — siempre visibles (salvo si ya está
           instalada), con los pasos exactos según la plataforma detectada. */}
@@ -634,7 +652,7 @@ export function renderSectionContent(section: CompassSection, attendee: Attendee
     case 'mapa':       return <Suspense fallback={<MapLoading />}><MyAppMap attendee={attendee} /></Suspense>;
     case 'lineup':     return <ItinerarioPanel />;
     case 'galeria':    return <GaleriaPanel attendee={attendee} token={token} />;
-    case 'perfil':     return <PerfilPanel attendee={attendee} onLogout={onLogout} />;
+    case 'perfil':     return <PerfilPanel attendee={attendee} onLogout={onLogout} token={token} />;
     default:           return <ComingSoonPanel section={section} />;
   }
 }

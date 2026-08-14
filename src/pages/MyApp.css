@@ -2085,6 +2085,7 @@
 }
 .perfil-menu-item span:first-child { flex: 1; text-align: left; }
 .perfil-menu-item--danger { color: #f87171; border-color: rgba(248,113,113,0.25); }
+.perfil-menu-item:disabled { opacity: 0.55; }
 .perfil-install-hint {
   margin: 4px 2px 0;
   padding: 10px 12px;

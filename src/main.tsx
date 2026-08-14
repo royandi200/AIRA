@@ -13,6 +13,7 @@ const Promotor  = lazy(() => import('./pages/Promotor'))
 const MyApp      = lazy(() => import('./pages/MyApp'))
 const Seguridad  = lazy(() => import('./pages/Seguridad'))
 const MyAppAdmin = lazy(() => import('./pages/MyAppAdmin'))
+const MyAppNotificaciones = lazy(() => import('./pages/MyAppNotificaciones'))
 
 const path = window.location.pathname.replace(/\/$/, '')
 
@@ -22,6 +23,7 @@ function pickRoute() {
   if (path === '/myapp')    return MyApp
   if (path === '/seguridad') return Seguridad
   if (path === '/myapp-admin') return MyAppAdmin
+  if (path === '/myapp-notificaciones') return MyAppNotificaciones
   return App
 }
 
@@ -30,7 +32,8 @@ const Route = pickRoute()
 // Fallback minimalista — fondo oscuro a juego con cada página,
 // para que no haya parpadeo blanco mientras carga el chunk.
 function RouteFallback() {
-  const bg = path === '/myapp' ? '#08080b' : (path === '/seguridad' || path === '/myapp-admin') ? '#000' : '#00164c'
+  const dark = path === '/seguridad' || path === '/myapp-admin' || path === '/myapp-notificaciones'
+  const bg = path === '/myapp' ? '#08080b' : dark ? '#000' : '#00164c'
   return <div style={{ position: 'fixed', inset: 0, background: bg }} />
 }
 
