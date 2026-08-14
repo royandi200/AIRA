@@ -174,156 +174,75 @@ function Terrain({ image }: { image: string }) {
 
 interface MarkerProps { point: MapPoint; index: number; onSelect: (i: number) => void; selected: boolean; }
 
-/** Casita 3D — usada para las cabañas. Pequeña, pegada al suelo. */
-function CabanaMarker({ point, index, onSelect, selected }: MarkerProps) {
-  const groupRef = useRef<THREE.Group>(null);
+// Altura/grosor del haz según el tipo de punto — el escenario se ve más
+// alto e imponente, las cabañas más discretas, entrada/VIP intermedio.
+const BEACON_PRESET: Record<NonNullable<MapPoint['kind']>, { height: number; radius: number; orbSize: number }> = {
+  cabana:   { height: 0.16, radius: 0.0028, orbSize: 0.011 },
+  landmark: { height: 0.24, radius: 0.0034, orbSize: 0.014 },
+  balloon:  { height: 0.42, radius: 0.0045, orbSize: 0.02 },
+};
+
+/**
+ * Baliza láser — un haz de luz delgado que sube desde el suelo con un
+ * orbe brillante en la punta. Mismo lenguaje visual para cabañas,
+ * entrada/VIP y el escenario; solo cambian alto/grosor/brillo según
+ * el tipo y si está seleccionado o es "la mía".
+ */
+function BeaconMarker({ point, index, onSelect, selected }: MarkerProps) {
+  const beamRef = useRef<THREE.Mesh>(null);
+  const orbRef  = useRef<THREE.Mesh>(null);
   const px = (point.x * PLANE_W) / 2;
   const pz = (point.z * PLANE_D) / 2;
-  const MARKER_SCALE = 4; // tamaño de las casitas 3D — aumentado 4x
-  const scale = (selected || point.isMine ? 1.35 : 1) * MARKER_SCALE;
-  const wallColor = point.isMine ? point.color : '#f4f1ea';
+  const preset = BEACON_PRESET[point.kind ?? 'landmark'];
+  const emphasis = selected || point.isMine;
+  const scaleMul = emphasis ? 1.3 : 1;
+  const height = preset.height * scaleMul;
+  const color = point.color;
 
   useFrame(({ clock }) => {
-    if (!groupRef.current) return;
-    const bob = point.isMine ? Math.sin(clock.getElapsedTime() * 2.2) * 0.004 : 0;
-    groupRef.current.position.y = bob; // el cuerpo ya toca el suelo en su espacio local
-  });
-
-  return (
-    <group position={[px, 0, pz]} onClick={(e) => { e.stopPropagation(); onSelect(index); }}>
-      {/* sombra pegada al suelo */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.002, 0]}>
-        <circleGeometry args={[0.032 * scale, 16]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.3} />
-      </mesh>
-
-      {(selected || point.isMine) && (
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, 0]}>
-          <ringGeometry args={[0.034 * scale, 0.042 * scale, 24]} />
-          <meshBasicMaterial color={point.color} transparent opacity={0.9} />
-        </mesh>
-      )}
-
-      <group ref={groupRef} scale={scale}>
-        {/* cuerpo de la cabaña */}
-        <mesh position={[0, 0.011, 0]}>
-          <boxGeometry args={[0.034, 0.022, 0.034]} />
-          <meshStandardMaterial color={wallColor} roughness={0.8} />
-        </mesh>
-        {/* techo a dos aguas */}
-        <mesh position={[0, 0.026, 0]} rotation={[0, Math.PI / 4, 0]}>
-          <coneGeometry args={[0.026, 0.018, 4]} />
-          <meshStandardMaterial
-            color={point.isMine ? point.color : '#7c4a2d'}
-            emissive={point.isMine ? point.color : '#000000'}
-            emissiveIntensity={point.isMine ? 0.5 : 0}
-            roughness={0.6}
-          />
-        </mesh>
-      </group>
-    </group>
-  );
-}
-
-/** Baliza fina — usada para entrada / VIP (no son cabañas ni el escenario). */
-function LandmarkMarker({ point, index, onSelect, selected }: MarkerProps) {
-  const groupRef = useRef<THREE.Group>(null);
-  const px = (point.x * PLANE_W) / 2;
-  const pz = (point.z * PLANE_D) / 2;
-  const markerScale = (selected ? 1.25 : 1) * 4; // mismo factor x4 que las casitas
-  const height = 0.09 * markerScale; // el poste debe llegar hasta el suelo con el nuevo tamaño
-
-  useFrame(({ clock }) => {
-    if (!groupRef.current) return;
-    const bob = Math.sin(clock.getElapsedTime() * 2 + px) * 0.006;
-    groupRef.current.position.y = height + bob;
-  });
-
-  return (
-    <group position={[px, 0, pz]} onClick={(e) => { e.stopPropagation(); onSelect(index); }}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.002, 0]}>
-        <circleGeometry args={[0.026 * (markerScale / 4), 16]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.3} />
-      </mesh>
-      <group ref={groupRef} scale={markerScale}>
-        <mesh position={[0, -0.045, 0]}>
-          <cylinderGeometry args={[0.003, 0.003, 0.09, 8]} />
-          <meshStandardMaterial color="#ffffff" opacity={0.7} transparent />
-        </mesh>
-        <mesh>
-          <sphereGeometry args={[0.02, 16, 16]} />
-          <meshStandardMaterial color={point.color} emissive={point.color} emissiveIntensity={selected ? 0.9 : 0.5} />
-        </mesh>
-      </group>
-    </group>
-  );
-}
-
-/** Globo aerostático morado — marca el Escenario, flotando sobre el venue. */
-function BalloonMarker({ point, index, onSelect, selected }: MarkerProps) {
-  const groupRef = useRef<THREE.Group>(null);
-  const px = (point.x * PLANE_W) / 2;
-  const pz = (point.z * PLANE_D) / 2;
-  const scale = (selected ? 1.2 : 1) * 4.4;
-  const FLOAT_HEIGHT = 0.16; // el globo vuela mucho más alto que los demás marcadores
-
-  useFrame(({ clock }) => {
-    if (!groupRef.current) return;
     const t = clock.getElapsedTime();
-    groupRef.current.position.y = FLOAT_HEIGHT + Math.sin(t * 0.9) * 0.01;
-    groupRef.current.rotation.y = Math.sin(t * 0.4) * 0.15; // se mece suavemente
+    if (orbRef.current) {
+      orbRef.current.position.y = height + Math.sin(t * 2 + px) * 0.008;
+    }
+    if (beamRef.current) {
+      const mat = beamRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = (emphasis ? 0.55 : 0.32) + Math.sin(t * 2.4 + pz) * 0.06;
+    }
   });
 
   return (
     <group position={[px, 0, pz]} onClick={(e) => { e.stopPropagation(); onSelect(index); }}>
-      {/* sombra proyectada en el suelo */}
+      {/* halo en el suelo */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.002, 0]}>
-        <circleGeometry args={[0.028 * scale * 0.5, 20]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.22} />
+        <circleGeometry args={[preset.orbSize * 1.6 * scaleMul, 24]} />
+        <meshBasicMaterial color={color} transparent opacity={emphasis ? 0.35 : 0.18} />
       </mesh>
-      {selected && (
+      {emphasis && (
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, 0]}>
-          <ringGeometry args={[0.036 * scale * 0.5, 0.044 * scale * 0.5, 24]} />
-          <meshBasicMaterial color={point.color} transparent opacity={0.9} />
+          <ringGeometry args={[preset.orbSize * 1.7 * scaleMul, preset.orbSize * 2.1 * scaleMul, 28]} />
+          <meshBasicMaterial color={color} transparent opacity={0.85} />
         </mesh>
       )}
 
-      <group ref={groupRef} scale={scale}>
-        {/* globo — esfera alargada, con un casquete superior más oscuro para dar volumen */}
-        <mesh position={[0, 0.05, 0]} scale={[1, 1.25, 1]}>
-          <sphereGeometry args={[0.024, 20, 20]} />
-          <meshStandardMaterial color={point.color} emissive={point.color} emissiveIntensity={0.35} roughness={0.5} />
-        </mesh>
-        <mesh position={[0, 0.05, 0]} scale={[1.03, 1.28, 1.03]}>
-          <sphereGeometry args={[0.024, 20, 20, 0, Math.PI * 2, 0, Math.PI * 0.35]} />
-          <meshBasicMaterial color="#3b0764" transparent opacity={0.5} />
-        </mesh>
-        {/* cuello del globo */}
-        <mesh position={[0, 0.023, 0]}>
-          <coneGeometry args={[0.006, 0.012, 8]} />
-          <meshStandardMaterial color="#3b0764" />
-        </mesh>
-        {/* cuerdas */}
-        {[[-0.012, -0.012], [0.012, -0.012], [-0.012, 0.012], [0.012, 0.012]].map(([ox, oz], i) => (
-          <mesh key={i} position={[ox, 0.008, oz]}>
-            <cylinderGeometry args={[0.0008, 0.0008, 0.03, 4]} />
-            <meshBasicMaterial color="#e5e7eb" />
-          </mesh>
-        ))}
-        {/* canasta */}
-        <mesh position={[0, -0.008, 0]}>
-          <boxGeometry args={[0.026, 0.016, 0.026]} />
-          <meshStandardMaterial color="#7c4a2d" roughness={0.9} />
-        </mesh>
-      </group>
+      {/* haz vertical */}
+      <mesh ref={beamRef} position={[0, height / 2, 0]}>
+        <cylinderGeometry args={[preset.radius * 0.4 * scaleMul, preset.radius * scaleMul, height, 10, 1, true]} />
+        <meshBasicMaterial color={color} transparent opacity={0.4} side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+
+      {/* orbe brillante en la punta */}
+      <mesh ref={orbRef} position={[0, height, 0]}>
+        <sphereGeometry args={[preset.orbSize * scaleMul, 16, 16]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={emphasis ? 1.4 : 0.9} roughness={0.3} />
+      </mesh>
     </group>
   );
 }
 
-const MARKERS: Record<NonNullable<MapPoint['kind']>, typeof CabanaMarker> = {
-  cabana: CabanaMarker,
-  landmark: LandmarkMarker,
-  balloon: BalloonMarker,
+const MARKERS: Record<NonNullable<MapPoint['kind']>, typeof BeaconMarker> = {
+  cabana: BeaconMarker,
+  landmark: BeaconMarker,
+  balloon: BeaconMarker,
 };
 
 /**
