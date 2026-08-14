@@ -19,12 +19,12 @@ export async function ensureCheckinsTable(pool: Pool): Promise<void> {
   `).catch(() => {});
 }
 
-// Lista de puntos de control disponibles — agregar uno nuevo es solo
-// sumar una línea acá y en la misma lista del frontend (Seguridad.tsx).
+// Lista de puntos de control disponibles — por ahora solo Ingreso y
+// Transporte (checks distintos e independientes en la BD). Para agregar
+// más adelante Ingreso 2/3 u otras zonas: sumar una línea acá y otra en
+// la misma lista del frontend (Seguridad.tsx).
 export const CHECKPOINTS: { id: string; label: string }[] = [
+  { id: 'ingreso',    label: 'Ingreso' },
   { id: 'transporte', label: 'Transporte (bus)' },
-  { id: 'ingreso-1',  label: 'Ingreso 1' },
-  { id: 'ingreso-2',  label: 'Ingreso 2' },
-  { id: 'ingreso-3',  label: 'Ingreso 3' },
 ];
 export const CHECKPOINT_IDS = CHECKPOINTS.map(c => c.id);

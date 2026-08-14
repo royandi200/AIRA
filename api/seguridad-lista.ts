@@ -15,7 +15,7 @@ const pool = mysql.createPool({
 });
 
 /**
- * GET /api/seguridad-lista?checkpoint=ingreso-1
+ * GET /api/seguridad-lista?checkpoint=ingreso
  * Lista general de TODOS los registrados para UN punto de control
  * específico — separa quiénes ya escanearon ahí de quiénes faltan.
  * Cada punto de control lleva su propia lista (tabla checkins).
@@ -31,7 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const checkpointRaw = req.query.checkpoint as string | undefined;
-  const checkpoint = checkpointRaw && CHECKPOINT_IDS.includes(checkpointRaw) ? checkpointRaw : 'ingreso-1';
+  const checkpoint = checkpointRaw && CHECKPOINT_IDS.includes(checkpointRaw) ? checkpointRaw : 'ingreso';
 
   try {
     await ensureCheckinsTable(pool);

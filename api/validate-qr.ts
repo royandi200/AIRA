@@ -15,7 +15,7 @@ const pool = mysql.createPool({
 });
 
 /**
- * GET /api/validate-qr?token=abc123&checkpoint=ingreso-1
+ * GET /api/validate-qr?token=abc123&checkpoint=ingreso
  * Endpoint del scanner. Valida el QR y lo marca como usado EN ESE PUNTO
  * DE CONTROL específico (tabla checkins) — el mismo QR puede pasar por
  * varios puntos (Transporte, Ingreso 1/2/3) sin bloquearse entre sí.
@@ -38,7 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!token) return res.status(400).json({ valid: false, error: 'token requerido' });
 
   const checkpointRaw = (req.query.checkpoint || req.body?.checkpoint) as string | undefined;
-  const checkpoint = checkpointRaw && CHECKPOINT_IDS.includes(checkpointRaw) ? checkpointRaw : 'ingreso-1';
+  const checkpoint = checkpointRaw && CHECKPOINT_IDS.includes(checkpointRaw) ? checkpointRaw : 'ingreso';
 
   await ensureCheckinsTable(pool);
 

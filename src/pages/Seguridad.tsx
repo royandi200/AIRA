@@ -18,12 +18,11 @@ const KEY_STORAGE = 'aira_scanner_key';
 const CHECKPOINT_STORAGE = 'aira_scanner_checkpoint';
 
 // Misma lista que api/lib/checkins.ts — agregar un punto de control es
-// sumar una línea acá y otra allá.
+// sumar una línea acá y otra allá. Por ahora solo estos 2, cada uno es
+// un check independiente en la BD (tabla checkins).
 const CHECKPOINTS: { id: string; label: string }[] = [
+  { id: 'ingreso',    label: 'Ingreso' },
   { id: 'transporte', label: 'Transporte (bus)' },
-  { id: 'ingreso-1',  label: 'Ingreso 1' },
-  { id: 'ingreso-2',  label: 'Ingreso 2' },
-  { id: 'ingreso-3',  label: 'Ingreso 3' },
 ];
 
 type ResultState =
@@ -179,9 +178,11 @@ export default function Seguridad() {
     setListaTab(tab);
     setLoadingLista(true);
     try {
+      // Fijo: "ingreso" y "transporte" son 2 listas propias, sin importar
+      // en qué punto de control esté parado este celular ahora mismo.
       const endpoint = tab === 'transporte'
         ? '/api/seguridad-transporte'
-        : `/api/seguridad-lista?checkpoint=${encodeURIComponent(checkpoint)}`;
+        : `/api/seguridad-lista?checkpoint=ingreso`;
       const res = await fetch(endpoint, { headers: { 'x-scanner-key': scannerKey } });
       const json = await res.json();
       if (json.ok) setListaData(prev => ({ ...prev, [tab]: json }));
@@ -190,7 +191,7 @@ export default function Seguridad() {
   };
   const switchListaTab = (tab: ListaTab) => {
     setListaTab(tab);
-    loadLista(tab); // siempre refresca — "todos" depende del checkpoint activo
+    if (!listaData[tab]) loadLista(tab);
   };
 
   const saveKey = () => {
@@ -321,7 +322,7 @@ export default function Seguridad() {
                 className={`seg-transporte-tab ${listaTab === 'todos' ? 'is-active' : ''}`}
                 onClick={() => switchListaTab('todos')}
               >
-                <ListIcon size={13} /> {checkpointLabel}
+                <MapPin size={13} /> Ingreso
               </button>
             </div>
 
