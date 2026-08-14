@@ -257,19 +257,27 @@
   gap: 8px;
   padding: 12px 18px 0;
 }
+.seg-transporte-tabs--scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.seg-transporte-tabs--scroll::-webkit-scrollbar { display: none; }
 .seg-transporte-tab {
   flex: 1;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 8px 10px;
+  padding: 8px 12px;
   border-radius: 10px;
   border: 1px solid rgba(255,255,255,0.12);
   background: rgba(255,255,255,0.04);
   color: rgba(255,255,255,0.6);
   font-size: 12px;
   font-weight: 700;
+  white-space: nowrap;
 }
 .seg-transporte-tab.is-active { background: #e1fe52; color: #06110c; border-color: #e1fe52; }
 .seg-transporte-summary {

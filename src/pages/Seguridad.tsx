@@ -18,11 +18,14 @@ const KEY_STORAGE = 'aira_scanner_key';
 const CHECKPOINT_STORAGE = 'aira_scanner_checkpoint';
 
 // Misma lista que api/lib/checkins.ts — agregar un punto de control es
-// sumar una línea acá y otra allá. Por ahora solo estos 2, cada uno es
-// un check independiente en la BD (tabla checkins).
+// sumar una línea acá y otra allá. Cada uno es un check independiente
+// en la BD (tabla checkins).
 const CHECKPOINTS: { id: string; label: string }[] = [
-  { id: 'ingreso',    label: 'Ingreso' },
-  { id: 'transporte', label: 'Transporte (bus)' },
+  { id: 'ingreso',              label: 'Ingreso' },
+  { id: 'transporte',           label: 'Transporte (bus)' },
+  { id: 'ingreso-aira-15-ago',  label: 'Ingreso AIRA · 15 Agosto' },
+  { id: 'transporte-14-ago',    label: 'Transporte · Viernes 14 Agosto' },
+  { id: 'majestic-16-ago',      label: 'Majestic · Domingo 16 Agosto' },
 ];
 
 type ResultState =
@@ -31,7 +34,6 @@ type ResultState =
   | { status: 'result'; color: 'green' | 'red' | 'orange'; message: string; name?: string; ref?: string; vaEnBus?: boolean };
 
 interface ListaPersona { nombre: string; movil: string; paquete: string | null; hora?: string; pendiente?: boolean; vaEnBus?: boolean; }
-type ListaTab = 'transporte' | 'todos';
 
 export default function Seguridad() {
   const [scannerKey, setScannerKey] = useState(() => localStorage.getItem(KEY_STORAGE) || '');
@@ -40,8 +42,8 @@ export default function Seguridad() {
   const [cameraError, setCameraError] = useState('');
   const [result, setResult] = useState<ResultState>({ status: 'idle' });
   const [showLista, setShowLista] = useState(false);
-  const [listaTab, setListaTab] = useState<ListaTab>('transporte');
-  const [listaData, setListaData] = useState<Record<ListaTab, { total: number; faltan: ListaPersona[]; llegaron: ListaPersona[] } | null>>({ transporte: null, todos: null });
+  const [listaTab, setListaTab] = useState<string>('ingreso');
+  const [listaData, setListaData] = useState<Record<string, { total: number; faltan: ListaPersona[]; llegaron: ListaPersona[] } | null>>({});
   const [loadingLista, setLoadingLista] = useState(false);
 
   const videoRef  = useRef<HTMLVideoElement>(null);
@@ -173,23 +175,18 @@ export default function Seguridad() {
     }, 2200);
   };
 
-  const loadLista = async (tab: ListaTab) => {
+  const loadLista = async (tab: string) => {
     setShowLista(true);
     setListaTab(tab);
     setLoadingLista(true);
     try {
-      // Fijo: "ingreso" y "transporte" son 2 listas propias, sin importar
-      // en qué punto de control esté parado este celular ahora mismo.
-      const endpoint = tab === 'transporte'
-        ? '/api/seguridad-transporte'
-        : `/api/seguridad-lista?checkpoint=ingreso`;
-      const res = await fetch(endpoint, { headers: { 'x-scanner-key': scannerKey } });
+      const res = await fetch(`/api/seguridad-lista?checkpoint=${encodeURIComponent(tab)}`, { headers: { 'x-scanner-key': scannerKey } });
       const json = await res.json();
       if (json.ok) setListaData(prev => ({ ...prev, [tab]: json }));
     } catch { /* silencioso — se puede reintentar */ }
     setLoadingLista(false);
   };
-  const switchListaTab = (tab: ListaTab) => {
+  const switchListaTab = (tab: string) => {
     setListaTab(tab);
     if (!listaData[tab]) loadLista(tab);
   };
@@ -273,7 +270,7 @@ export default function Seguridad() {
           <MapPin size={12} /> {checkpointLabel}
         </button>
         <div className="seg-header-actions">
-          <button className="seg-bus-btn" onClick={() => loadLista('todos')}>
+          <button className="seg-bus-btn" onClick={() => loadLista(checkpoint)}>
             <ListIcon size={14} /> Lista
           </button>
           <button className="seg-logout" onClick={() => { localStorage.removeItem(KEY_STORAGE); setScannerKey(''); }}>
@@ -311,19 +308,17 @@ export default function Seguridad() {
               <button onClick={() => setShowLista(false)} aria-label="Cerrar"><X size={18} /></button>
             </div>
 
-            <div className="seg-transporte-tabs">
-              <button
-                className={`seg-transporte-tab ${listaTab === 'transporte' ? 'is-active' : ''}`}
-                onClick={() => switchListaTab('transporte')}
-              >
-                <Bus size={13} /> Transporte
-              </button>
-              <button
-                className={`seg-transporte-tab ${listaTab === 'todos' ? 'is-active' : ''}`}
-                onClick={() => switchListaTab('todos')}
-              >
-                <MapPin size={13} /> Ingreso
-              </button>
+            <div className="seg-transporte-tabs seg-transporte-tabs--scroll">
+              {CHECKPOINTS.map(c => (
+                <button
+                  key={c.id}
+                  className={`seg-transporte-tab ${listaTab === c.id ? 'is-active' : ''}`}
+                  onClick={() => switchListaTab(c.id)}
+                >
+                  {c.id.startsWith('transporte') ? <Bus size={13} /> : <MapPin size={13} />}
+                  {c.label}
+                </button>
+              ))}
             </div>
 
             {loadingLista && <p className="seg-transporte-loading">Cargando…</p>}

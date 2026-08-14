@@ -32,6 +32,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const checkpointRaw = req.query.checkpoint as string | undefined;
   const checkpoint = checkpointRaw && CHECKPOINT_IDS.includes(checkpointRaw) ? checkpointRaw : 'ingreso';
+  // Puntos de control de transporte: solo tiene sentido mostrar gente que
+  // efectivamente va en bus, no a todo el mundo.
+  const onlyBus = checkpoint.startsWith('transporte');
 
   try {
     await ensureCheckinsTable(pool);
@@ -40,6 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `SELECT r.nombre, r.movil, r.paquete, r.monto_pendiente, r.va_en_bus, c.scanned_at
        FROM manual_registros r
        LEFT JOIN checkins c ON c.order_ref = r.order_ref AND c.checkpoint = ?
+       ${onlyBus ? 'WHERE r.va_en_bus = 1' : ''}
        ORDER BY (c.scanned_at IS NULL) DESC, r.nombre ASC`,
       [checkpoint]
     );
