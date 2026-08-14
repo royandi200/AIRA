@@ -21,6 +21,18 @@
   }
   header h1 { font-size: 15px; margin: 0 0 4px; }
   header p { font-size: 12px; color: rgba(255,255,255,0.5); margin: 0; }
+  .modes { display: flex; gap: 8px; margin-top: 10px; }
+  .mode-btn {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.7);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .mode-btn.is-active { background: #22c55e; color: #06110c; border-color: #22c55e; }
   .main {
     flex: 1;
     display: flex;
@@ -38,6 +50,11 @@
     height: auto;
     cursor: crosshair;
     user-select: none;
+  }
+  svg.path-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
   }
   .pin {
     position: absolute;
@@ -63,6 +80,16 @@
     white-space: nowrap;
     pointer-events: none;
   }
+  .waypoint-dot {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    margin: -4.5px 0 0 -4.5px;
+    border-radius: 50%;
+    background: #facc15;
+    border: 1.5px solid #06110c;
+    pointer-events: none;
+  }
   .sidebar {
     width: 340px;
     flex-shrink: 0;
@@ -77,7 +104,7 @@
   .sidebar h2 { font-size: 13px; margin: 0; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.05em; }
   textarea {
     width: 100%;
-    height: 240px;
+    height: 200px;
     background: #0a0a0d;
     color: #7ee787;
     font-family: 'Consolas', monospace;
@@ -101,6 +128,10 @@
     background: rgba(255,255,255,0.1);
     color: #fff;
   }
+  button.warn {
+    background: rgba(250,204,21,0.2);
+    color: #facc15;
+  }
   .list { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
   .list-item {
     display: flex;
@@ -111,24 +142,41 @@
     border-radius: 6px;
   }
   .list-item button { padding: 3px 8px; font-size: 11px; background: rgba(239,68,68,0.2); color: #fca5a5; }
+  .hint { font-size: 11.5px; color: rgba(255,255,255,0.45); line-height: 1.5; margin: 0; }
 </style>
 </head>
 <body>
 <header>
-  <h1>🗺️ Editor de puntos — venue-map.jpg</h1>
-  <p>Haz clic sobre la imagen en cada punto (entrada, cabañas, escenario, etc). Se genera el código listo para pegar en <code>MyAppMap.tsx</code>.</p>
+  <h1>🗺️ Editor de puntos y caminos — venue-map.jpg</h1>
+  <p id="modeHint">Haz clic sobre la imagen en cada punto (entrada, cabañas, escenario, etc). Se genera el código listo para pegar en <code>MyAppMap.tsx</code>.</p>
+  <div class="modes">
+    <button class="mode-btn is-active" id="modePoints" onclick="setMode('points')">📍 Puntos</button>
+    <button class="mode-btn" id="modePaths" onclick="setMode('paths')">🛤️ Caminos</button>
+  </div>
 </header>
 <div class="main">
   <div class="img-wrap" id="imgWrap">
     <img id="img" src="/venue-map.jpg" alt="venue" />
+    <svg class="path-overlay" id="pathOverlay"></svg>
   </div>
-  <div class="sidebar">
+  <div class="sidebar" id="sidebarPoints">
     <h2>Puntos agregados</h2>
     <div class="list" id="list"></div>
     <h2>Código generado</h2>
     <textarea id="output" readonly placeholder="Haz clic en la imagen para empezar..."></textarea>
     <button id="copyBtn">📋 Copiar código</button>
     <button id="clearBtn" class="secondary">Borrar todo</button>
+  </div>
+  <div class="sidebar" id="sidebarPaths" style="display:none">
+    <p class="hint">Haz clic para ir agregando puntos del camino, en orden, desde el inicio hasta el final (ej. Entrada → Playa Aïra). Cuando termines ese camino, dale "Terminar camino".</p>
+    <button id="finishPathBtn">✅ Terminar camino (<span id="wpCount">0</span> puntos)</button>
+    <button id="cancelPathBtn" class="warn">✕ Cancelar camino actual</button>
+    <h2>Caminos guardados</h2>
+    <div class="list" id="pathList"></div>
+    <h2>Código generado</h2>
+    <textarea id="pathOutput" readonly placeholder="Traza un camino para empezar..."></textarea>
+    <button id="copyPathBtn">📋 Copiar código</button>
+    <button id="clearPathBtn" class="secondary">Borrar todos los caminos</button>
   </div>
 </div>
 
@@ -139,10 +187,22 @@
   const list = document.getElementById('list');
   const colors = ['#38bdf8', '#a855f7', '#facc15', '#22c55e', '#ef4444', '#ec4899', '#f97316', '#10b981'];
   let points = [];
+  let mode = 'points';
 
   function slugify(s) {
     return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
       .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  }
+
+  function setMode(m) {
+    mode = m;
+    document.getElementById('modePoints').classList.toggle('is-active', m === 'points');
+    document.getElementById('modePaths').classList.toggle('is-active', m === 'paths');
+    document.getElementById('sidebarPoints').style.display = m === 'points' ? 'flex' : 'none';
+    document.getElementById('sidebarPaths').style.display = m === 'paths' ? 'flex' : 'none';
+    document.getElementById('modeHint').textContent = m === 'points'
+      ? 'Haz clic sobre la imagen en cada punto (entrada, cabañas, escenario, etc). Se genera el código listo para pegar en MyAppMap.tsx.'
+      : 'Traza los caminos reales (vías peatonales) haciendo clic punto por punto, en orden.';
   }
 
   function render() {
@@ -186,7 +246,11 @@
     const rect = img.getBoundingClientRect();
     const px = e.clientX - rect.left;
     const py = e.clientY - rect.top;
+    if (mode === 'points') addPoint(px, py, rect);
+    else addWaypoint(px, py, rect);
+  });
 
+  function addPoint(px, py, rect) {
     const label = prompt('Nombre del punto (ej. Entrada, Cabaña 3, Escenario):');
     if (!label) return;
     const emoji = prompt('Emoji (ej. 🚪 🏠 👑 🎈):', '📍') || '📍';
@@ -206,7 +270,7 @@
       px, py,
     });
     render();
-  });
+  }
 
   document.getElementById('copyBtn').onclick = () => {
     output.select();
@@ -215,6 +279,96 @@
     alert('Código copiado — pégalo en el chat o directamente en MyAppMap.tsx');
   };
   document.getElementById('clearBtn').onclick = () => { points = []; render(); };
+
+  // ── Modo Caminos ──────────────────────────────────────────────────────
+  const pathOverlay = document.getElementById('pathOverlay');
+  const pathList = document.getElementById('pathList');
+  const pathOutput = document.getElementById('pathOutput');
+  let paths = [];        // caminos ya terminados
+  let currentWaypoints = []; // el camino que se está trazando ahora
+
+  function addWaypoint(px, py, rect) {
+    const nx = ((px / rect.width) * 2 - 1) * 0.9;
+    const nz = ((py / rect.height) * 2 - 1) * 0.9;
+    currentWaypoints.push({ px, py, x: +nx.toFixed(3), z: +nz.toFixed(3) });
+    renderPaths();
+  }
+
+  function renderPaths() {
+    document.querySelectorAll('.waypoint-dot').forEach(el => el.remove());
+    pathOverlay.innerHTML = '';
+    pathList.innerHTML = '';
+    document.getElementById('wpCount').textContent = currentWaypoints.length;
+
+    // Puntos del camino actual (amarillo, en progreso)
+    currentWaypoints.forEach(wp => {
+      const dot = document.createElement('div');
+      dot.className = 'waypoint-dot';
+      dot.style.left = wp.px + 'px';
+      dot.style.top = wp.py + 'px';
+      imgWrap.appendChild(dot);
+    });
+    if (currentWaypoints.length > 1) {
+      const pts = currentWaypoints.map(wp => wp.px + ',' + wp.py).join(' ');
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+      line.setAttribute('points', pts);
+      line.setAttribute('fill', 'none');
+      line.setAttribute('stroke', '#facc15');
+      line.setAttribute('stroke-width', '3');
+      line.setAttribute('stroke-dasharray', '6 4');
+      pathOverlay.appendChild(line);
+    }
+
+    // Caminos ya terminados (verde)
+    paths.forEach((p, i) => {
+      if (p.waypoints.length > 1) {
+        const pts = p.waypoints.map(wp => wp.px + ',' + wp.py).join(' ');
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+        line.setAttribute('points', pts);
+        line.setAttribute('fill', 'none');
+        line.setAttribute('stroke', '#22c55e');
+        line.setAttribute('stroke-width', '3');
+        pathOverlay.appendChild(line);
+      }
+      const row = document.createElement('div');
+      row.className = 'list-item';
+      row.innerHTML = '<span>🛤️ ' + p.name + ' (' + p.waypoints.length + ' pts)</span>';
+      const del = document.createElement('button');
+      del.textContent = '✕';
+      del.onclick = () => { paths.splice(i, 1); renderPaths(); };
+      row.appendChild(del);
+      pathList.appendChild(row);
+    });
+
+    const code = paths.map(p =>
+      `  { id: '${p.id}', name: '${p.name}', points: [\n` +
+      p.waypoints.map(wp => `    { x: ${wp.x}, z: ${wp.z} },`).join('\n') +
+      `\n  ] },`
+    ).join('\n');
+    pathOutput.value = paths.length
+      ? 'const PATHS: PathSegment[] = [\n' + code + '\n];'
+      : '';
+  }
+
+  document.getElementById('finishPathBtn').onclick = () => {
+    if (currentWaypoints.length < 2) { alert('Agrega al menos 2 puntos antes de terminar el camino.'); return; }
+    const name = prompt('Nombre de este camino (ej. "Entrada a Playa Aïra"):');
+    if (!name) return;
+    paths.push({ id: slugify(name) + '-' + Date.now().toString(36).slice(-4), name, waypoints: currentWaypoints });
+    currentWaypoints = [];
+    renderPaths();
+  };
+  document.getElementById('cancelPathBtn').onclick = () => { currentWaypoints = []; renderPaths(); };
+  document.getElementById('copyPathBtn').onclick = () => {
+    pathOutput.select();
+    document.execCommand('copy');
+    navigator.clipboard?.writeText(pathOutput.value).catch(() => {});
+    alert('Código copiado — pégalo en el chat para integrarlo al mapa');
+  };
+  document.getElementById('clearPathBtn').onclick = () => { paths = []; currentWaypoints = []; renderPaths(); };
+
+  render();
+  renderPaths();
 </script>
 </body>
 </html>
