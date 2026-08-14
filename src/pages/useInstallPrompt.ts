@@ -17,6 +17,10 @@ function isIOS(): boolean {
   return /iphone|ipad|ipod/i.test(navigator.userAgent) && !(window as any).MSStream;
 }
 
+function isAndroid(): boolean {
+  return /android/i.test(navigator.userAgent);
+}
+
 function isStandalone(): boolean {
   return window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
 }
@@ -49,7 +53,8 @@ export function useInstallPrompt() {
 
   return {
     canInstall: !!deferred && !installed,
-    isIOS: isIOS() && !installed,
+    isIOS: isIOS(),
+    isAndroid: isAndroid(),
     // Ni Android con prompt disponible ni iOS — puede pasar si Chrome
     // todavía no considera "suficiente" el engagement para ofrecer el
     // evento automático. Mostramos igual una instrucción manual en vez

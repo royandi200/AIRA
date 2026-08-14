@@ -2096,6 +2096,45 @@
   line-height: 1.5;
 }
 .perfil-install-hint strong { color: rgba(255,255,255,0.75); }
+.perfil-install-hint--done {
+  border-style: solid;
+  border-color: rgba(34,197,94,0.3);
+  background: rgba(34,197,94,0.08);
+  color: #86efac;
+  font-size: 12px;
+}
+.perfil-install-block {
+  margin: 4px 2px 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px dashed rgba(255,255,255,0.15);
+}
+.perfil-install-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.75);
+}
+.perfil-install-steps {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11.5px;
+  color: rgba(255,255,255,0.55);
+  line-height: 1.5;
+}
+.perfil-install-steps li::marker { color: rgba(255,255,255,0.3); }
+.perfil-install-steps strong,
+.perfil-install-steps-text strong { color: rgba(255,255,255,0.8); }
+.perfil-install-steps-text {
+  margin: 0;
+  font-size: 11.5px;
+  color: rgba(255,255,255,0.55);
+  line-height: 1.5;
+}
 
 /* ── Simulador de hora (solo pruebas) ────────────────────────────────── */
 .perfil-sim {

@@ -579,7 +579,7 @@ function SimTimePanel() {
 
 function PerfilPanel({ attendee, onLogout }: { attendee: Attendee | null; onLogout: () => void }) {
   const name = attendee?.name ?? 'Invitado AIRA';
-  const { canInstall, isIOS, showManualHint, installed, install } = useInstallPrompt();
+  const { canInstall, isIOS, isAndroid, installed, install } = useInstallPrompt();
   return (
     <div className="perfil-panel">
       <div className="perfil-avatar-row">
@@ -625,12 +625,34 @@ function PerfilPanel({ attendee, onLogout }: { attendee: Attendee | null; onLogo
         </button>
       </div>
 
-      {!installed && !canInstall && (isIOS || showManualHint) && (
-        <p className="perfil-install-hint">
-          {isIOS
-            ? <>En iPhone: toca <strong>Compartir</strong> ⬆️ y luego <strong>"Agregar a pantalla de inicio"</strong> para instalar la app.</>
-            : <>Para instalar la app: toca el menú <strong>⋮</strong> del navegador y elige <strong>"Instalar app"</strong> o <strong>"Agregar a pantalla de inicio"</strong>.</>}
-        </p>
+      {/* Instrucciones de instalación — siempre visibles (salvo si ya está
+          instalada), con los pasos exactos según la plataforma detectada. */}
+      {installed ? (
+        <p className="perfil-install-hint perfil-install-hint--done">✅ Ya tienes la app instalada en este celular.</p>
+      ) : (
+        <div className="perfil-install-block">
+          <p className="perfil-install-title">📲 Cómo guardar AIRA como app</p>
+          {isIOS ? (
+            <ol className="perfil-install-steps">
+              <li>Abre este sitio con <strong>Safari</strong>.</li>
+              <li>Toca el ícono <strong>Compartir</strong> ⬆️ (abajo, o arriba junto a la barra de direcciones en iPad).</li>
+              <li>Baja en la lista y toca <strong>"Agregar a pantalla de inicio"</strong>.</li>
+              <li>Toca <strong>"Agregar"</strong> arriba a la derecha — listo, queda el ícono en tu pantalla.</li>
+            </ol>
+          ) : isAndroid ? (
+            canInstall ? (
+              <p className="perfil-install-steps-text">Toca <strong>"Instalar app en el celular"</strong> arriba y confirma — se agrega directo a tu pantalla de inicio.</p>
+            ) : (
+              <ol className="perfil-install-steps">
+                <li>Toca el menú <strong>⋮</strong> (arriba a la derecha del navegador).</li>
+                <li>Elige <strong>"Instalar app"</strong> o <strong>"Agregar a pantalla de inicio"</strong>.</li>
+                <li>Confirma tocando <strong>"Instalar"</strong>.</li>
+              </ol>
+            )
+          ) : (
+            <p className="perfil-install-steps-text">Abre el menú del navegador y busca <strong>"Instalar app"</strong> o <strong>"Agregar a pantalla de inicio"</strong>.</p>
+          )}
+        </div>
       )}
 
       <SimTimePanel />
