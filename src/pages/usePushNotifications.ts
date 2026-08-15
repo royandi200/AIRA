@@ -38,10 +38,10 @@ export function usePushNotifications(token: string | null) {
 
   useEffect(() => {
     if (!supported) return;
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('/sw.js').catch(err => console.error('[push] no se pudo registrar el service worker:', err));
     navigator.serviceWorker.ready.then(reg =>
       reg.pushManager.getSubscription().then(sub => setSubscribed(!!sub))
-    ).catch(() => {});
+    ).catch(err => console.error('[push] no se pudo leer la suscripción existente:', err));
   }, [supported]);
 
   const subscribe = useCallback(async () => {
@@ -67,8 +67,13 @@ export function usePushNotifications(token: string | null) {
       const json = await res.json();
       if (json.ok) setSubscribed(true);
       else setError(json.error || 'No se pudo activar');
-    } catch {
-      setError('No se pudo activar. Intenta de nuevo.');
+    } catch (err: any) {
+      // Antes tragaba el error real y siempre mostraba el mismo mensaje
+      // generico — sin saber si fallo el permiso, el service worker o la
+      // suscripcion en si no habia forma de diagnosticar a distancia.
+      console.error('[push] subscribe falló:', err);
+      const detail = err?.message ? `: ${err.message}` : '';
+      setError(`No se pudo activar${detail}. Intenta de nuevo.`);
     }
     setBusy(false);
   }, [supported, token, iosNeedsInstall]);
