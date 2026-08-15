@@ -438,11 +438,15 @@ export default function MyApp() {
         <img src="/AIRA BLANCO.png" alt="AIRA" className="myapp-logo" data-no-drag />
       </div>
 
-      {/* Nombre de la sección activa — grande y difuminado, entre el logo
-          y el aro, para ubicarse de un vistazo sin tener que leer el
-          footer chiquito. Cambia con key para que haga fade al girar. */}
+      {/* Nombre de la sección activa — como la pantallita del canal en una
+          consola de DJ (Pioneer/Denon): bisel + display oscuro con el
+          nombre, LED de color a juego con la sección. Cambia con key
+          para que haga fade al girar. */}
       <div className="myapp-current-label" data-no-drag>
-        <span key={activeSection.id} className="myapp-current-label-text">{activeSection.label}</span>
+        <div className="myapp-current-screen" style={{ ['--accent' as any]: activeSection.color }}>
+          <span className="myapp-current-screen-led" />
+          <span key={activeSection.id} className="myapp-current-label-text">{activeSection.label}</span>
+        </div>
       </div>
 
       {/* Zona central — la rueda vive aquí, arrastrable desde toda la pantalla */}
