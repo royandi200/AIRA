@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { MapPin, Clock, Ticket, ChevronRight, Bus, Star, Calendar, Package } from 'lucide-react';
 import { tourScheduleConfig, type TourDate } from '../config';
 import type { ReservationEvent } from './TicketReserve';
@@ -10,25 +10,6 @@ interface TourScheduleProps {
   onOpenMisReservas?: () => void;
   onOpenAddOn?: (type: 'vip' | 'transport') => void;
 }
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-const getVenueType = (venue: string): ReservationEvent['venueType'] => {
-  const v = venue.toLowerCase();
-  if (v.includes('yacht') || v.includes('yate') || v.includes('embalse')) return 'yacht';
-  if (v.includes('suite'))                                                  return 'club';
-  if (v.includes('vip'))                                                   return 'club';
-  return 'festival';
-};
-
-const getAccessType = (tour: TourDate): 'day1'|'day2'|'day3'|'package'|undefined => {
-  const v = tour.venue.toLowerCase();
-  if (tour.category === 'premium') return 'package';
-  // Daily tickets — detect by day number in venue name
-  if (v.includes('día 1') || v.includes('dia 1')) return 'day1';
-  if (v.includes('día 2') || v.includes('dia 2')) return 'day2';
-  if (v.includes('día 3') || v.includes('dia 3')) return 'day3';
-  return undefined;
-};
 
 const CATEGORY_ICON: Record<string, React.ReactNode> = {
   '3 DÍAS':     <Calendar className="w-4 h-4"/>,
@@ -232,7 +213,7 @@ function DailyCard({
 }
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenCabana, onOpenMisReservas, onOpenAddOn }: TourScheduleProps) => {
+const TourSchedule = ({ onOpenMisReservas }: TourScheduleProps) => {
   if (tourScheduleConfig.tourDates.length === 0 && !tourScheduleConfig.sectionTitle) return null;
 
   const [activeImage, setActiveImage] = useState<string | null>(null);
@@ -241,25 +222,19 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenCabana, onOpenMisR
   const dailyDates   = allDates.filter(t => t.category === 'daily');
   const defaultImage = premiumDates[0]?.image || allDates[0]?.image || '/main-stage.jpg';
 
-  const buildEvent = (tour: TourDate): ReservationEvent => ({
-    id:               String(tour.id),
-    city:             tour.city,
-    venue:            tour.venue,
-    date:             tour.date,
-    time:             tour.time,
-    image:            tour.image,
-    venueType:        getVenueType(tour.venue),
-    initialAccessType: getAccessType(tour),
-  });
-
-  const handleClick = (tour: TourDate) => {
-    const v = tour.venue.toLowerCase();
-    if (v.includes('caba'))                             { if (onOpenCabana) { onOpenCabana(); } else { onOpenSuite?.(); } return; }
-    if (v.includes('suite'))                            { onOpenSuite?.(); return; }
-    if (v.includes('vip') && !v.includes('paquete'))   { onOpenAddOn?.('vip'); return; }
-    if (v.includes('transporte') || v.includes('bus')) { onOpenAddOn?.('transport'); return; }
-    onOpenReservation(buildEvent(tour));
+  // Venta de entradas deshabilitada a propósito — el evento sigue "en
+  // desarrollo" del lado de ventas. Se deja TODO igual visualmente
+  // (tarjetas, botones, precios, "Mis reservas") pero ningún click abre
+  // de verdad un flujo de compra/pago: solo muestra un aviso.
+  const [showNotice, setShowNotice] = useState(false);
+  const noticeTimer = useRef<number | null>(null);
+  const triggerNotice = () => {
+    setShowNotice(true);
+    if (noticeTimer.current) window.clearTimeout(noticeTimer.current);
+    noticeTimer.current = window.setTimeout(() => setShowNotice(false), 3500);
   };
+
+  const handleClick = (_tour: TourDate) => { triggerNotice(); };
 
   return (
     <section id="booking" className="relative py-16 md:py-32 bg-aira-darkBlue">
@@ -286,7 +261,7 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenCabana, onOpenMisR
         {/* ── Mis Reservas banner ── */}
         {onOpenMisReservas && (
           <div className="mb-10">
-            <button onClick={onOpenMisReservas}
+            <button onClick={triggerNotice}
               className="w-full group relative flex items-center justify-between gap-4 px-6 py-4 rounded-2xl border border-aira-lime/30 bg-aira-lime/5 hover:bg-aira-lime/10 hover:border-aira-lime/60 transition-all duration-300 overflow-hidden">
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
                 style={{ background:'radial-gradient(ellipse at left center,rgba(225,254,82,0.08),transparent 60%)' }}/>
@@ -381,11 +356,23 @@ const TourSchedule = ({ onOpenReservation, onOpenSuite, onOpenCabana, onOpenMisR
         {/* ── Bottom CTA ── */}
         <div className="mt-16 text-center">
           <p className="font-mono-custom text-sm text-white/30 mb-5">{tourScheduleConfig.bottomNote}</p>
-          <button
+          <button onClick={triggerNotice}
             className="px-8 py-4 bg-aira-lime text-aira-darkBlue font-display text-sm uppercase tracking-[0.2em] rounded-full hover:bg-white active:scale-[0.97] transition-all">
             {tourScheduleConfig.bottomCtaText}
           </button>
         </div>
+      </div>
+
+      {/* Aviso — la venta de entradas está desactivada, esto es lo único
+          que pasa al tocar cualquier botón/tarjeta de esta sección. */}
+      <div
+        className={`fixed left-1/2 bottom-6 z-[999] -translate-x-1/2 px-5 py-3 rounded-full border border-aira-lime/40 bg-aira-darkBlue/95 backdrop-blur-sm shadow-[0_8px_30px_rgba(0,0,0,0.4)] font-mono-custom text-xs text-white/85 uppercase tracking-wider flex items-center gap-2 transition-all duration-300 ${
+          showNotice ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-3 pointer-events-none'
+        }`}
+        role="status"
+        aria-live="polite"
+      >
+        🚧 Evento en desarrollo — la venta de entradas aún no está disponible
       </div>
     </section>
   );
