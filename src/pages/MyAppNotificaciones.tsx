@@ -1,7 +1,28 @@
 import { useEffect, useState } from 'react';
-import { Send, Bell } from 'lucide-react';
+import { Send, Bell, AlertTriangle, RefreshCw } from 'lucide-react';
 import './MyAppAdmin.css';
 import './MyAppNotificaciones.css';
+
+interface PushFailure {
+  id: number;
+  order_ref: string | null;
+  nombre: string | null;
+  stage: string;
+  error_name: string | null;
+  error_message: string | null;
+  user_agent: string | null;
+  created_at: string;
+}
+
+// Extrae "Android 14 · Chrome 128" o similar de un user-agent crudo, sin
+// pretender parsearlo perfecto — solo lo suficiente para reconocer el
+// dispositivo/navegador de un vistazo en la lista.
+function shortDevice(ua: string | null): string {
+  if (!ua) return 'Dispositivo desconocido';
+  const os = /iphone|ipad/i.test(ua) ? 'iOS' : /android\s*([\d.]+)?/i.exec(ua)?.[0].replace(/android/i, 'Android') || (/windows/i.test(ua) ? 'Windows' : /mac os/i.test(ua) ? 'Mac' : 'Otro');
+  const browser = /edg\//i.test(ua) ? 'Edge' : /chrome\/[\d.]+/i.exec(ua)?.[0].replace('/', ' ') || (/firefox\/[\d.]+/i.exec(ua)?.[0].replace('/', ' ')) || (/safari\//i.test(ua) ? 'Safari' : 'navegador');
+  return `${os} · ${browser}`;
+}
 
 /**
  * /myapp-notificaciones — panel para mandar un push a TODOS los
@@ -21,8 +42,20 @@ export default function MyAppNotificaciones() {
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
   const [error, setError] = useState('');
+  const [failures, setFailures] = useState<PushFailure[] | null>(null);
+  const [loadingFailures, setLoadingFailures] = useState(false);
 
   useEffect(() => { document.title = 'AIRA · Notificaciones'; }, []);
+
+  const loadFailures = async (key: string) => {
+    setLoadingFailures(true);
+    try {
+      const res = await fetch('/api/myapp-push-log-error', { headers: { 'x-admin-key': key } });
+      const json = await res.json();
+      if (json.ok) setFailures(json.failures);
+    } catch { /* silencioso, hay boton de refrescar */ }
+    setLoadingFailures(false);
+  };
 
   const loadTotal = async (key: string) => {
     try {
@@ -38,7 +71,7 @@ export default function MyAppNotificaciones() {
     } catch { /* silencioso, se puede reintentar */ }
   };
 
-  useEffect(() => { if (adminKey) loadTotal(adminKey); }, [adminKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (adminKey) { loadTotal(adminKey); loadFailures(adminKey); } }, [adminKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveKey = () => {
     if (!keyInput.trim()) return;
@@ -141,6 +174,37 @@ export default function MyAppNotificaciones() {
         <button className="mnot-send" onClick={send} disabled={sending || !title.trim() || !body.trim()}>
           <Send size={15} /> {sending ? 'Enviando…' : 'Enviar a todos'}
         </button>
+
+        {/* Fallos de activación — lo que antes solo se veía en la consola
+            del celular de cada persona (ej. "Registration failed - push
+            service error" en algunos Android), ahora queda acá. */}
+        <div className="mnot-failures">
+          <div className="mnot-failures-head">
+            <span><AlertTriangle size={14} /> Fallos al activar notificaciones</span>
+            <button onClick={() => loadFailures(adminKey)} disabled={loadingFailures} aria-label="Refrescar">
+              <RefreshCw size={13} className={loadingFailures ? 'is-spinning' : ''} />
+            </button>
+          </div>
+          {failures === null && <p className="mnot-failures-empty">Cargando…</p>}
+          {failures?.length === 0 && <p className="mnot-failures-empty">Sin fallos registrados 🎉</p>}
+          {failures && failures.length > 0 && (
+            <div className="mnot-failures-list">
+              {failures.map(f => (
+                <div key={f.id} className="mnot-failure-row">
+                  <div className="mnot-failure-top">
+                    <span className="mnot-failure-who">{f.nombre || f.order_ref || 'Anónimo'}</span>
+                    <span className="mnot-failure-when">{new Date(f.created_at).toLocaleString('es-CO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  <p className="mnot-failure-device">{shortDevice(f.user_agent)}</p>
+                  <p className="mnot-failure-error">
+                    <span className="mnot-failure-stage">{f.stage}</span>
+                    {f.error_name ? ` ${f.error_name}` : ''}{f.error_message ? `: ${f.error_message}` : ''}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

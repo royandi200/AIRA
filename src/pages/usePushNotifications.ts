@@ -24,6 +24,31 @@ function isIOS(): boolean {
   return /iphone|ipad|ipod/i.test(navigator.userAgent) && !(window as any).MSStream;
 }
 
+/**
+ * Manda el fallo al servidor (fire-and-forget, nunca bloquea ni rompe la
+ * UX si esto mismo falla) — antes un error como "Registration failed -
+ * push service error" solo quedaba en la consola del celular de la
+ * persona, imposible de ver a distancia. Con esto queda guardado con el
+ * dispositivo (user-agent) y en qué paso pasó, revisable desde
+ * /myapp-notificaciones.
+ */
+function logPushFailure(stage: string, err: unknown) {
+  try {
+    const e = err as { name?: string; message?: string } | undefined;
+    fetch('/api/myapp-push-log-error', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        stage,
+        errorName: e?.name,
+        errorMessage: e?.message,
+        userAgent: navigator.userAgent,
+      }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch { /* nunca romper la UX por el logging en sí */ }
+}
+
 export function usePushNotifications(token: string | null) {
   const supported = typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window;
   const [permission, setPermission] = useState<NotificationPermission>(
@@ -38,7 +63,10 @@ export function usePushNotifications(token: string | null) {
 
   useEffect(() => {
     if (!supported) return;
-    navigator.serviceWorker.register('/sw.js').catch(err => console.error('[push] no se pudo registrar el service worker:', err));
+    navigator.serviceWorker.register('/sw.js').catch(err => {
+      console.error('[push] no se pudo registrar el service worker:', err);
+      logPushFailure('sw-register', err);
+    });
     navigator.serviceWorker.ready.then(reg =>
       reg.pushManager.getSubscription().then(sub => setSubscribed(!!sub))
     ).catch(err => console.error('[push] no se pudo leer la suscripción existente:', err));
@@ -48,17 +76,22 @@ export function usePushNotifications(token: string | null) {
     if (!supported || !token || iosNeedsInstall) return;
     setBusy(true);
     setError('');
+    let stage = 'permiso';
     try {
       const perm = await Notification.requestPermission();
       setPermission(perm);
       if (perm !== 'granted') { setBusy(false); return; }
 
+      stage = 'service-worker';
       const reg = await navigator.serviceWorker.ready;
+
+      stage = 'push-subscribe'; // acá cae el "Registration failed - push service error"
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
       });
 
+      stage = 'guardar-suscripcion';
       const res = await fetch(`/api/myapp-push-subscribe?token=${encodeURIComponent(token)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -66,12 +99,14 @@ export function usePushNotifications(token: string | null) {
       });
       const json = await res.json();
       if (json.ok) setSubscribed(true);
-      else setError(json.error || 'No se pudo activar');
+      else { setError(json.error || 'No se pudo activar'); logPushFailure(stage, { message: json.error }); }
     } catch (err: any) {
       // Antes tragaba el error real y siempre mostraba el mismo mensaje
-      // generico — sin saber si fallo el permiso, el service worker o la
-      // suscripcion en si no habia forma de diagnosticar a distancia.
-      console.error('[push] subscribe falló:', err);
+      // generico — sin saber en qué paso ni por qué, era imposible
+      // diagnosticar a distancia (ej. el "Registration failed - push
+      // service error" que solo pasa en algunos celulares Android).
+      console.error(`[push] subscribe falló en "${stage}":`, err);
+      logPushFailure(stage, err);
       const detail = err?.message ? `: ${err.message}` : '';
       setError(`No se pudo activar${detail}. Intenta de nuevo.`);
     }
