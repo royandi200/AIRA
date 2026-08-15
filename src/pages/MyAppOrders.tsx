@@ -76,6 +76,11 @@ export default function MyAppOrders({ attendee }: { attendee: Attendee | null })
   const [cart, setCart]     = useState<CartLine[]>([]);
   const [category, setCategory] = useState('Todo');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
+  // Joinn ahora puede pedir pago con Bold antes de mandar el pedido a
+  // cocina — si CREAR_PEDIDO devuelve payment_url, el pedido queda
+  // "esperando pago" del lado de BarDJ, no se puede mostrar como si ya
+  // estuviera confirmado.
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -118,13 +123,19 @@ export default function MyAppOrders({ attendee }: { attendee: Attendee | null })
   const submitOrder = async () => {
     if (!cart.length) return;
     setStatus('sending');
+    setPaymentUrl(null);
     try {
-      const res = await callBarDJ(code, 'CREAR_PEDIDO', {
+      const res = await callBarDJ<{ payment_url?: string | null }>(code, 'CREAR_PEDIDO', {
         items: cart.map(l => ({ name: l.name, qty: l.qty, price: l.price })),
         customer_name: customerName,
       });
-      if (res.ok) { setStatus('sent'); setCart([]); }
-      else { setStatus('idle'); setView('carta'); setError(res.error || 'No se pudo enviar el pedido'); }
+      if (res.ok) {
+        setPaymentUrl(res.data?.payment_url || null);
+        setStatus('sent');
+        setCart([]);
+      } else {
+        setStatus('idle'); setView('carta'); setError(res.error || 'No se pudo enviar el pedido');
+      }
     } catch {
       setStatus('idle');
       setView('carta');
@@ -135,9 +146,28 @@ export default function MyAppOrders({ attendee }: { attendee: Attendee | null })
   if (status === 'sent') {
     return (
       <div className="pedidos-success">
-        <div className="pedidos-success-icon">✅</div>
-        <h3>¡Pedido enviado a Joinn!</h3>
-        <p>Te lo llevan en un momento — no necesitas estar en ninguna mesa fija.</p>
+        {paymentUrl ? (
+          <>
+            <div className="pedidos-success-icon">💳</div>
+            <h3>¡Casi listo!</h3>
+            <p>Confirma el pago para que tu pedido pase a cocina en Joinn</p>
+            <a
+              href={paymentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="pedidos-again-btn"
+              style={{ textDecoration: 'none', display: 'inline-block' }}
+            >
+              💳 Pagar ahora
+            </a>
+          </>
+        ) : (
+          <>
+            <div className="pedidos-success-icon">✅</div>
+            <h3>¡Pedido enviado a Joinn!</h3>
+            <p>Te lo llevan en un momento — no necesitas estar en ninguna mesa fija.</p>
+          </>
+        )}
         <button className="pedidos-again-btn" onClick={() => setStatus('idle')}>Hacer otro pedido</button>
         <button className="pedidos-again-btn" onClick={() => { setStatus('idle'); setView('cuenta'); }}>Ver mi cuenta</button>
       </div>
