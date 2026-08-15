@@ -98,14 +98,19 @@ export default function MyAppOrders({ attendee }: { attendee: Attendee | null })
   const code = attendee?.orderRef || getFallbackCode();
   const customerName = attendee?.name || code;
 
-  // Cabaña — se pide una sola vez (se guarda en localStorage) y se manda
-  // SIEMPRE antes del nombre del cliente, así en BarDJ/Joinn se ve de una
-  // "Cabaña 12 - Juan Pérez" y saben a qué cabaña llevar el pedido.
-  const [cabin, setCabin] = useState<string>(() => localStorage.getItem(CABIN_KEY) || '');
+  // Cabaña — YA está en la base (attendee.paquete viene como "Cabaña 12 -
+  // El Faro Individual", mismo formato que usa MyAppAdmin para el mapa de
+  // cabañas), así que se saca sola, sin preguntarle nada al cliente. Solo
+  // si por algún motivo el paquete no trae cabaña asignada (staff, boleta
+  // suelta sin alojamiento, etc.) se cae al campo manual como respaldo.
+  const detectedCabin = attendee?.paquete?.match(/Caba[ñn]a\s*\d+[^-]*(?:-[^,]*)?/i)?.[0]?.trim() || '';
+  const [manualCabin, setManualCabin] = useState<string>(() => localStorage.getItem(CABIN_KEY) || '');
   const setCabinPersist = (v: string) => {
-    setCabin(v);
+    setManualCabin(v);
     localStorage.setItem(CABIN_KEY, v);
   };
+  const cabin = detectedCabin || manualCabin;
+  const needsManualCabin = !detectedCabin;
   const fullCustomerName = cabin.trim() ? `${cabin.trim()} - ${customerName}` : customerName;
 
   // Si se llegó acá recién volviendo de pagar con Bold (MyApp.tsx detecta
@@ -230,6 +235,7 @@ export default function MyAppOrders({ attendee }: { attendee: Attendee | null })
         total={total}
         sending={status === 'sending'}
         cabin={cabin}
+        needsManualCabin={needsManualCabin}
         onChangeCabin={setCabinPersist}
         onBack={() => setView('carta')}
         onChangeQty={changeQty}
@@ -434,9 +440,9 @@ function AiraDishCard({ items, cart, onAdd, onChangeQty }: {
 }
 
 // ── Confirmar antes de enviar ────────────────────────────────────────────────
-function ConfirmScreen({ cart, total, sending, cabin, onChangeCabin, onBack, onChangeQty, onConfirm }: {
+function ConfirmScreen({ cart, total, sending, cabin, needsManualCabin, onChangeCabin, onBack, onChangeQty, onConfirm }: {
   cart: CartLine[]; total: number; sending: boolean;
-  cabin: string; onChangeCabin: (v: string) => void;
+  cabin: string; needsManualCabin: boolean; onChangeCabin: (v: string) => void;
   onBack: () => void; onChangeQty: (name: string, delta: number) => void; onConfirm: () => void;
 }) {
   return (
@@ -448,16 +454,21 @@ function ConfirmScreen({ cart, total, sending, cabin, onChangeCabin, onBack, onC
       <h3 className="pedidos-confirm-title">Confirma tu pedido</h3>
       <p className="pedidos-confirm-sub">Se enviará directo a la barra de Joinn</p>
 
-      <label className="pedidos-cabin-label">
-        Cabaña
-        <input
-          className="pedidos-cabin-input"
-          type="text"
-          placeholder="Ej: Cabaña 12"
-          value={cabin}
-          onChange={e => onChangeCabin(e.target.value)}
-        />
-      </label>
+      {needsManualCabin ? (
+        <label className="pedidos-cabin-label">
+          Cabaña
+          <input
+            className="pedidos-cabin-input"
+            type="text"
+            placeholder="Ej: Cabaña 12"
+            value={cabin}
+            onChange={e => onChangeCabin(e.target.value)}
+          />
+        </label>
+      ) : (
+        // La cabaña ya viene de tu boleta — solo se muestra, no hay nada que llenar.
+        <p className="pedidos-cabin-detected">🏡 {cabin}</p>
+      )}
 
       <div className="pedidos-confirm-list">
         {cart.map(l => (
@@ -481,8 +492,8 @@ function ConfirmScreen({ cart, total, sending, cabin, onChangeCabin, onBack, onC
         <span>{fmt(total)}</span>
       </div>
 
-      <button className="pedidos-cart-btn pedidos-confirm-submit" disabled={sending || !cart.length || !cabin.trim()} onClick={onConfirm}>
-        {sending ? 'Enviando…' : !cabin.trim() ? 'Escribe tu cabaña para continuar' : `Confirmar y enviar a Joinn`}
+      <button className="pedidos-cart-btn pedidos-confirm-submit" disabled={sending || !cart.length || (needsManualCabin && !cabin.trim())} onClick={onConfirm}>
+        {sending ? 'Enviando…' : (needsManualCabin && !cabin.trim()) ? 'Escribe tu cabaña para continuar' : `Confirmar y enviar a Joinn`}
       </button>
     </div>
   );
