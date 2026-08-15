@@ -63,9 +63,21 @@ const CABANAS: MapPoint[] = CABANAS_RAW.map((c, i) => ({
   kind: 'cabana',
 }));
 
-function buildPoints(attendee?: { cabana?: string | null } | null): MapPoint[] {
-  const mine = attendee?.cabana ?? null;
-  const cabanas = CABANAS.map(c => ({ ...c, isMine: !!mine && c.label.toLowerCase() === mine.toLowerCase() }));
+// El campo real en toda la app (Attendee, manual_registros, el admin
+// dashboard) es "paquete", con formato "Cabaña N - Nombre" — no
+// "cabana" a secas. Se extrae el número y se compara por número, no
+// por texto exacto (los labels de este mapa son solo "Cabaña N").
+function cabinNumberFromPaquete(paquete: string | null | undefined): number | null {
+  const m = paquete?.match(/Caba[ñn]a\s*(\d+)/i);
+  return m ? Number(m[1]) : null;
+}
+
+function buildPoints(attendee?: { paquete?: string | null } | null): MapPoint[] {
+  const mineNumber = cabinNumberFromPaquete(attendee?.paquete);
+  const cabanas = CABANAS.map(c => {
+    const n = cabinNumberFromPaquete(c.label);
+    return { ...c, isMine: mineNumber !== null && n === mineNumber };
+  });
   return [...cabanas, ...LANDMARKS];
 }
 
@@ -554,7 +566,7 @@ function Scene({ image, points, selectedIdx, onSelect, geo }: {
   );
 }
 
-export default function MyAppMap({ image = '/venue-map.jpg', attendee }: { image?: string; attendee?: { cabana?: string | null } | null }) {
+export default function MyAppMap({ image = '/venue-map.jpg', attendee }: { image?: string; attendee?: { paquete?: string | null } | null }) {
   const points = useMemo(() => buildPoints(attendee), [attendee]);
   const [selectedIdx, setSelectedIdx] = useState(() => {
     const mineIdx = points.findIndex(p => p.isMine);
