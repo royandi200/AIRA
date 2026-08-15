@@ -163,16 +163,19 @@ export default function MyAppOrders({ attendee }: { attendee: Attendee | null })
             >
               💳 Pagar ahora
             </a>
+            {/* Mientras el pago está pendiente no tiene sentido "hacer otro
+                pedido" ni "ver mi cuenta" — solo pagar o volver a la carta. */}
+            <button className="pedidos-again-btn" onClick={() => { setStatus('idle'); setPaymentUrl(null); }}>Volver</button>
           </>
         ) : (
           <>
             <div className="pedidos-success-icon">✅</div>
             <h3>¡Pedido enviado a Joinn!</h3>
             <p>Te lo llevan en un momento — no necesitas estar en ninguna mesa fija.</p>
+            <button className="pedidos-again-btn" onClick={() => setStatus('idle')}>Hacer otro pedido</button>
+            <button className="pedidos-again-btn" onClick={() => { setStatus('idle'); setView('cuenta'); }}>Ver mi cuenta</button>
           </>
         )}
-        <button className="pedidos-again-btn" onClick={() => setStatus('idle')}>Hacer otro pedido</button>
-        <button className="pedidos-again-btn" onClick={() => { setStatus('idle'); setView('cuenta'); }}>Ver mi cuenta</button>
       </div>
     );
   }
