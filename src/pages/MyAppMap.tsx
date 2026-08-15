@@ -63,22 +63,20 @@ const CABANAS: MapPoint[] = CABANAS_RAW.map((c, i) => ({
   kind: 'cabana',
 }));
 
-// El campo real en toda la app (Attendee, manual_registros, el admin
-// dashboard) es "paquete", con formato "Cabaña N - Nombre" — no
-// "cabana" a secas. Se extrae el número y se compara por número, no
-// por texto exacto (los labels de este mapa son solo "Cabaña N").
-function cabinNumberFromPaquete(paquete: string | null | undefined): number | null {
-  const m = paquete?.match(/Caba[ñn]a\s*(\d+)/i);
-  return m ? Number(m[1]) : null;
-}
+const BASE_POINTS: MapPoint[] = [...CABANAS, ...LANDMARKS];
 
-function buildPoints(attendee?: { paquete?: string | null } | null): MapPoint[] {
-  const mineNumber = cabinNumberFromPaquete(attendee?.paquete);
-  const cabanas = CABANAS.map(c => {
-    const n = cabinNumberFromPaquete(c.label);
-    return { ...c, isMine: mineNumber !== null && n === mineNumber };
-  });
-  return [...cabanas, ...LANDMARKS];
+/**
+ * Marca como "isMine" la cabaña real del asistente, extrayendo el número
+ * de `attendee.paquete` (ej. "Cabaña 9 - Río Arriba" -> cabana-9). Si el
+ * paquete es una suite o pasadía (no hay marcador para esos todavía) o no
+ * matchea ninguna cabaña, no se resalta nada — mejor que apuntar a la
+ * cabaña equivocada.
+ */
+function buildPoints(paquete: string | null | undefined): MapPoint[] {
+  const match = paquete?.match(/Caba[ñn]a\s*(\d+)/i);
+  const myId = match ? `cabana-${match[1]}` : null;
+  if (!myId) return BASE_POINTS;
+  return BASE_POINTS.map(p => (p.id === myId ? { ...p, isMine: true } : p));
 }
 
 const PLANE_W = 6;
@@ -566,8 +564,8 @@ function Scene({ image, points, selectedIdx, onSelect, geo }: {
   );
 }
 
-export default function MyAppMap({ image = '/venue-map.jpg', attendee }: { image?: string; attendee?: { paquete?: string | null } | null }) {
-  const points = useMemo(() => buildPoints(attendee), [attendee]);
+export default function MyAppMap({ image = '/venue-map.jpg', attendee }: { image?: string; attendee?: { paquete: string | null } | null }) {
+  const points = useMemo(() => buildPoints(attendee?.paquete), [attendee?.paquete]);
   const [selectedIdx, setSelectedIdx] = useState(() => {
     const mineIdx = points.findIndex(p => p.isMine);
     return mineIdx >= 0 ? mineIdx : 0;
