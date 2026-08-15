@@ -235,7 +235,10 @@ function BeaconMarker({ point, index, onSelect, selected }: MarkerProps) {
   );
 }
 
-const STAGE_FLOAT_HEIGHT = 0.55;
+// Antes en 0.55 quedaban flotando muy alto, casi fuera del encuadre del
+// mapa — se bajan al mismo rango que las balizas de cabañas/landmarks
+// (0.16-0.24) para que se vean "parados" sobre el terreno, no flotando.
+const STAGE_FLOAT_HEIGHT = 0.2;
 
 /** Halo base compartido por los 3 marcadores de escenario — mismo lenguaje visual que BeaconMarker */
 function StageGroundHalo({ color, selected, radius = 0.05 }: { color: string; selected: boolean; radius?: number }) {
@@ -634,7 +637,7 @@ export default function MyAppMap({ image = '/venue-map.jpg', attendee }: { image
         )}
       </div>
 
-      <div className="mapa-selector">
+      <div className="mapa-selector" style={{ ['--pin-color' as any]: selected.color }}>
         <button className="mapa-nav-arrow" onClick={goPrev} aria-label="Punto anterior">
           <ChevronLeft size={20} />
         </button>
