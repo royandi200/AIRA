@@ -56,7 +56,12 @@ function orderStatusInfo(o: OrderRow): { label: string; emoji: string; className
   if (o.status === 'preparing')       return { label: 'Preparando',     emoji: '👨‍🍳', className: 'is-preparing' };
   if (o.status === 'ready')           return { label: 'Listo',          emoji: '✅', className: 'is-ready' };
   if (o.status === 'delivered')       return { label: 'Entregado',      emoji: '🍽️', className: 'is-delivered' };
-  return { label: 'Pendiente', emoji: '🕐', className: 'is-pending' }; // status === 'pending'
+  // status === 'pending' — "recibido, en cola para que cocina empiece".
+  // Si se pagó con Bold, decirle al cliente "Pagado" en vez de "Pendiente"
+  // — antes esa palabra sonaba a "pago pendiente" (justo lo contrario)
+  // aunque el pago ya estuviera confirmado.
+  if (o.bold_status === 'paid') return { label: 'Pagado · en cola', emoji: '✅', className: 'is-paid' };
+  return { label: 'Pendiente', emoji: '🕐', className: 'is-pending' };
 }
 
 type View = 'carta' | 'confirm' | 'cuenta';
