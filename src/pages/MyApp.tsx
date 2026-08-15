@@ -10,10 +10,11 @@ import PullIndicator from './PullIndicator';
 
 /**
  * MyApp — Webapp para asistentes al evento AIRA.
- * Menú principal: brújula/dial giratorio con detentes (como caja fuerte).
+ * Menú principal: tornamesa de DJ — un vinilo giratorio con detentes
+ * (misma mecánica de caja fuerte de siempre, look de set de DJ encima).
  * Cada sección "cae" en su diente con vibración + tick de audio,
- * y la imagen central hace zoom/crossfade circular al seleccionar
- * (mismo lenguaje visual que el círculo de plato en /mesa).
+ * y la imagen central (el "label" del disco) hace zoom/crossfade
+ * circular al seleccionar (mismo lenguaje visual que /mesa).
  *
  * La rueda vive centrada en pantalla y se puede arrastrar desde
  * cualquier punto de la pantalla, no solo tocando el aro.
@@ -447,6 +448,13 @@ export default function MyApp() {
       {/* Zona central — la rueda vive aquí, arrastrable desde toda la pantalla */}
       <div className="myapp-wheel-zone">
         <div className="myapp-ring-contact-shadow" />
+        {/* Plato de la tornamesa — carcasa fija detrás del vinilo, no rota */}
+        <div className="myapp-plinth">
+          <span className="myapp-plinth-screw myapp-plinth-screw--tl" />
+          <span className="myapp-plinth-screw myapp-plinth-screw--tr" />
+          <span className="myapp-plinth-screw myapp-plinth-screw--bl" />
+          <span className="myapp-plinth-screw myapp-plinth-screw--br" />
+        </div>
         <div
           ref={ringRef}
           className={`myapp-ring ${dragging ? 'is-dragging' : ''} ${snapping ? 'is-snapping' : ''}`}
@@ -488,12 +496,16 @@ export default function MyApp() {
           </button>
         </div>
 
-        {/* Puntero fijo arriba del aro — indica la sección seleccionada */}
-        <div className="myapp-pointer" style={{ ['--accent' as any]: activeSection.color }}>▲</div>
+        {/* Brazo/aguja fijo arriba del aro — indica la sección seleccionada,
+            como el cabezal de una tornamesa apuntando al disco */}
+        <div className="myapp-pointer" style={{ ['--accent' as any]: activeSection.color }}>
+          <span className="myapp-pointer-arm" />
+          <span className="myapp-pointer-tip" />
+        </div>
       </div>
 
       <div className="myapp-footer">
-        <div className="myapp-hint">Toca el círculo para abrir · Desliza para girar</div>
+        <div className="myapp-hint">Toca el vinilo para abrir · Gira la tornamesa para cambiar</div>
       </div>
 
       {openSection && (
