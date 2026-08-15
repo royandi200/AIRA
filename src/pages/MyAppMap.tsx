@@ -641,25 +641,23 @@ export default function MyAppMap({ image = '/venue-map.jpg', attendee }: { image
         <button className="mapa-nav-arrow" onClick={goPrev} aria-label="Punto anterior">
           <ChevronLeft size={20} />
         </button>
-        <div className="mapa-selector-center">
-          <div className="mapa-selector-label">
-            <span className="mapa-selector-tag">{selected.isMine ? 'Tu cabaña' : selected.kind === 'cabana' ? 'Cabaña' : 'Punto de interés'}</span>
-            <span key={selected.id} className="mapa-selector-name">{selected.emoji} {selected.label}</span>
-            {geo.status === 'active' && geo.lat !== null && geo.lon !== null && (() => {
-              const user = latLonToWorld(geo.lat, geo.lon);
-              const target = { x: (selected.x * PLANE_W) / 2, z: (selected.z * PLANE_D) / 2 };
-              const meters = worldDistanceMeters(user.x, user.z, target.x, target.z);
-              return (
-                <span className="mapa-selector-distance">
-                  <Navigation size={11} /> {meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(1)} km`}
-                </span>
-              );
-            })()}
-          </div>
-          <button className="mapa-nav-arrow" onClick={goNext} aria-label="Punto siguiente">
-            <ChevronRight size={20} />
-          </button>
+        <div className="mapa-selector-label">
+          <span className="mapa-selector-tag">{selected.isMine ? 'Tu cabaña' : selected.kind === 'cabana' ? 'Cabaña' : 'Punto de interés'}</span>
+          <span key={selected.id} className="mapa-selector-name">{selected.emoji} {selected.label}</span>
+          {geo.status === 'active' && geo.lat !== null && geo.lon !== null && (() => {
+            const user = latLonToWorld(geo.lat, geo.lon);
+            const target = { x: (selected.x * PLANE_W) / 2, z: (selected.z * PLANE_D) / 2 };
+            const meters = worldDistanceMeters(user.x, user.z, target.x, target.z);
+            return (
+              <span className="mapa-selector-distance">
+                <Navigation size={11} /> {meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(1)} km`}
+              </span>
+            );
+          })()}
         </div>
+        <button className="mapa-nav-arrow" onClick={goNext} aria-label="Punto siguiente">
+          <ChevronRight size={20} />
+        </button>
       </div>
     </div>
   );
