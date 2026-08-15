@@ -24,6 +24,7 @@ import type { Attendee } from './MyAppAuth';
 const BARDJ_API = 'https://www.meseroai.com/api/webhook';
 const BAR_SLUG = 'Joinn';
 const CUSTOMER_CODE_KEY = 'aira_customer_code'; // fallback legacy, solo si por algún motivo no hay attendee
+const CABIN_KEY = 'aira_cabin_name'; // cabaña del asistente — se pide una vez y se recuerda entre pedidos
 
 interface MenuItem {
   name: string;
@@ -97,6 +98,16 @@ export default function MyAppOrders({ attendee }: { attendee: Attendee | null })
   const code = attendee?.orderRef || getFallbackCode();
   const customerName = attendee?.name || code;
 
+  // Cabaña — se pide una sola vez (se guarda en localStorage) y se manda
+  // SIEMPRE antes del nombre del cliente, así en BarDJ/Joinn se ve de una
+  // "Cabaña 12 - Juan Pérez" y saben a qué cabaña llevar el pedido.
+  const [cabin, setCabin] = useState<string>(() => localStorage.getItem(CABIN_KEY) || '');
+  const setCabinPersist = (v: string) => {
+    setCabin(v);
+    localStorage.setItem(CABIN_KEY, v);
+  };
+  const fullCustomerName = cabin.trim() ? `${cabin.trim()} - ${customerName}` : customerName;
+
   // Si se llegó acá recién volviendo de pagar con Bold (MyApp.tsx detecta
   // ?order= y abre esta sección), arranca directo en "Mi cuenta" para que
   // el cliente vea el estado de su pedido, no la carta desde cero.
@@ -159,7 +170,7 @@ export default function MyAppOrders({ attendee }: { attendee: Attendee | null })
     try {
       const res = await callBarDJ<{ payment_url?: string | null }>(code, 'CREAR_PEDIDO', {
         items: cart.map(l => ({ name: l.name, qty: l.qty, price: l.price })),
-        customer_name: customerName,
+        customer_name: fullCustomerName,
         // Después de pagar en Bold, que vuelva a myapp (no al dominio de
         // bardj-ai) — así el cliente no queda "perdido" fuera de la app.
         redirect_url: 'https://www.viveaira.live/myapp',
@@ -205,7 +216,7 @@ export default function MyAppOrders({ attendee }: { attendee: Attendee | null })
             <h3>¡Pedido enviado a Joinn!</h3>
             <p>Te lo llevan en un momento — no necesitas estar en ninguna mesa fija.</p>
             <button className="pedidos-again-btn" onClick={() => setStatus('idle')}>Hacer otro pedido</button>
-            <button className="pedidos-again-btn" onClick={() => { setStatus('idle'); setView('cuenta'); }}>Ver mi cuenta</button>
+            <button className="pedidos-again-btn" onClick={() => { setStatus('idle'); setView('cuenta'); }}>Ver mis pedidos</button>
           </>
         )}
       </div>
@@ -218,6 +229,8 @@ export default function MyAppOrders({ attendee }: { attendee: Attendee | null })
         cart={cart}
         total={total}
         sending={status === 'sending'}
+        cabin={cabin}
+        onChangeCabin={setCabinPersist}
         onBack={() => setView('carta')}
         onChangeQty={changeQty}
         onConfirm={submitOrder}
@@ -232,7 +245,7 @@ export default function MyAppOrders({ attendee }: { attendee: Attendee | null })
           🍽️ Carta
         </button>
         <button className={`pedidos-tab ${view === 'cuenta' ? 'is-active' : ''}`} onClick={() => setView('cuenta')}>
-          <Receipt size={13} /> Mi cuenta
+          <Receipt size={13} /> Mis pedidos
         </button>
       </div>
 
@@ -421,8 +434,9 @@ function AiraDishCard({ items, cart, onAdd, onChangeQty }: {
 }
 
 // ── Confirmar antes de enviar ────────────────────────────────────────────────
-function ConfirmScreen({ cart, total, sending, onBack, onChangeQty, onConfirm }: {
+function ConfirmScreen({ cart, total, sending, cabin, onChangeCabin, onBack, onChangeQty, onConfirm }: {
   cart: CartLine[]; total: number; sending: boolean;
+  cabin: string; onChangeCabin: (v: string) => void;
   onBack: () => void; onChangeQty: (name: string, delta: number) => void; onConfirm: () => void;
 }) {
   return (
@@ -433,6 +447,17 @@ function ConfirmScreen({ cart, total, sending, onBack, onChangeQty, onConfirm }:
 
       <h3 className="pedidos-confirm-title">Confirma tu pedido</h3>
       <p className="pedidos-confirm-sub">Se enviará directo a la barra de Joinn</p>
+
+      <label className="pedidos-cabin-label">
+        Cabaña
+        <input
+          className="pedidos-cabin-input"
+          type="text"
+          placeholder="Ej: Cabaña 12"
+          value={cabin}
+          onChange={e => onChangeCabin(e.target.value)}
+        />
+      </label>
 
       <div className="pedidos-confirm-list">
         {cart.map(l => (
@@ -456,8 +481,8 @@ function ConfirmScreen({ cart, total, sending, onBack, onChangeQty, onConfirm }:
         <span>{fmt(total)}</span>
       </div>
 
-      <button className="pedidos-cart-btn pedidos-confirm-submit" disabled={sending || !cart.length} onClick={onConfirm}>
-        {sending ? 'Enviando…' : `Confirmar y enviar a Joinn`}
+      <button className="pedidos-cart-btn pedidos-confirm-submit" disabled={sending || !cart.length || !cabin.trim()} onClick={onConfirm}>
+        {sending ? 'Enviando…' : !cabin.trim() ? 'Escribe tu cabaña para continuar' : `Confirmar y enviar a Joinn`}
       </button>
     </div>
   );

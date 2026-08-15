@@ -46,27 +46,25 @@ function item(
 export const SCHEDULE: ScheduleItem[] = [
   // ══ DÍA 1 · Sábado 15 ═══════════════════════════════════════════════════
   // Japi Stage
-  item('s1-japi-1', 15, 'Sábado', '15 Agosto', '12:00', '13:30', 'Wayne', 'Japi Stage'),
-  item('s1-japi-2', 15, 'Sábado', '15 Agosto', '13:30', '15:00', 'NBL', 'Japi Stage'),
-  item('s1-japi-3', 15, 'Sábado', '15 Agosto', '15:00', '16:30', 'Malia', 'Japi Stage'),
+  item('s1-japi-1', 15, 'Sábado', '15 Agosto', '14:30', '16:00', 'Wayne', 'Japi Stage'),
+  item('s1-japi-2', 15, 'Sábado', '15 Agosto', '16:00', '17:30', 'Malia', 'Japi Stage'),
 
   // Joinn Stage
-  item('s1-joinn-1', 15, 'Sábado', '15 Agosto', '13:30', '15:00', 'Blvck Rite', 'Joinn Stage'),
-  item('s1-joinn-2', 15, 'Sábado', '15 Agosto', '15:00', '16:30', 'Paz', 'Joinn Stage'),
-  item('s1-joinn-3', 15, 'Sábado', '15 Agosto', '16:30', '18:00', 'Alex Jockey', 'Joinn Stage'),
-  item('s1-joinn-4', 15, 'Sábado', '15 Agosto', '18:00', '19:30', 'Shade', 'Joinn Stage'),
-  item('s1-joinn-5', 15, 'Sábado', '15 Agosto', '19:30', '21:00', 'G1V3R', 'Joinn Stage'),
-  item('s1-joinn-6', 15, 'Sábado', '15 Agosto', '21:00', '22:30', 'Juano Marciano', 'Joinn Stage'),
-  item('s1-joinn-7', 15, 'Sábado', '15 Agosto', '22:30', '00:00', 'Mulatto', 'Joinn Stage'),
-  item('s1-joinn-8', 16, 'Sábado', '15-16 Agosto (madrugada)', '00:00', '01:30', '19 Clouds', 'Joinn Stage'),
-  item('s1-joinn-9', 16, 'Sábado', '15-16 Agosto (madrugada)', '01:30', '03:00', 'Hylen', 'Joinn Stage'),
+  item('s1-joinn-1', 15, 'Sábado', '15 Agosto', '15:00', '16:30', 'Blvck Rite', 'Joinn Stage'),
+  item('s1-joinn-2', 15, 'Sábado', '15 Agosto', '16:30', '18:00', 'Paz', 'Joinn Stage'),
+  item('s1-joinn-3', 15, 'Sábado', '15 Agosto', '18:00', '19:30', 'Alex Jockey', 'Joinn Stage'),
+  item('s1-joinn-4', 15, 'Sábado', '15 Agosto', '19:30', '21:00', 'Shade', 'Joinn Stage'),
+  item('s1-joinn-5', 15, 'Sábado', '15 Agosto', '21:00', '22:30', 'Juano Marciano', 'Joinn Stage'),
+  item('s1-joinn-6', 15, 'Sábado', '15 Agosto', '22:30', '00:00', 'Mulattø', 'Joinn Stage'),
+  item('s1-joinn-7', 16, 'Sábado', '15-16 Agosto (madrugada)', '00:00', '01:30', '19 Clouds', 'Joinn Stage'),
+  item('s1-joinn-8', 16, 'Sábado', '15-16 Agosto (madrugada)', '01:30', '03:00', 'Hylen', 'Joinn Stage'),
 
   // Playa Aïra
   item('s1-playa-1', 15, 'Sábado', '15 Agosto', '16:30', '18:00', 'Deepmatt', 'Playa Aïra'),
   item('s1-playa-2', 15, 'Sábado', '15 Agosto', '18:00', '19:30', 'Frann', 'Playa Aïra'),
   item('s1-playa-3', 15, 'Sábado', '15 Agosto', '19:30', '21:00', 'Calvin Parra', 'Playa Aïra'),
-  item('s1-playa-4', 15, 'Sábado', '15 Agosto', '21:00', '22:30', 'HarrySoul', 'Playa Aïra'),
-  item('s1-playa-5', 15, 'Sábado', '15 Agosto', '22:30', '00:00', 'Alex Saint', 'Playa Aïra'),
+  item('s1-playa-4', 15, 'Sábado', '15 Agosto', '21:00', '22:30', 'G1ver', 'Playa Aïra'),
+  item('s1-playa-5', 15, 'Sábado', '15 Agosto', '22:30', '00:00', 'HarrySoul b2b Alex Saint', 'Playa Aïra'),
   item('s1-playa-6', 16, 'Sábado', '15-16 Agosto (madrugada)', '00:00', '01:30', 'Valerio', 'Playa Aïra'),
   item('s1-playa-7', 16, 'Sábado', '15-16 Agosto (madrugada)', '01:30', '03:00', 'Real Salsa', 'Playa Aïra'),
 
@@ -116,23 +114,39 @@ export const SCHEDULE: ScheduleItem[] = [
 
 // ── Itinerario general del evento (recorridos, yoga, torneos, etc.) —
 // paralelo al line-up de DJs, se muestran lado a lado en ItinerarioPanel.
+// Algunas actividades cruzan la medianoche (arrancan un día y terminan al
+// siguiente) — para esas no sirve item() (asume start/end el mismo día),
+// así que se arman directo con at(dayOfMonth, hhmm) para cada extremo.
 export const ACTIVITIES: ScheduleItem[] = [
   // ── Sábado 15 ──────────────────────────────────────────────────────────
-  item('s1', 15, 'Sábado', '15 Agosto', '09:00', '10:00', 'Recorrido turístico por el embalse y sesión de meditación', 'Barco Veroni'),
-  item('s2', 15, 'Sábado', '15 Agosto', '10:00', '11:00', 'Recorrido turístico Guatapé', 'Guatapé'),
-  item('s3', 15, 'Sábado', '15 Agosto', '11:30', '12:00', 'Recorrido turístico por el embalse', 'Barco Veroni'),
-  item('s4', 15, 'Sábado', '15 Agosto', '12:00', '13:30', 'Apertura del evento', 'Pandora Stage'),
-  item('s6', 15, 'Sábado', '15 Agosto', '16:00', '17:00', 'Sesión de estiramiento y relajación', 'Playa Aira'),
+  item('s1', 15, 'Sábado', '15 Agosto', '11:00', '12:00', 'Recorrido turístico por el embalse y sesión de meditación', 'Barco Veroni'),
+  item('s2', 15, 'Sábado', '15 Agosto', '12:00', '13:00', 'Recorrido turístico Guatapé', 'Guatapé'),
+  item('s3', 15, 'Sábado', '15 Agosto', '13:30', '14:00', 'Recorrido turístico por el embalse', 'Barco Veroni'),
+  item('s4', 15, 'Sábado', '15 Agosto', '14:00', '15:30', 'Apertura del evento', 'Pandora Stage'),
+  item('s5', 15, 'Sábado', '15 Agosto', '15:30', '20:00', 'Presentación de artistas', 'Pandora Stage y Joinn Stage'),
+  item('s6', 15, 'Sábado', '15 Agosto', '18:00', '19:00', 'Sesión de estiramiento y relajación', 'Playa Aira'),
+  {
+    id: 's7', day: 'Sábado' as const, dayDate: '15-16 Agosto (madrugada)',
+    title: 'Presentación de artistas', place: 'Aira Stage y Joinn Stage',
+    start: at(15, '20:00'), end: at(16, '05:00'),
+  },
 
   // ── Domingo 16 ─────────────────────────────────────────────────────────
   item('d1', 16, 'Domingo', '16 Agosto', '08:00', '10:00', 'Actividades acuáticas', 'Pandora Stage'),
   item('d2', 16, 'Domingo', '16 Agosto', '09:00', '10:00', 'Sesión de yoga / entrenamiento funcional', 'Playa Aira'),
   item('d3', 16, 'Domingo', '16 Agosto', '10:00', '18:00', 'Torneo de voleibol', 'Playa Aira'),
-  item('d5', 16, 'Domingo', '16 Agosto', '20:00', '00:00', 'Noche blanca y antifaz', 'Main Stage Majestic'),
+  item('d4', 16, 'Domingo', '16 Agosto', '10:00', '18:00', 'Presentación de artistas', 'Pandora Stage y Joinn Stage'),
+  item('d6', 16, 'Domingo', '16 Agosto', '01:00', '03:00', 'Presentación de artistas', 'Aira Stage'),
+  {
+    id: 'd5', day: 'Domingo' as const, dayDate: '16-17 Agosto',
+    title: 'Noche blanca y antifaz / presentación de artistas', place: 'Main Stage Majestic',
+    start: at(16, '20:00'), end: at(17, '12:00'),
+  },
 
   // ── Lunes 17 ───────────────────────────────────────────────────────────
   item('l1', 17, 'Lunes', '17 Agosto', '09:00', '10:00', 'Entrenamiento funcional', 'Playa Aira'),
   item('l2', 17, 'Lunes', '17 Agosto', '10:00', '15:00', 'Torneo de voleibol', 'Playa Aira'),
+  item('l3', 17, 'Lunes', '17 Agosto', '10:00', '17:00', 'Presentación de artistas', 'Pandora Stage y Joinn Stage'),
   item('l4', 17, 'Lunes', '17 Agosto', '17:00', '18:00', 'Sesión de yoga', 'Playa Aira'),
 ].sort((a, b) => a.start.getTime() - b.start.getTime());
 
