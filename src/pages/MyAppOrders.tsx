@@ -128,6 +128,9 @@ export default function MyAppOrders({ attendee }: { attendee: Attendee | null })
       const res = await callBarDJ<{ payment_url?: string | null }>(code, 'CREAR_PEDIDO', {
         items: cart.map(l => ({ name: l.name, qty: l.qty, price: l.price })),
         customer_name: customerName,
+        // Después de pagar en Bold, que vuelva a myapp (no al dominio de
+        // bardj-ai) — así el cliente no queda "perdido" fuera de la app.
+        redirect_url: 'https://www.viveaira.live/myapp',
       });
       if (res.ok) {
         setPaymentUrl(res.data?.payment_url || null);
