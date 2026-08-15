@@ -94,6 +94,22 @@ function findRouteOnPath(
   const slice = fromIdx < toIdx
     ? path.points.slice(fromIdx, toIdx + 1)
     : path.points.slice(toIdx, fromIdx + 1).reverse();
+
+  // Sanity check — el sendero es UN solo trazo continuo, así que el
+  // tramo entre dos índices puede terminar dando un rodeo enorme por
+  // zonas de cabañas que no hacen falta (ej. para llegar a un escenario
+  // que el trazo "visita" tarde en el recorrido). Si el tramo resultante
+  // es mucho más largo que la línea recta real entre origen y destino,
+  // es una señal de que ese tramo no sirve como ruta — se descarta y el
+  // caller cae de vuelta a la flecha directa en vez de mostrar un rodeo
+  // que confunde más de lo que ayuda.
+  let routeLength = 0;
+  for (let i = 1; i < slice.length; i++) {
+    routeLength += Math.hypot(slice[i].x - slice[i - 1].x, slice[i].z - slice[i - 1].z);
+  }
+  const straightLength = Math.hypot(toXZ.x - fromXZ.x, toXZ.z - fromXZ.z);
+  if (straightLength > 0 && routeLength > straightLength * 2.2) return null;
+
   return slice;
 }
 
