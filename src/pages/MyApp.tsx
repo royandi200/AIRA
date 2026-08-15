@@ -27,9 +27,10 @@ import PullIndicator from './PullIndicator';
 const N = SECTIONS.length;
 const STEP = 360 / N;
 
-/** Sintetiza un "tac" corto vía WebAudio — sin depender de archivos de audio */
+/** Sintetiza un "scratch" corto de DJ vía WebAudio — sin depender de archivos de audio */
 function useTickSound() {
   const ctxRef = useRef<AudioContext | null>(null);
+  const noiseBufferRef = useRef<AudioBuffer | null>(null);
 
   const ensureCtx = useCallback((): AudioContext | null => {
     try {
@@ -42,41 +43,74 @@ function useTickSound() {
     } catch { return null; }
   }, []);
 
+  // Ruido base para la "textura" del scratch (aguja + surco) — se genera
+  // una sola vez y se reutiliza en cada tick, no hay que recalcularlo.
+  const ensureNoise = useCallback((ctx: AudioContext): AudioBuffer => {
+    if (!noiseBufferRef.current) {
+      const len = Math.floor(ctx.sampleRate * 0.09);
+      const buffer = ctx.createBuffer(1, len, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+      noiseBufferRef.current = buffer;
+    }
+    return noiseBufferRef.current;
+  }, []);
+
   // Se llama en el primer toque de la pantalla, ANTES de que se necesite el
   // primer tick — así el costo de crear/despertar el AudioContext no se
   // siente como un salto justo cuando cruza el primer diente.
-  const warm = useCallback(() => { ensureCtx(); }, [ensureCtx]);
+  const warm = useCallback(() => { const ctx = ensureCtx(); if (ctx) ensureNoise(ctx); }, [ensureCtx, ensureNoise]);
 
-  const tick = useCallback((strength: number = 1) => {
+  /**
+   * Cada diente cruzado suena como un scratch de vinilo real: ruido
+   * filtrado en banda (la "textura" del surco bajo la aguja) + un tono
+   * sawtooth barrido en pitch (el "wiii" característico) — ambos van de
+   * grave a agudo o agudo a grave según hacia dónde se está girando el
+   * disco, igual que un DJ moviendo el brazo adelante/atrás.
+   */
+  const tick = useCallback((strength: number = 1, direction: 1 | -1 = 1) => {
     try {
       const ctx = ensureCtx();
       if (!ctx) return;
+      const noiseBuffer = ensureNoise(ctx);
 
-      // "Clic" suave tipo mecanismo físico (diente de caja fuerte) en vez
-      // de un beep — onda seno (sin armónicos duros) + caída muy rápida
-      // de tono y volumen, con un pasabajos que le quita cualquier brillo
-      // metálico.
-      const now  = ctx.currentTime;
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const lp   = ctx.createBiquadFilter();
+      const now = ctx.currentTime;
+      const dur = 0.05 + 0.02 * Math.min(strength, 1.4);
 
-      lp.type = 'lowpass';
-      lp.frequency.value = 1800;
-      lp.Q.value = 0.6;
+      // Textura de ruido/surco, pasada por un filtro de banda barrido
+      const noise = ctx.createBufferSource();
+      noise.buffer = noiseBuffer;
+      const band = ctx.createBiquadFilter();
+      band.type = 'bandpass';
+      band.Q.value = 5;
+      const bandFrom = direction > 0 ? 350 : 2800;
+      const bandTo   = direction > 0 ? 2800 : 350;
+      band.frequency.setValueAtTime(bandFrom, now);
+      band.frequency.exponentialRampToValueAtTime(bandTo, now + dur);
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.1 * strength, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+      noise.connect(band).connect(noiseGain).connect(ctx.destination);
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(620 + strength * 90, now);
-      osc.frequency.exponentialRampToValueAtTime(180, now + 0.018);
+      // Tono barrido — el cuerpo melódico del scratch
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      const pitchFrom = direction > 0 ? 200 : 780;
+      const pitchTo   = direction > 0 ? 780 : 200;
+      osc.frequency.setValueAtTime(pitchFrom, now);
+      osc.frequency.exponentialRampToValueAtTime(pitchTo, now + dur);
+      const oscLp = ctx.createBiquadFilter();
+      oscLp.type = 'lowpass';
+      oscLp.frequency.value = 2400;
+      const oscGain = ctx.createGain();
+      oscGain.gain.setValueAtTime(0.05 * strength, now);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+      osc.connect(oscLp).connect(oscGain).connect(ctx.destination);
 
-      gain.gain.setValueAtTime(0.075 * strength, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
-
-      osc.connect(lp).connect(gain).connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.035);
+      noise.start(now); noise.stop(now + dur);
+      osc.start(now);   osc.stop(now + dur);
     } catch { /* audio no soportado — degrada silenciosamente */ }
-  }, [ensureCtx]);
+  }, [ensureCtx, ensureNoise]);
 
   return { tick, warm };
 }
@@ -326,10 +360,11 @@ export default function MyApp() {
 
       const currentStep = Math.round(-next / STEP);
       if (currentStep !== lastStepRef.current) {
+        const direction: 1 | -1 = currentStep > lastStepRef.current ? 1 : -1;
         lastStepRef.current = currentStep;
         const idx = (((currentStep % N) + N) % N);
         setActiveIdx(idx);
-        tick(1);
+        tick(1, direction);
         haptic(10);
         pulseSettle();
       }
