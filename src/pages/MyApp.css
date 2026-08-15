@@ -1463,15 +1463,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
   margin-top: 2px;
   padding: 9px;
   border-radius: 10px;
+  border: none;
   background: #e1fe52;
   color: #06110c;
   font-weight: 800;
   font-size: 12.5px;
   text-decoration: none;
+  cursor: pointer;
 }
+.pedidos-order-card-pay:disabled { opacity: 0.6; cursor: default; }
 
 /* Colores por estado — el badge (fondo) toma el color del estado */
 .pedidos-order-card.is-pending-pay  .pedidos-order-card-status { background: rgba(225,254,82,0.15); color: #e1fe52; }

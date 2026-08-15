@@ -470,6 +470,7 @@ function CuentaScreen({ code }: { code: string }) {
   const [mensaje, setMensaje] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
+  const [retryingId, setRetryingId] = useState<string | null>(null);
 
   const fetchCuenta = useCallback(async () => {
     setLoading(true); setError('');
@@ -488,6 +489,31 @@ function CuentaScreen({ code }: { code: string }) {
   }, [code]);
 
   useEffect(() => { fetchCuenta(); }, [fetchCuenta]);
+
+  // El link guardado en o.bold_link puede estar vencido (Bold lo expira a
+  // los 30 min) — en vez de reusarlo a ciegas, siempre se pide uno nuevo
+  // al tocar "Pagar ahora". REGENERAR_PAGO valida que el pedido siga
+  // "esperando pago" antes de generarlo.
+  const handleRetryPayment = async (orderId: string) => {
+    setRetryingId(orderId);
+    setError('');
+    try {
+      const res = await callBarDJ<{ payment_url?: string; status?: string }>(code, 'REGENERAR_PAGO', {
+        order_id: orderId,
+        redirect_url: 'https://www.viveaira.live/myapp',
+      });
+      if (res.ok && res.data?.payment_url) {
+        window.open(res.data.payment_url, '_blank', 'noopener,noreferrer');
+        fetchCuenta(); // refresca para reflejar el link nuevo
+      } else {
+        setError(res.mensaje || res.error || 'No se pudo generar el link de pago');
+        fetchCuenta(); // por si el estado cambió (ej. ya se pagó o se canceló)
+      }
+    } catch {
+      setError('No se pudo conectar con Joinn.');
+    }
+    setRetryingId(null);
+  };
 
   // Total a pagar = solo lo que no está ni pagado ni cancelado (mismo
   // criterio que PEDIR_CUENTA del lado del backend).
@@ -542,10 +568,14 @@ function CuentaScreen({ code }: { code: string }) {
                   <span>Total</span>
                   <span>{fmt(o.total)}</span>
                 </div>
-                {o.status === 'awaiting_payment' && o.bold_link && (
-                  <a href={o.bold_link} target="_blank" rel="noopener noreferrer" className="pedidos-order-card-pay">
-                    💳 Pagar ahora
-                  </a>
+                {o.status === 'awaiting_payment' && (
+                  <button
+                    className="pedidos-order-card-pay"
+                    onClick={() => handleRetryPayment(o.id)}
+                    disabled={retryingId === o.id}
+                  >
+                    {retryingId === o.id ? 'Generando link…' : '💳 Pagar ahora'}
+                  </button>
                 )}
               </div>
             );
