@@ -430,6 +430,30 @@ export default function MyApp() {
     document.title = 'AIRA · Menú';
   }, []);
 
+  // Al volver de pagar un pedido de Joinn (Bold redirige a
+  // /myapp?order=<id>), abre directo "Bar" → "Mi cuenta" en vez de dejar
+  // al usuario en el inicio sin saber qué pasó con su pedido.
+  useEffect(() => {
+    if (sessionStatus !== 'authed') return;
+    if (!new URLSearchParams(window.location.search).has('order')) return;
+    const pedidosIdx = SECTIONS.findIndex(s => s.id === 'pedidos');
+    if (pedidosIdx < 0) return;
+    // Sin un círculo tocado de verdad, se usa el centro de pantalla como
+    // origen de la animación — se ve bien igual, solo cambia desde dónde
+    // "explota" la hoja al abrirse.
+    const origin: SheetOrigin = { x: window.innerWidth / 2, y: window.innerHeight / 2, r: 90 };
+    openRef.current = true;
+    setActiveIdx(pedidosIdx);
+    setOpenSection({ section: SECTIONS[pedidosIdx], origin });
+    // Limpia el ?order= de la URL para que un refresh no vuelva a abrirlo
+    // solo — con delay a propósito: MyAppOrders.tsx (el hijo que se monta
+    // con setOpenSection de arriba) todavía necesita leer ese mismo query
+    // param en su primer render para saber que debe arrancar en "Mi
+    // cuenta" en vez de la carta. Si se limpia ya, ese hijo nunca la ve.
+    window.setTimeout(() => window.history.replaceState({}, '', window.location.pathname), 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionStatus]);
+
   // Puerta de sesión — sin OTP verificado no se ve el menú real
   if (sessionStatus === 'checking') {
     return (

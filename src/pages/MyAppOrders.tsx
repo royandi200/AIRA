@@ -35,7 +35,29 @@ interface MenuItem {
 }
 
 interface CartLine { name: string; price: number; qty: number; }
-interface CuentaLine { name: string; qty: number; price: number; subtotal: number; }
+
+// Un pedido individual — así lo devuelve CONSULTAR_CUENTA en data.orders,
+// ya con status de cocina + status de pago (bold_status).
+interface OrderRow {
+  id: string;
+  items: CartLine[] | string;
+  total: number;
+  notes?: string | null;
+  status: 'awaiting_payment' | 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+  created_at: string;
+  bold_status?: 'pending' | 'paid' | 'cancelled' | null;
+  bold_link?: string | null;
+}
+
+/** Une status de cocina + bold_status en una sola etiqueta clara para el cliente */
+function orderStatusInfo(o: OrderRow): { label: string; emoji: string; className: string } {
+  if (o.status === 'cancelled')       return { label: 'Cancelado',      emoji: '❌', className: 'is-cancelled' };
+  if (o.status === 'awaiting_payment') return { label: 'Esperando pago', emoji: '💳', className: 'is-pending-pay' };
+  if (o.status === 'preparing')       return { label: 'Preparando',     emoji: '👨‍🍳', className: 'is-preparing' };
+  if (o.status === 'ready')           return { label: 'Listo',          emoji: '✅', className: 'is-ready' };
+  if (o.status === 'delivered')       return { label: 'Entregado',      emoji: '🍽️', className: 'is-delivered' };
+  return { label: 'Pendiente', emoji: '🕐', className: 'is-pending' }; // status === 'pending'
+}
 
 type View = 'carta' | 'confirm' | 'cuenta';
 
@@ -70,7 +92,12 @@ export default function MyAppOrders({ attendee }: { attendee: Attendee | null })
   const code = attendee?.orderRef || getFallbackCode();
   const customerName = attendee?.name || code;
 
-  const [view, setView]     = useState<View>('carta');
+  // Si se llegó acá recién volviendo de pagar con Bold (MyApp.tsx detecta
+  // ?order= y abre esta sección), arranca directo en "Mi cuenta" para que
+  // el cliente vea el estado de su pedido, no la carta desde cero.
+  const [view, setView]     = useState<View>(() =>
+    new URLSearchParams(window.location.search).has('order') ? 'cuenta' : 'carta'
+  );
   const [items, setItems]   = useState<MenuItem[] | null>(null);
   const [error, setError]   = useState<string | null>(null);
   const [cart, setCart]     = useState<CartLine[]>([]);
@@ -431,9 +458,10 @@ function ConfirmScreen({ cart, total, sending, onBack, onChangeQty, onConfirm }:
   );
 }
 
-// ── Cuenta — todo lo pedido hasta ahora ──────────────────────────────────────
+// ── Mi cuenta — historial de pedidos con su estado (pagado/pendiente/
+// cancelado/preparando/listo/entregado), no solo la suma de items. ──────────
 function CuentaScreen({ code }: { code: string }) {
-  const [lines, setLines]     = useState<CuentaLine[] | null>(null);
+  const [orders, setOrders]   = useState<OrderRow[] | null>(null);
   const [mensaje, setMensaje] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
@@ -441,12 +469,12 @@ function CuentaScreen({ code }: { code: string }) {
   const fetchCuenta = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const res = await callBarDJ<{ items?: CuentaLine[] }>(code, 'CONSULTAR_CUENTA');
+      const res = await callBarDJ<{ orders?: OrderRow[] }>(code, 'CONSULTAR_CUENTA');
       if (res.ok) {
-        setLines(res.data?.items ?? []);
+        setOrders(res.data?.orders ?? []);
         setMensaje(res.mensaje || '');
       } else {
-        setError(res.error || 'No se pudo cargar la cuenta');
+        setError(res.error || 'No se pudo cargar tus pedidos');
       }
     } catch {
       setError('No se pudo conectar con Joinn.');
@@ -456,46 +484,74 @@ function CuentaScreen({ code }: { code: string }) {
 
   useEffect(() => { fetchCuenta(); }, [fetchCuenta]);
 
-  const total = (lines ?? []).reduce((s, l) => s + l.subtotal, 0);
+  // Total a pagar = solo lo que no está ni pagado ni cancelado (mismo
+  // criterio que PEDIR_CUENTA del lado del backend).
+  const totalPendiente = (orders ?? [])
+    .filter(o => o.status !== 'cancelled' && o.status !== 'awaiting_payment' && o.bold_status !== 'paid')
+    .reduce((s, o) => s + Number(o.total || 0), 0);
 
   return (
     <div className="pedidos-cuenta">
       <div className="pedidos-cuenta-header">
-        <span className="pedidos-cuenta-title">Mi cuenta en Joinn</span>
+        <span className="pedidos-cuenta-title">Mis pedidos en Joinn</span>
         <button className="pedidos-cuenta-refresh" onClick={fetchCuenta} disabled={loading} aria-label="Actualizar">
           <RefreshCw size={14} className={loading ? 'is-spinning' : ''} />
         </button>
       </div>
 
-      {loading && lines === null && (
-        <div className="pedidos-loading"><div className="spinner" /><span>Cargando tu cuenta…</span></div>
+      {loading && orders === null && (
+        <div className="pedidos-loading"><div className="spinner" /><span>Cargando tus pedidos…</span></div>
       )}
 
       {error && <div className="pedidos-error">⚠️ {error}</div>}
 
-      {!loading && lines !== null && lines.length === 0 && !error && (
+      {!loading && orders !== null && orders.length === 0 && !error && (
         <div className="pedidos-empty">
           <span>🧾</span>
           <p>{mensaje || 'Todavía no tienes pedidos en Joinn.'}</p>
         </div>
       )}
 
-      {lines !== null && lines.length > 0 && (
-        <>
-          <div className="pedidos-cuenta-list">
-            {lines.map((l, i) => (
-              <div key={i} className="pedidos-cuenta-row">
-                <span>{l.name} × {l.qty}</span>
-                <span>{fmt(l.subtotal)}</span>
+      {orders !== null && orders.length > 0 && (
+        <div className="pedidos-orders-list">
+          {orders.map(o => {
+            const its = typeof o.items === 'string' ? JSON.parse(o.items) as CartLine[] : o.items;
+            const info = orderStatusInfo(o);
+            const hora = new Date(o.created_at).toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit' });
+            return (
+              <div key={o.id} className={`pedidos-order-card ${info.className}`}>
+                <div className="pedidos-order-card-head">
+                  <span className="pedidos-order-card-status">{info.emoji} {info.label}</span>
+                  <span className="pedidos-order-card-hora">{hora}</span>
+                </div>
+                <div className="pedidos-order-card-items">
+                  {its.map((l, i) => (
+                    <div key={i} className="pedidos-cuenta-row">
+                      <span>{l.qty}x {l.name}</span>
+                      <span>{fmt(l.qty * l.price)}</span>
+                    </div>
+                  ))}
+                </div>
+                {o.notes && <p className="pedidos-order-card-notes">Nota: {o.notes}</p>}
+                <div className="pedidos-cuenta-row pedidos-order-card-total">
+                  <span>Total</span>
+                  <span>{fmt(o.total)}</span>
+                </div>
+                {o.status === 'awaiting_payment' && o.bold_link && (
+                  <a href={o.bold_link} target="_blank" rel="noopener noreferrer" className="pedidos-order-card-pay">
+                    💳 Pagar ahora
+                  </a>
+                )}
               </div>
-            ))}
-          </div>
-          <div className="pedidos-cuenta-divider" />
-          <div className="pedidos-cuenta-row pedidos-cuenta-total">
-            <span>Total</span>
-            <span>{fmt(total)}</span>
-          </div>
-        </>
+            );
+          })}
+          {totalPendiente > 0 && (
+            <div className="pedidos-cuenta-row pedidos-cuenta-total">
+              <span>Total pendiente por pagar</span>
+              <span>{fmt(totalPendiente)}</span>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
