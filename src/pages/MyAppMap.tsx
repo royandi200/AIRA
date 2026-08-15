@@ -30,6 +30,73 @@ const LANDMARKS: MapPoint[] = [
   { id: 'joinn-stage', label: 'Joinn Stage', emoji: '🎈', x: 0.268,  z: 0.743,  color: '#ec4899', kind: 'balloon' },
 ];
 
+// ── Caminos reales (vías peatonales) ────────────────────────────────────
+// Trazados a mano con /map-editor.html (modo "Caminos"), punto por punto
+// sobre venue-map.jpg. Es un solo sendero maestro que recorre el venue —
+// la guía busca el punto más cercano a tu ubicación y al destino dentro
+// de este mismo camino, y traza el tramo entre esos dos puntos (en vez
+// de adivinar cómo conectar varios caminos sueltos entre sí). Se había
+// perdido en un deploy paralelo — restaurado tal cual estaba.
+interface PathSegment { id: string; name: string; points: { x: number; z: number }[]; }
+
+const PATHS: PathSegment[] = [
+  { id: 'completo-bxth', name: 'Completo', points: [
+    { x: 0.387, z: 0.825 }, { x: 0.346, z: 0.765 }, { x: 0.282, z: 0.784 }, { x: 0.266, z: 0.746 },
+    { x: 0.257, z: 0.711 }, { x: 0.234, z: 0.692 }, { x: 0.215, z: 0.679 }, { x: 0.184, z: 0.667 },
+    { x: 0.195, z: 0.648 }, { x: 0.236, z: 0.626 }, { x: 0.263, z: 0.6 },   { x: 0.302, z: 0.581 },
+    { x: 0.325, z: 0.556 }, { x: 0.361, z: 0.512 }, { x: 0.393, z: 0.471 }, { x: 0.407, z: 0.315 },
+    { x: 0.401, z: 0.41 },  { x: 0.401, z: 0.239 }, { x: 0.389, z: 0.16 },  { x: 0.375, z: 0.113 },
+    { x: 0.377, z: 0.059 }, { x: 0.369, z: -0.036 },{ x: 0.362, z: -0.074 },{ x: 0.316, z: -0.175 },
+    { x: 0.272, z: -0.261 },{ x: 0.289, z: -0.229 },{ x: 0.247, z: -0.324 },{ x: 0.206, z: -0.378 },
+    { x: 0.222, z: -0.362 },{ x: 0.168, z: 0.638 }, { x: 0.15, z: 0.619 },  { x: 0.175, z: 0.6 },
+    { x: 0.216, z: 0.553 }, { x: 0.122, z: 0.616 }, { x: 0.104, z: 0.597 }, { x: 0.093, z: 0.572 },
+    { x: 0.117, z: 0.524 }, { x: 0.138, z: 0.502 }, { x: 0.158, z: 0.477 }, { x: 0.179, z: 0.42 },
+    { x: 0.177, z: 0.379 }, { x: 0.168, z: 0.366 }, { x: 0.181, z: 0.284 }, { x: 0.211, z: 0.119 },
+    { x: 0.19, z: 0.217 },  { x: 0.225, z: 0.062 }, { x: 0.211, z: -0.09 },{ x: 0.184, z: -0.163 },
+    { x: 0.161, z: -0.229 },{ x: 0.14, z: -0.292 }, { x: 0.236, z: -0.017 },{ x: 0.168, z: 0.252 },
+    { x: 0.136, z: 0.227 }, { x: 0.108, z: 0.192 }, { x: 0.086, z: 0.167 }, { x: 0.065, z: 0.141 },
+    { x: 0.045, z: 0.103 }, { x: 0.029, z: 0.084 }, { x: 0.003, z: 0.078 },{ x: -0.02, z: 0.072 },
+    { x: -0.033, z: 0.043 },{ x: -0.053, z: 0.04 }, { x: 0.067, z: 0.179 },{ x: 0.058, z: 0.23 },
+    { x: 0.035, z: 0.265 }, { x: 0.029, z: 0.29 },  { x: 0.131, z: 0.379 },{ x: 0.067, z: 0.398 },
+    { x: 0.036, z: 0.41 },  { x: -0.01, z: 0.426 }, { x: -0.065, z: 0.401 },{ x: -0.122, z: 0.401 },
+    { x: -0.159, z: 0.395 },{ x: -0.199, z: 0.385 },{ x: -0.245, z: 0.369 },{ x: -0.291, z: 0.353 },
+    { x: -0.337, z: 0.331 },{ x: -0.385, z: 0.296 },{ x: -0.426, z: 0.249 },{ x: -0.482, z: 0.224 },
+    { x: -0.521, z: 0.179 },{ x: -0.564, z: 0.135 },{ x: -0.59, z: 0.075 },{ x: -0.624, z: 0.072 },
+    { x: -0.651, z: 0.091 },{ x: -0.67, z: 0.145 }, { x: -0.67, z: 0.205 },{ x: -0.654, z: 0.262 },
+    { x: -0.638, z: 0.284 },{ x: -0.612, z: 0.306 },{ x: -0.587, z: 0.35 },{ x: -0.556, z: 0.369 },
+  ] },
+];
+
+/**
+ * Busca, dentro del camino trazado, el punto más cercano al origen y al
+ * destino (coordenadas normalizadas -1..1, igual que MapPoint), y
+ * devuelve el tramo del camino entre esos dos índices — en el orden
+ * correcto para ir de origen a destino. Si el camino está vacío/muy
+ * corto o el origen y destino caen en el mismo punto, devuelve null (el
+ * caller cae de vuelta a la línea recta).
+ */
+function findRouteOnPath(
+  fromXZ: { x: number; z: number },
+  toXZ: { x: number; z: number }
+): { x: number; z: number }[] | null {
+  const path = PATHS[0];
+  if (!path || path.points.length < 2) return null;
+
+  let fromIdx = 0, toIdx = 0, fromBest = Infinity, toBest = Infinity;
+  path.points.forEach((p, i) => {
+    const df = Math.hypot(p.x - fromXZ.x, p.z - fromXZ.z);
+    const dt = Math.hypot(p.x - toXZ.x, p.z - toXZ.z);
+    if (df < fromBest) { fromBest = df; fromIdx = i; }
+    if (dt < toBest)   { toBest = dt; toIdx = i; }
+  });
+  if (fromIdx === toIdx) return null;
+
+  const slice = fromIdx < toIdx
+    ? path.points.slice(fromIdx, toIdx + 1)
+    : path.points.slice(toIdx, fromIdx + 1).reverse();
+  return slice;
+}
+
 // Las 19 cabañas reales del venue — ubicadas con /map-editor.html sobre
 // venue-map.jpg (coordenadas reales, digitalizadas a mano, no un grid
 // aproximado). El id `cabana-N` es lo que usa buildPoints() para
@@ -235,10 +302,10 @@ function BeaconMarker({ point, index, onSelect, selected }: MarkerProps) {
   );
 }
 
-// Antes en 0.55 quedaban flotando muy alto, casi fuera del encuadre del
-// mapa — se bajan al mismo rango que las balizas de cabañas/landmarks
-// (0.16-0.24) para que se vean "parados" sobre el terreno, no flotando.
-const STAGE_FLOAT_HEIGHT = 0.2;
+// Antes en 0.55 (y luego 0.2) seguían quedando muy altos — se bajan a
+// un nivel realmente pegado al suelo, cerca del halo que ya dibujan en
+// el terreno, para que se vean "parados" sobre el mapa, no flotando.
+const STAGE_FLOAT_HEIGHT = 0.08;
 
 /** Halo base compartido por los 3 marcadores de escenario — mismo lenguaje visual que BeaconMarker */
 function StageGroundHalo({ color, selected, radius = 0.05 }: { color: string; selected: boolean; radius?: number }) {
@@ -494,27 +561,28 @@ function getMarkerComponent(point: MapPoint) {
 }
 
 /**
- * Guía de ruta — línea recta punteada del usuario al punto seleccionado.
- * Es orientación "línea de aire" (dirección + distancia real), no una
- * ruta peatonal trazada sobre los caminos reales del venue.
+ * Guía de ruta — dibuja el tramo del camino real entre el usuario y el
+ * punto seleccionado (findRouteOnPath) cuando hay uno disponible; si no,
+ * cae de vuelta a la línea recta punteada ("línea de aire"). Se había
+ * perdido en un deploy paralelo — restaurada tal cual estaba.
  */
-function GuideLine({ from, to, color }: { from: [number, number]; to: [number, number]; color: string }) {
-  const points = useMemo<[number, number, number][]>(() => [
-    [from[0], 0.018, from[1]],
-    [to[0], 0.018, to[1]],
-  ], [from, to]);
+function GuideLine({ worldPoints, color, isRealPath }: { worldPoints: [number, number][]; color: string; isRealPath: boolean }) {
+  const points = useMemo<[number, number, number][]>(
+    () => worldPoints.map(([x, z]) => [x, 0.018, z]),
+    [worldPoints]
+  );
 
   return (
     <Line
       points={points}
       color={color}
-      lineWidth={2}
-      dashed
+      lineWidth={isRealPath ? 3 : 2}
+      dashed={!isRealPath}
       dashScale={12}
       dashSize={1}
       gapSize={0.6}
       transparent
-      opacity={0.85}
+      opacity={isRealPath ? 0.95 : 0.85}
     />
   );
 }
@@ -531,6 +599,16 @@ function Scene({ image, points, selectedIdx, onSelect, geo }: {
   const hasGeo = geo.status === 'active' && geo.lat !== null && geo.lon !== null;
   const userWorld = hasGeo ? latLonToWorld(geo.lat!, geo.lon!) : null;
 
+  // Intenta trazar el tramo real del camino entre el usuario y el punto
+  // seleccionado — si no hay camino cerca de alguno de los dos, usa la
+  // línea recta como respaldo.
+  const routeOnPath = hasGeo
+    ? findRouteOnPath({ x: (userWorld!.x * 2) / PLANE_W, z: (userWorld!.z * 2) / PLANE_D }, { x: selected.x, z: selected.z })
+    : null;
+  const routeWorldPoints: [number, number][] = routeOnPath
+    ? routeOnPath.map(p => [(p.x * PLANE_W) / 2, (p.z * PLANE_D) / 2] as [number, number])
+    : hasGeo ? [[userWorld!.x, userWorld!.z], targetWorld] : [];
+
   return (
     <>
       <ambientLight intensity={0.9} />
@@ -545,7 +623,7 @@ function Scene({ image, points, selectedIdx, onSelect, geo }: {
       {hasGeo && (
         <>
           <UserLocationMarker lat={geo.lat!} lon={geo.lon!} accuracy={geo.accuracy} />
-          <GuideLine from={[userWorld!.x, userWorld!.z]} to={targetWorld} color={selected.color} />
+          <GuideLine worldPoints={routeWorldPoints} color={selected.color} isRealPath={!!routeOnPath} />
         </>
       )}
       <OrbitControls
