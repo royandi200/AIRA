@@ -24,6 +24,11 @@ const pool = mysql.createPool({
   ssl:                { rejectUnauthorized: false },
 });
 
+// Las mismas 5 secciones de "La Experiencia" (ver config.ts galleryImages)
+// + null/vacío para "sin clasificar". Lobby se renombró a Joinn Stage acá
+// también, a pedido — mismo criterio que Japi/AIRA Stage en el resto del sitio.
+const CATEGORIES = ['AIRA Stage', 'Japi Stage', 'Cabañas', 'Majestic', 'Joinn Stage'] as const;
+
 async function ensureTable() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS photos_uploads (
@@ -31,9 +36,12 @@ async function ensureTable() {
       uploaded_by VARCHAR(100) NOT NULL,
       file_url    VARCHAR(500) NOT NULL,
       is_video    TINYINT(1)   NOT NULL DEFAULT 0,
+      category    VARCHAR(30)  NULL,
       created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  // ALTER separado por si la tabla ya existía de antes de agregar category.
+  await pool.query(`ALTER TABLE photos_uploads ADD COLUMN IF NOT EXISTS category VARCHAR(30) NULL`).catch(() => {});
 }
 
 /** Credenciales compartidas (no hay tabla de usuarios acá, a propósito —
@@ -66,7 +74,7 @@ function readBody(req: VercelRequest, limitBytes: number): Promise<Buffer> {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-photos-user, x-photos-pass');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-photos-user, x-photos-pass, x-photos-category');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
@@ -78,9 +86,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ── GET — listar lo subido + confirmar login ────────────────────────
     if (req.method === 'GET') {
       const [rows]: any = await pool.query(
-        `SELECT id, uploaded_by, file_url, is_video, created_at FROM photos_uploads ORDER BY created_at DESC LIMIT 300`
+        `SELECT id, uploaded_by, file_url, is_video, category, created_at FROM photos_uploads ORDER BY created_at DESC LIMIT 300`
       );
-      return res.status(200).json({ ok: true, photos: rows });
+      return res.status(200).json({ ok: true, photos: rows, categories: CATEGORIES });
     }
 
     // ── POST — subir foto o video ────────────────────────────────────────
@@ -88,6 +96,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!process.env.BLOB_READ_WRITE_TOKEN) {
         return res.status(500).json({ ok: false, error: 'BLOB_READ_WRITE_TOKEN no configurado en Vercel' });
       }
+
+      // Sección elegida en el picker de después de subir — 'Sin clasificar'
+      // (o cualquier valor no reconocido) se guarda como NULL.
+      const categoryRaw = String(req.headers['x-photos-category'] || req.query.category || '');
+      const category = (CATEGORIES as readonly string[]).includes(categoryRaw) ? categoryRaw : null;
 
       const contentTypeHeader = String(req.headers['content-type'] || 'image/jpeg');
       const isVideo = contentTypeHeader.startsWith('video/');
@@ -120,8 +133,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
 
       await pool.query(
-        `INSERT INTO photos_uploads (uploaded_by, file_url, is_video) VALUES (?, ?, ?)`,
-        [user, url, isVideo ? 1 : 0]
+        `INSERT INTO photos_uploads (uploaded_by, file_url, is_video, category) VALUES (?, ?, ?, ?)`,
+        [user, url, isVideo ? 1 : 0, category]
       );
 
       return res.status(200).json({ ok: true, url, bytesAntes: original.length, bytesDespues: buffer.length });

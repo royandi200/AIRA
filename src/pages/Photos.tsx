@@ -14,7 +14,13 @@ const PASS_KEY = 'aira_photos_pass';
 const VIDEO_MAX_SECONDS = 10;
 const VIDEO_MAX_BYTES = 35 * 1024 * 1024;
 
-interface Photo { id: number; uploaded_by: string; file_url: string; is_video: number; created_at: string; }
+// Mismas 5 secciones de "La Experiencia" del sitio (ver config.ts) —
+// "Lobby" pasó a llamarse "Joinn Stage" acá también.
+const CATEGORIES = ['AIRA Stage', 'Japi Stage', 'Cabañas', 'Majestic', 'Joinn Stage'];
+const SIN_CLASIFICAR = 'Sin clasificar';
+
+interface Photo { id: number; uploaded_by: string; file_url: string; is_video: number; category: string | null; created_at: string; }
+interface PendingFile { file: File; previewUrl: string; isVideo: boolean; }
 
 /** Lee la duración de un video local antes de subirlo, sin tocar el servidor. */
 function readVideoDuration(file: File): Promise<number> {
@@ -45,6 +51,9 @@ export default function Photos() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [openItem, setOpenItem] = useState<Photo | null>(null);
+  // Archivo ya validado (tamaño/duración) esperando a que se elija la
+  // sección antes de subirlo de verdad.
+  const [pending, setPending] = useState<PendingFile | null>(null);
 
   const loadPhotos = async (u: string, p: string) => {
     try {
@@ -84,13 +93,14 @@ export default function Photos() {
     setLoggingIn(false);
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
     setUploadError('');
 
-    if (file.type.startsWith('video/')) {
+    const isVideo = file.type.startsWith('video/');
+    if (isVideo) {
       if (file.size > VIDEO_MAX_BYTES) {
         setUploadError(`El video pesa demasiado (máx ${VIDEO_MAX_BYTES / 1024 / 1024}MB)`);
         return;
@@ -107,20 +117,43 @@ export default function Photos() {
       }
     }
 
+    // Archivo validado — ahora se pide la sección antes de subir de verdad.
+    setPending({ file, previewUrl: URL.createObjectURL(file), isVideo });
+  };
+
+  const confirmUpload = async (category: string) => {
+    if (!pending) return;
+    const { file } = pending;
     setUploading(true);
+    setUploadError('');
     try {
       const res = await fetch('/api/photos', {
         method: 'POST',
-        headers: { 'Content-Type': file.type || 'image/jpeg', 'x-photos-user': user, 'x-photos-pass': pass },
+        headers: {
+          'Content-Type': file.type || 'image/jpeg',
+          'x-photos-user': user, 'x-photos-pass': pass,
+          'x-photos-category': category === SIN_CLASIFICAR ? '' : category,
+        },
         body: file,
       });
       const json = await res.json();
-      if (json.ok) loadPhotos(user, pass);
-      else setUploadError(json.error || 'No se pudo subir el archivo');
+      if (json.ok) {
+        loadPhotos(user, pass);
+        URL.revokeObjectURL(pending.previewUrl);
+        setPending(null);
+      } else {
+        setUploadError(json.error || 'No se pudo subir el archivo');
+      }
     } catch {
       setUploadError('No se pudo conectar. Intenta de nuevo.');
     }
     setUploading(false);
+  };
+
+  const cancelPending = () => {
+    if (pending) URL.revokeObjectURL(pending.previewUrl);
+    setPending(null);
+    setUploadError('');
   };
 
   if (authed === null) {
@@ -161,13 +194,13 @@ export default function Photos() {
       </header>
 
       <div className="photos-upload-row">
-        <label className={`photos-upload-btn ${uploading ? 'is-uploading' : ''}`}>
-          {uploading ? 'Subiendo…' : '⬆️ Subir foto o video'}
-          <input type="file" accept="image/*,video/*" onChange={handleUpload} disabled={uploading} hidden />
+        <label className="photos-upload-btn">
+          ⬆️ Subir foto o video
+          <input type="file" accept="image/*,video/*" onChange={handleFileSelected} hidden />
         </label>
         <p className="photos-hint">Fotos o videos cortos (máx {VIDEO_MAX_SECONDS}s)</p>
       </div>
-      {uploadError && <p className="photos-upload-error">⚠️ {uploadError}</p>}
+      {uploadError && !pending && <p className="photos-upload-error">⚠️ {uploadError}</p>}
 
       <div className="photos-grid">
         {photos.map(p => (
@@ -178,6 +211,7 @@ export default function Photos() {
               <img src={p.file_url} alt="" loading="lazy" />
             )}
             {!!p.is_video && <span className="photos-thumb-play">▶</span>}
+            <span className="photos-thumb-category">{p.category || SIN_CLASIFICAR}</span>
           </button>
         ))}
         {photos.length === 0 && <p className="photos-empty">Todavía no hay nada subido.</p>}
@@ -191,6 +225,36 @@ export default function Photos() {
           ) : (
             <img src={openItem.file_url} alt="" onClick={e => e.stopPropagation()} />
           )}
+          <p className="photos-lightbox-category">{openItem.category || SIN_CLASIFICAR}</p>
+        </div>
+      )}
+
+      {/* Picker de sección — aparece después de elegir el archivo, antes
+          de que se suba de verdad. */}
+      {pending && (
+        <div className="photos-category-overlay" onClick={cancelPending}>
+          <div className="photos-category-card" onClick={e => e.stopPropagation()}>
+            {pending.isVideo ? (
+              <video src={pending.previewUrl} muted playsInline autoPlay loop className="photos-category-preview" />
+            ) : (
+              <img src={pending.previewUrl} alt="" className="photos-category-preview" />
+            )}
+            <p className="photos-category-title">¿De qué sección es?</p>
+            {uploadError && <p className="photos-upload-error">⚠️ {uploadError}</p>}
+            <div className="photos-category-options">
+              {[SIN_CLASIFICAR, ...CATEGORIES].map(cat => (
+                <button
+                  key={cat}
+                  className="photos-category-option"
+                  disabled={uploading}
+                  onClick={() => confirmUpload(cat)}
+                >
+                  {uploading ? 'Subiendo…' : cat}
+                </button>
+              ))}
+            </div>
+            <button className="photos-category-cancel" onClick={cancelPending} disabled={uploading}>Cancelar</button>
+          </div>
         </div>
       )}
     </div>
