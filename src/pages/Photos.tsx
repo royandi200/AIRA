@@ -12,6 +12,14 @@ const USER_KEY = 'aira_photos_user';
 const PASS_KEY = 'aira_photos_pass';
 const NAME_KEY = 'aira_photos_lastname';
 
+// Los headers HTTP solo aceptan ISO-8859-1 — un nombre con una comilla
+// curva, un emoji o cualquier carácter fuera de ese rango (comunes en
+// teclados de celular) hacía que fetch() tirara "String contains non
+// ISO-8859-1 code point" y todo pareciera "no se pudo conectar" (el
+// error real quedaba enterrado en la excepción). encodeURIComponent
+// deja el valor en ASCII puro, siempre válido como header.
+const enc = (s: string) => encodeURIComponent(s);
+
 const VIDEO_MAX_SECONDS = 10;
 const VIDEO_MAX_BYTES = 35 * 1024 * 1024;
 // Un video más largo que esto no se corta — se rechaza directo. Cortarlo
@@ -132,7 +140,7 @@ async function splitVideoIntoClips(file: File, segmentSeconds: number): Promise<
  * en Vercel) o un problema de red. */
 async function checkLogin(user: string, pass: string): Promise<{ ok: boolean; detail: string }> {
   try {
-    const res = await fetch('/api/photos', { headers: { 'x-photos-user': user, 'x-photos-pass': pass } });
+    const res = await fetch('/api/photos', { headers: { 'x-photos-user': enc(user), 'x-photos-pass': enc(pass) } });
     if (res.ok) return { ok: true, detail: '' };
     const json = await res.json().catch(() => ({}));
     return { ok: false, detail: `HTTP ${res.status}${json.error ? ` — ${json.error}` : ''}` };
@@ -169,7 +177,7 @@ export default function Photos() {
 
   const loadPhotos = async (u: string, p: string) => {
     try {
-      const res = await fetch('/api/photos', { headers: { 'x-photos-user': u, 'x-photos-pass': p } });
+      const res = await fetch('/api/photos', { headers: { 'x-photos-user': enc(u), 'x-photos-pass': enc(p) } });
       const json = await res.json();
       if (json.ok) setPhotos(json.photos);
     } catch { /* silencioso */ }
@@ -273,9 +281,9 @@ export default function Photos() {
           method: 'POST',
           headers: {
             'Content-Type': file.type || 'image/jpeg',
-            'x-photos-user': user, 'x-photos-pass': pass,
-            'x-photos-category': category === SIN_CLASIFICAR ? '' : category,
-            'x-photos-name': partName,
+            'x-photos-user': enc(user), 'x-photos-pass': enc(pass),
+            'x-photos-category': enc(category === SIN_CLASIFICAR ? '' : category),
+            'x-photos-name': enc(partName),
           },
           body: file,
         });
@@ -313,7 +321,7 @@ export default function Photos() {
     try {
       const res = await fetch('/api/photos', {
         method: 'DELETE',
-        headers: { 'x-photos-user': user, 'x-photos-pass': pass, 'Content-Type': 'application/json' },
+        headers: { 'x-photos-user': enc(user), 'x-photos-pass': enc(pass), 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
       });
       const json = await res.json();
@@ -335,7 +343,7 @@ export default function Photos() {
     try {
       const res = await fetch('/api/photos', {
         method: 'DELETE',
-        headers: { 'x-photos-user': user, 'x-photos-pass': pass },
+        headers: { 'x-photos-user': enc(user), 'x-photos-pass': enc(pass) },
       });
       const json = await res.json();
       if (json.ok) loadPhotos(user, pass);

@@ -57,11 +57,19 @@ export async function ensureTable() {
   await pool.query(`ALTER TABLE photos_uploads ADD COLUMN uploaded_name VARCHAR(100) NULL`).catch(() => {});
 }
 
+// El cliente manda user/pass/category/name con encodeURIComponent (los
+// headers HTTP solo aceptan ISO-8859-1 — un nombre con comilla curva o
+// emoji del teclado del celular rompía fetch() antes de esto).
+function decHeader(v: unknown): string {
+  const s = String(v || '');
+  try { return decodeURIComponent(s); } catch { return s; }
+}
+
 /** Credenciales compartidas (no hay tabla de usuarios acá, a propósito —
  * es una herramienta interna del equipo, no una cuenta por asistente). */
 function checkAuth(req: VercelRequest): string | null {
-  const user = String(req.headers['x-photos-user'] || req.query.user || '');
-  const pass = String(req.headers['x-photos-pass'] || req.query.pass || '');
+  const user = decHeader(req.headers['x-photos-user'] || req.query.user);
+  const pass = decHeader(req.headers['x-photos-pass'] || req.query.pass);
   const expectedUser = process.env.PHOTOS_USER;
   const expectedPass = process.env.PHOTOS_PASSWORD;
   if (!expectedUser || !expectedPass) return null;
@@ -112,10 +120,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Sección elegida en el picker de después de subir — 'Sin clasificar'
       // (o cualquier valor no reconocido) se guarda como NULL.
-      const categoryRaw = String(req.headers['x-photos-category'] || req.query.category || '');
+      const categoryRaw = decHeader(req.headers['x-photos-category'] || req.query.category);
       const category = (CATEGORIES as readonly string[]).includes(categoryRaw) ? categoryRaw : null;
       // Nombre a mostrar cuando alguien abre la foto en el sitio.
-      const uploadedName = String(req.headers['x-photos-name'] || req.query.name || '').trim().slice(0, 100) || null;
+      const uploadedName = decHeader(req.headers['x-photos-name'] || req.query.name).trim().slice(0, 100) || null;
 
       const contentTypeHeader = String(req.headers['content-type'] || 'image/jpeg');
       const isVideo = contentTypeHeader.startsWith('video/');
