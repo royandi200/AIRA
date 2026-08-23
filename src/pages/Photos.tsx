@@ -285,8 +285,8 @@ export default function Photos() {
           setUploading(false);
           return;
         }
-      } catch {
-        setUploadError(`No se pudo conectar${parts.length > 1 ? ` (tramo ${i + 1}/${parts.length})` : ''}. Intenta de nuevo.`);
+      } catch (err: any) {
+        setUploadError(`No se pudo conectar${parts.length > 1 ? ` (tramo ${i + 1}/${parts.length})` : ''}: ${err?.message || err}`);
         setUploading(false);
         return;
       }
@@ -323,8 +323,8 @@ export default function Photos() {
       } else {
         setUploadError(json.error || 'No se pudo borrar');
       }
-    } catch {
-      setUploadError('No se pudo conectar. Intenta de nuevo.');
+    } catch (err: any) {
+      setUploadError(`No se pudo conectar: ${err?.message || err}`);
     }
     setDeletingId(null);
   };
@@ -340,8 +340,8 @@ export default function Photos() {
       const json = await res.json();
       if (json.ok) loadPhotos(user, pass);
       else setUploadError(json.error || 'No se pudo borrar');
-    } catch {
-      setUploadError('No se pudo conectar. Intenta de nuevo.');
+    } catch (err: any) {
+      setUploadError(`No se pudo conectar: ${err?.message || err}`);
     }
     setClearing(false);
   };
