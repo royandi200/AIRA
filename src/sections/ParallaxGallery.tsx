@@ -1,10 +1,38 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Ticket, ArrowRight, X, ChevronLeft, ChevronRight, Play, ZoomIn } from 'lucide-react';
 import { parallaxGalleryConfig, type GalleryImage } from '../config';
 
 gsap.registerPlugin(ScrollTrigger);
+
+// ─── Fotos subidas por el equipo en /photos ────────────────────────────────
+// "Sin clasificar" alimenta la sección Galería (tiras parallax); cada una
+// de las 5 categorías alimenta el carrusel de su zona en "La Experiencia".
+// A propósito NO se reemplaza lo que ya se ve con solo 1-2 fotos subidas —
+// hay un mínimo por sección, así nunca se ve "peor" que antes mientras se
+// va llenando de contenido real.
+interface UploadedPhoto {
+  id: number;
+  uploaded_name: string | null;
+  file_url: string;
+  is_video: number;
+  category: string | null;
+  created_at: string;
+}
+const MIN_STRIP_PHOTOS = 6; // Galería (home) — mínimo para reemplazar las tiras estáticas
+const MIN_ZONE_PHOTOS   = 3; // por zona de "La Experiencia"
+
+function useUploadedPhotos() {
+  const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
+  useEffect(() => {
+    fetch('/api/photos-public')
+      .then(r => r.json())
+      .then(json => { if (json.ok) setPhotos(json.photos); })
+      .catch(() => {});
+  }, []);
+  return photos;
+}
 
 // ─── Photo Lightbox Modal ─────────────────────────────────────────────────────
 function PhotoModal({
@@ -340,6 +368,41 @@ const ParallaxGallery = () => {
   const [photoModal, setPhotoModal] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
   const [expModal, setExpModal] = useState<{ open: boolean; zone: (typeof images)[0] | null; imgIdx: number }>({ open: false, zone: null, imgIdx: 0 });
 
+  const uploaded = useUploadedPhotos();
+  const uncategorized = useMemo(() => uploaded.filter(p => !p.category), [uploaded]);
+  const byCategory = useMemo(() => {
+    const map: Record<string, UploadedPhoto[]> = {};
+    for (const p of uploaded) if (p.category) (map[p.category] ??= []).push(p);
+    return map;
+  }, [uploaded]);
+  const photoNameBySrc = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const p of uploaded) if (p.uploaded_name) map[p.file_url] = p.uploaded_name;
+    return map;
+  }, [uploaded]);
+
+  // Solo se reemplazan las tiras estáticas de "Galería" cuando ya hay
+  // suficientes fotos "sin clasificar" subidas — con 1-2 fotos se veía peor
+  // que los defaults actuales.
+  const useDynamicStrip = uncategorized.length >= MIN_STRIP_PHOTOS;
+  const effectiveTop = useMemo(() => {
+    if (!useDynamicStrip) return parallaxGalleryConfig.parallaxImagesTop;
+    const half = Math.ceil(uncategorized.length / 2);
+    return uncategorized.slice(0, half).map(p => ({ id: p.id, src: p.file_url, alt: p.uploaded_name || 'Foto AIRA' }));
+  }, [useDynamicStrip, uncategorized]);
+  const effectiveBottom = useMemo(() => {
+    if (!useDynamicStrip) return parallaxGalleryConfig.parallaxImagesBottom;
+    const half = Math.ceil(uncategorized.length / 2);
+    return uncategorized.slice(half).map(p => ({ id: p.id + 100000, src: p.file_url, alt: p.uploaded_name || 'Foto AIRA' }));
+  }, [useDynamicStrip, uncategorized]);
+
+  // Mismo criterio por zona de "La Experiencia" — mínimo de fotos de esa
+  // categoría antes de reemplazar el carrusel estático de la zona.
+  const getZoneImages = useCallback((title: string, fallback: string[]): string[] => {
+    const cat = byCategory[title];
+    return cat && cat.length >= MIN_ZONE_PHOTOS ? cat.map(p => p.file_url) : fallback;
+  }, [byCategory]);
+
   useEffect(() => {
     if (!expModal.open) return;
     const prev = document.body.style.overflow;
@@ -418,7 +481,7 @@ const ParallaxGallery = () => {
           </div>
 
           <div ref={topRowRef} className="flex gap-4 mb-4 will-change-transform">
-            {parallaxGalleryConfig.parallaxImagesTop.map((image, i) => (
+            {effectiveTop.map((image, i) => (
               <div key={image.id}
                 className="relative flex-shrink-0 w-[400px] h-[250px] overflow-hidden rounded-lg image-hover-scale cursor-pointer group"
                 onClick={() => openPhoto(i)}>
@@ -434,10 +497,10 @@ const ParallaxGallery = () => {
           </div>
 
           <div ref={bottomRowRef} className="flex gap-4 will-change-transform" style={{ transform: 'translateX(-150px)' }}>
-            {parallaxGalleryConfig.parallaxImagesBottom.map((image, i) => (
+            {effectiveBottom.map((image, i) => (
               <div key={image.id}
                 className="relative flex-shrink-0 w-[400px] h-[250px] overflow-hidden rounded-lg image-hover-scale cursor-pointer group"
-                onClick={() => openPhoto(parallaxGalleryConfig.parallaxImagesTop.length + i)}>
+                onClick={() => openPhoto(effectiveTop.length + i)}>
                 <img src={image.src} alt={image.alt} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-void-black/50 to-transparent"/>
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -482,7 +545,7 @@ const ParallaxGallery = () => {
                 ref={el => { thumbRefs.current[index] = el; }}
                 className="relative flex-shrink-0 group cursor-pointer"
                 style={{ marginTop: index % 2 === 0 ? '0' : '60px' }}
-                onClick={() => setExpModal({ open: true, zone: image, imgIdx: 0 })}>
+                onClick={() => setExpModal({ open: true, zone: { ...image, images: getZoneImages(image.title, image.images || []) }, imgIdx: 0 })}>
 
                 <div className="relative w-[450px] h-[300px] overflow-hidden rounded-xl">
                   <img src={image.src} alt={image.title}
@@ -531,8 +594,8 @@ const ParallaxGallery = () => {
       {photoModal.open && (
         <PhotoModal
           images={[
-            ...parallaxGalleryConfig.parallaxImagesTop.map(im => ({ id: im.id, src: im.src, title: im.alt, date: '' })),
-            ...parallaxGalleryConfig.parallaxImagesBottom.map(im => ({ id: im.id + 100, src: im.src, title: im.alt, date: '' })),
+            ...effectiveTop.map(im => ({ id: im.id, src: im.src, title: im.alt, date: '' })),
+            ...effectiveBottom.map(im => ({ id: im.id + 100, src: im.src, title: im.alt, date: '' })),
           ]}
           startIndex={photoModal.index}
           onClose={() => setPhotoModal({ open: false, index: 0 })}
@@ -574,6 +637,16 @@ const ParallaxGallery = () => {
             <img src={(z.images && z.images[expModal.imgIdx]) || z.src} alt={z.title}
               className="w-full h-full object-cover transition-all duration-500"/>
             <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, #09101f 0%, transparent 55%)' }}/>
+            {(() => {
+              const currentSrc = (z.images && z.images[expModal.imgIdx]) || z.src;
+              const name = photoNameBySrc[currentSrc];
+              return name ? (
+                <div className="absolute top-4 right-16 px-3 py-1 rounded-full font-mono-custom text-[10px] font-bold"
+                  style={{ background: 'rgba(0,0,0,0.55)', color: '#fff', border: '1px solid rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)' }}>
+                  📸 {name}
+                </div>
+              ) : null;
+            })()}
             {z.images && z.images.length > 1 && (
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
                 {z.images.map((_: string, i: number) => (

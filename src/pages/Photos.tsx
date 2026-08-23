@@ -10,6 +10,7 @@ import './Photos.css';
 
 const USER_KEY = 'aira_photos_user';
 const PASS_KEY = 'aira_photos_pass';
+const NAME_KEY = 'aira_photos_lastname';
 
 const VIDEO_MAX_SECONDS = 10;
 const VIDEO_MAX_BYTES = 35 * 1024 * 1024;
@@ -19,7 +20,7 @@ const VIDEO_MAX_BYTES = 35 * 1024 * 1024;
 const CATEGORIES = ['AIRA Stage', 'Japi Stage', 'Cabañas', 'Majestic', 'Joinn Stage'];
 const SIN_CLASIFICAR = 'Sin clasificar';
 
-interface Photo { id: number; uploaded_by: string; file_url: string; is_video: number; category: string | null; created_at: string; }
+interface Photo { id: number; uploaded_by: string; uploaded_name: string | null; file_url: string; is_video: number; category: string | null; created_at: string; }
 interface PendingFile { file: File; previewUrl: string; isVideo: boolean; }
 
 /** Lee la duración de un video local antes de subirlo, sin tocar el servidor. */
@@ -54,6 +55,8 @@ export default function Photos() {
   // Archivo ya validado (tamaño/duración) esperando a que se elija la
   // sección antes de subirlo de verdad.
   const [pending, setPending] = useState<PendingFile | null>(null);
+  const [nameInput, setNameInput] = useState(() => sessionStorage.getItem(NAME_KEY) || '');
+  const [clearing, setClearing] = useState(false);
 
   const loadPhotos = async (u: string, p: string) => {
     try {
@@ -122,8 +125,9 @@ export default function Photos() {
   };
 
   const confirmUpload = async (category: string) => {
-    if (!pending) return;
+    if (!pending || !nameInput.trim()) return;
     const { file } = pending;
+    sessionStorage.setItem(NAME_KEY, nameInput.trim());
     setUploading(true);
     setUploadError('');
     try {
@@ -133,6 +137,7 @@ export default function Photos() {
           'Content-Type': file.type || 'image/jpeg',
           'x-photos-user': user, 'x-photos-pass': pass,
           'x-photos-category': category === SIN_CLASIFICAR ? '' : category,
+          'x-photos-name': nameInput.trim(),
         },
         body: file,
       });
@@ -154,6 +159,23 @@ export default function Photos() {
     if (pending) URL.revokeObjectURL(pending.previewUrl);
     setPending(null);
     setUploadError('');
+  };
+
+  const handleClearAll = async () => {
+    if (!window.confirm(`¿Borrar las ${photos.length} fotos/videos que están mostrándose ahora mismo? No se puede deshacer.`)) return;
+    setClearing(true);
+    try {
+      const res = await fetch('/api/photos', {
+        method: 'DELETE',
+        headers: { 'x-photos-user': user, 'x-photos-pass': pass },
+      });
+      const json = await res.json();
+      if (json.ok) loadPhotos(user, pass);
+      else setUploadError(json.error || 'No se pudo borrar');
+    } catch {
+      setUploadError('No se pudo conectar. Intenta de nuevo.');
+    }
+    setClearing(false);
   };
 
   if (authed === null) {
@@ -199,6 +221,11 @@ export default function Photos() {
           <input type="file" accept="image/*,video/*" onChange={handleFileSelected} hidden />
         </label>
         <p className="photos-hint">Fotos o videos cortos (máx {VIDEO_MAX_SECONDS}s)</p>
+        {photos.length > 0 && (
+          <button className="photos-clear-btn" onClick={handleClearAll} disabled={clearing}>
+            {clearing ? 'Borrando…' : '🗑️ Borrar fotos anteriores'}
+          </button>
+        )}
       </div>
       {uploadError && !pending && <p className="photos-upload-error">⚠️ {uploadError}</p>}
 
@@ -225,12 +252,15 @@ export default function Photos() {
           ) : (
             <img src={openItem.file_url} alt="" onClick={e => e.stopPropagation()} />
           )}
-          <p className="photos-lightbox-category">{openItem.category || SIN_CLASIFICAR}</p>
+          <div className="photos-lightbox-info">
+            {openItem.uploaded_name && <p className="photos-lightbox-name">{openItem.uploaded_name}</p>}
+            <p className="photos-lightbox-category">{openItem.category || SIN_CLASIFICAR}</p>
+          </div>
         </div>
       )}
 
-      {/* Picker de sección — aparece después de elegir el archivo, antes
-          de que se suba de verdad. */}
+      {/* Picker de nombre + sección — aparece después de elegir el archivo,
+          antes de que se suba de verdad. */}
       {pending && (
         <div className="photos-category-overlay" onClick={cancelPending}>
           <div className="photos-category-card" onClick={e => e.stopPropagation()}>
@@ -239,6 +269,14 @@ export default function Photos() {
             ) : (
               <img src={pending.previewUrl} alt="" className="photos-category-preview" />
             )}
+            <input
+              className="photos-category-name-input"
+              type="text"
+              placeholder="Tu nombre (se muestra al abrir la foto)"
+              value={nameInput}
+              onChange={e => setNameInput(e.target.value)}
+              autoFocus
+            />
             <p className="photos-category-title">¿De qué sección es?</p>
             {uploadError && <p className="photos-upload-error">⚠️ {uploadError}</p>}
             <div className="photos-category-options">
@@ -246,13 +284,14 @@ export default function Photos() {
                 <button
                   key={cat}
                   className="photos-category-option"
-                  disabled={uploading}
+                  disabled={uploading || !nameInput.trim()}
                   onClick={() => confirmUpload(cat)}
                 >
                   {uploading ? 'Subiendo…' : cat}
                 </button>
               ))}
             </div>
+            {!nameInput.trim() && <p className="photos-hint">Escribe tu nombre para poder subir</p>}
             <button className="photos-category-cancel" onClick={cancelPending} disabled={uploading}>Cancelar</button>
           </div>
         </div>

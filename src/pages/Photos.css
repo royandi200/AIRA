@@ -74,6 +74,13 @@
 .photos-upload-btn.is-uploading { opacity: 0.6; cursor: default; }
 .photos-hint { font-size: 12px; color: rgba(255,255,255,0.4); margin: 0; }
 .photos-upload-error { max-width: 900px; margin: 6px auto 0; color: #ff6b6b; font-size: 13px; }
+.photos-clear-btn {
+  margin-left: auto;
+  background: rgba(255,80,80,0.1); border: 1px solid rgba(255,80,80,0.3);
+  color: #ff8080; border-radius: 10px; padding: 8px 14px;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.photos-clear-btn:disabled { opacity: 0.6; cursor: default; }
 
 .photos-grid {
   max-width: 900px; margin: 20px auto 0;
@@ -100,10 +107,17 @@
 }
 .photos-empty { grid-column: 1 / -1; text-align: center; color: rgba(255,255,255,0.4); padding: 40px 0; }
 
-.photos-lightbox-category {
+.photos-lightbox-info {
   position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.photos-lightbox-name {
+  background: rgba(0,0,0,0.6); color: #fff;
+  font-size: 13px; font-weight: 700; padding: 5px 14px; border-radius: 999px; margin: 0;
+}
+.photos-lightbox-category {
   background: rgba(0,0,0,0.6); color: #e1fe52;
-  font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 999px; margin: 0;
 }
 
 .photos-category-overlay {
@@ -122,6 +136,16 @@
   width: 100%; max-height: 220px; object-fit: cover;
   border-radius: 14px;
 }
+.photos-category-name-input {
+  width: 100%;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 14px;
+  color: #fff;
+}
+.photos-category-name-input:focus { outline: none; border-color: #e1fe52; }
 .photos-category-title { font-size: 15px; font-weight: 800; margin: 0; }
 .photos-category-options {
   width: 100%; display: flex; flex-direction: column; gap: 8px;
