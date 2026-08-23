@@ -34,9 +34,18 @@ function readVideoDuration(file: File): Promise<number> {
   });
 }
 
-async function checkLogin(user: string, pass: string): Promise<boolean> {
-  const res = await fetch('/api/photos', { headers: { 'x-photos-user': user, 'x-photos-pass': pass } });
-  return res.ok;
+/** Devuelve el detalle del intento — antes solo se sabía "falló", sin
+ * poder distinguir clave mala de un 500 (ej. env vars sin configurar
+ * en Vercel) o un problema de red. */
+async function checkLogin(user: string, pass: string): Promise<{ ok: boolean; detail: string }> {
+  try {
+    const res = await fetch('/api/photos', { headers: { 'x-photos-user': user, 'x-photos-pass': pass } });
+    if (res.ok) return { ok: true, detail: '' };
+    const json = await res.json().catch(() => ({}));
+    return { ok: false, detail: `HTTP ${res.status}${json.error ? ` — ${json.error}` : ''}` };
+  } catch {
+    return { ok: false, detail: 'No se pudo conectar con el servidor' };
+  }
 }
 
 export default function Photos() {
@@ -70,10 +79,13 @@ export default function Photos() {
   // en vez de confiar ciegamente en lo que quedó en sessionStorage.
   useEffect(() => {
     if (!user || !pass) { setAuthed(false); return; }
-    checkLogin(user, pass).then(ok => {
+    checkLogin(user, pass).then(({ ok, detail }) => {
       setAuthed(ok);
       if (ok) loadPhotos(user, pass);
-      else { sessionStorage.removeItem(USER_KEY); sessionStorage.removeItem(PASS_KEY); }
+      else {
+        sessionStorage.removeItem(USER_KEY); sessionStorage.removeItem(PASS_KEY);
+        if (detail) setLoginError(detail);
+      }
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -82,7 +94,7 @@ export default function Photos() {
     if (!userInput.trim() || !passInput.trim()) return;
     setLoggingIn(true);
     setLoginError('');
-    const ok = await checkLogin(userInput.trim(), passInput.trim()).catch(() => false);
+    const { ok, detail } = await checkLogin(userInput.trim(), passInput.trim());
     if (ok) {
       sessionStorage.setItem(USER_KEY, userInput.trim());
       sessionStorage.setItem(PASS_KEY, passInput.trim());
@@ -91,7 +103,7 @@ export default function Photos() {
       setAuthed(true);
       loadPhotos(userInput.trim(), passInput.trim());
     } else {
-      setLoginError('Usuario o clave incorrectos');
+      setLoginError(detail === 'HTTP 401 — Usuario o clave incorrectos' ? 'Usuario o clave incorrectos' : detail);
     }
     setLoggingIn(false);
   };
