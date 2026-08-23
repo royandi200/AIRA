@@ -1,11 +1,23 @@
 import { useEffect, useState } from 'react';
+import { upload } from '@vercel/blob/client';
 import './Photos.css';
 
 /**
  * /photos — herramienta interna (usuario/clave compartidos, NO es una
  * cuenta por asistente) para que el equipo del evento suba fotos/videos
- * sueltos directo a la galería. Usa la misma optimización de imágenes
- * (sharp -> WebP) que la galería de /myapp — ver api/photos.ts.
+ * sueltos directo a la galería.
+ *
+ * Vercel Functions tienen un límite DURO de 4.5MB por request body (no
+ * configurable) — por eso las fotos y los videos van por caminos
+ * distintos:
+ *  - Fotos: se comprimen ACÁ en el navegador (canvas, ~1600px, JPEG 82%)
+ *    antes de subir — casi siempre quedan bien por debajo de 4.5MB, así
+ *    que siguen pasando por api/photos.ts (que además las vuelve a
+ *    optimizar con sharp del lado del servidor, doble seguro).
+ *  - Videos: NO se pueden comprimir de forma confiable en el navegador
+ *    (no hay ffmpeg acá), y un clip de 10s fácil pesa más de 4.5MB — van
+ *    DIRECTO del navegador a Vercel Blob (api/photos-blob-token.ts solo
+ *    entrega un token, nunca ve el archivo).
  */
 
 const USER_KEY = 'aira_photos_user';
@@ -21,7 +33,10 @@ const NAME_KEY = 'aira_photos_lastname';
 const enc = (s: string) => encodeURIComponent(s);
 
 const VIDEO_MAX_SECONDS = 10;
-const VIDEO_MAX_BYTES = 35 * 1024 * 1024;
+// Ya no limita la función serverless (los videos van directo a Blob) —
+// este tope es solo para no dejar subir algo absurdo por error; debe
+// coincidir con maximumSizeInBytes en api/photos-blob-token.ts.
+const VIDEO_MAX_BYTES = 60 * 1024 * 1024;
 // Un video más largo que esto no se corta — se rechaza directo. Cortarlo
 // implica reproducirlo completo en el navegador (ver splitVideoIntoClips),
 // así que sin este tope alguien podría subir un video de 10 min y dejar
@@ -36,6 +51,42 @@ const SIN_CLASIFICAR = 'Sin clasificar';
 interface Photo { id: number; uploaded_by: string; uploaded_name: string | null; file_url: string; is_video: number; category: string | null; created_at: string; }
 // parts.length > 1 = un video largo que se dividió en clips de máx 10s.
 interface PendingFile { parts: File[]; previewUrl: string; isVideo: boolean; }
+
+/**
+ * Redimensiona (máx 1600px de lado) y comprime a JPEG calidad 82% —
+ * misma idea que optimizarImagen() del servidor (sharp), pero en el
+ * navegador, para que el archivo ya quede chico ANTES de mandarlo (así
+ * nunca se acerca al límite de 4.5MB de las funciones de Vercel).
+ * createImageBitmap con imageOrientation:'from-image' respeta el EXIF de
+ * rotación de las fotos de celular — dibujar un <img> a canvas a veces no.
+ */
+async function compressImage(file: File, maxDimension = 1600, quality = 0.82): Promise<File> {
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' } as any);
+    let { width, height } = bitmap;
+    if (width > maxDimension || height > maxDimension) {
+      if (width > height) { height = Math.round((height * maxDimension) / width); width = maxDimension; }
+      else { width = Math.round((width * maxDimension) / height); height = maxDimension; }
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('No se pudo procesar la imagen');
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+    const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+    if (!blob) throw new Error('No se pudo comprimir la imagen');
+    const base = file.name.replace(/\.[^.]+$/, '') || 'foto';
+    return new File([blob], `${base}.jpg`, { type: 'image/jpeg' });
+  } catch (err) {
+    // Si algo falla acá (navegador raro, formato exótico), se sube el
+    // original tal cual — sharp del lado del servidor sigue siendo el
+    // respaldo, aunque para fotos muy grandes eso pueda pegarle al
+    // límite de 4.5MB.
+    console.warn('[photos] compresión en navegador falló, se sube el original:', err);
+    return file;
+  }
+}
 
 /** Lee la duración de un video local antes de subirlo, sin tocar el servidor. */
 function readVideoDuration(file: File): Promise<number> {
@@ -259,8 +310,10 @@ export default function Photos() {
       return;
     }
 
-    // Archivo validado — ahora se pide la sección antes de subir de verdad.
-    setPending({ parts: [file], previewUrl: URL.createObjectURL(file), isVideo: false });
+    // Imagen — se comprime acá antes de mostrar el preview y pedir la
+    // sección, así el archivo que realmente se sube ya viene liviano.
+    const compressed = await compressImage(file);
+    setPending({ parts: [compressed], previewUrl: URL.createObjectURL(compressed), isVideo: false });
   };
 
   const confirmUpload = async () => {
@@ -271,36 +324,58 @@ export default function Photos() {
     setUploading(true);
     setUploadError('');
 
-    const { parts } = pending;
+    const { parts, isVideo } = pending;
+    const categoryValue = category === SIN_CLASIFICAR ? '' : category;
+
     for (let i = 0; i < parts.length; i++) {
       setUploadPart(i + 1);
       const file = parts[i];
       const partName = parts.length > 1 ? `${name} (parte ${i + 1}/${parts.length})` : name;
+      const failSuffix = parts.length > 1 ? ` (tramo ${i + 1}/${parts.length})` : '';
+
       try {
-        const res = await fetch('/api/photos', {
-          method: 'POST',
-          headers: {
-            'Content-Type': file.type || 'image/jpeg',
-            'x-photos-user': enc(user), 'x-photos-pass': enc(pass),
-            'x-photos-category': enc(category === SIN_CLASIFICAR ? '' : category),
-            'x-photos-name': enc(partName),
-          },
-          body: file,
-        });
-        const json = await res.json();
-        if (!json.ok) {
-          setUploadError(`${json.error || 'No se pudo subir el archivo'}${parts.length > 1 ? ` (tramo ${i + 1}/${parts.length})` : ''}`);
-          setUploading(false);
-          return;
+        if (isVideo) {
+          // Directo del navegador a Vercel Blob — el archivo nunca pasa
+          // por nuestra función (ver comentario arriba y en
+          // api/photos-blob-token.ts). El insert en la BD lo hace ESE
+          // endpoint cuando Vercel le avisa que terminó la subida, no
+          // acá — por eso no revisamos el resultado más allá de que
+          // upload() no haya tirado una excepción.
+          await upload(`photos/${Date.now()}-${file.name}`, file, {
+            access: 'public',
+            handleUploadUrl: '/api/photos-blob-token',
+            clientPayload: JSON.stringify({ user, pass, category: categoryValue, name: partName }),
+          });
+        } else {
+          const res = await fetch('/api/photos', {
+            method: 'POST',
+            headers: {
+              'Content-Type': file.type || 'image/jpeg',
+              'x-photos-user': enc(user), 'x-photos-pass': enc(pass),
+              'x-photos-category': enc(categoryValue),
+              'x-photos-name': enc(partName),
+            },
+            body: file,
+          });
+          const json = await res.json();
+          if (!json.ok) {
+            setUploadError(`${json.error || 'No se pudo subir el archivo'}${failSuffix}`);
+            setUploading(false);
+            return;
+          }
         }
       } catch (err: any) {
-        setUploadError(`No se pudo conectar${parts.length > 1 ? ` (tramo ${i + 1}/${parts.length})` : ''}: ${err?.message || err}`);
+        setUploadError(`No se pudo subir${failSuffix}: ${err?.message || err}`);
         setUploading(false);
         return;
       }
     }
 
-    loadPhotos(user, pass);
+    // Para video el insert en la BD lo hace el callback de Vercel Blob de
+    // forma asíncrona (no bloquea la respuesta de upload()) — le damos un
+    // segundo de margen antes de refrescar la lista para no perder la
+    // carrera casi siempre.
+    setTimeout(() => loadPhotos(user, pass), isVideo ? 1200 : 0);
     URL.revokeObjectURL(pending.previewUrl);
     setPending(null);
     setSelectedCategory(null);
