@@ -14,6 +14,11 @@ const NAME_KEY = 'aira_photos_lastname';
 
 const VIDEO_MAX_SECONDS = 10;
 const VIDEO_MAX_BYTES = 35 * 1024 * 1024;
+// Un video más largo que esto no se corta — se rechaza directo. Cortarlo
+// implica reproducirlo completo en el navegador (ver splitVideoIntoClips),
+// así que sin este tope alguien podría subir un video de 10 min y dejar
+// la pestaña procesando por 10 minutos.
+const MAX_SPLITTABLE_SECONDS = 90;
 
 // Mismas 5 secciones de "La Experiencia" del sitio (ver config.ts) —
 // "Lobby" pasó a llamarse "Joinn Stage" acá también.
@@ -21,7 +26,8 @@ const CATEGORIES = ['AIRA Stage', 'Japi Stage', 'Cabañas', 'Majestic', 'Joinn S
 const SIN_CLASIFICAR = 'Sin clasificar';
 
 interface Photo { id: number; uploaded_by: string; uploaded_name: string | null; file_url: string; is_video: number; category: string | null; created_at: string; }
-interface PendingFile { file: File; previewUrl: string; isVideo: boolean; }
+// parts.length > 1 = un video largo que se dividió en clips de máx 10s.
+interface PendingFile { parts: File[]; previewUrl: string; isVideo: boolean; }
 
 /** Lee la duración de un video local antes de subirlo, sin tocar el servidor. */
 function readVideoDuration(file: File): Promise<number> {
@@ -32,6 +38,93 @@ function readVideoDuration(file: File): Promise<number> {
     video.onerror = () => { URL.revokeObjectURL(video.src); reject(new Error('No se pudo leer el video')); };
     video.src = URL.createObjectURL(file);
   });
+}
+
+/**
+ * Corta un video largo en clips de máx `segmentSeconds` cada uno — 100%
+ * en el navegador, sin subir nada al servidor para procesarlo (no hay
+ * ffmpeg en el backend, solo sharp para imágenes). Usa
+ * HTMLVideoElement.captureStream() + MediaRecorder: reproduce el video
+ * real (silencioso) y graba cada tramo como un clip nuevo en WebM.
+ * Soportado en Chrome/Edge/Firefox — Safari no soporta captureStream()
+ * de forma confiable, ahí se avisa con un error claro.
+ */
+async function splitVideoIntoClips(file: File, segmentSeconds: number): Promise<File[]> {
+  const anyWindow = window as any;
+  if (typeof MediaRecorder === 'undefined') {
+    throw new Error('Tu navegador no puede dividir videos largos — usa Chrome o sube clips de máx 10s directamente.');
+  }
+
+  const url = URL.createObjectURL(file);
+  const video = document.createElement('video');
+  video.src = url;
+  video.muted = false;
+  video.volume = 0; // silencioso pero sin "muted" — así el track de audio sí se graba
+  video.playsInline = true;
+  video.style.position = 'fixed';
+  video.style.left = '-9999px';
+  video.style.width = '1px';
+  video.style.height = '1px';
+  document.body.appendChild(video);
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      video.onloadedmetadata = () => resolve();
+      video.onerror = () => reject(new Error('No se pudo leer el video'));
+    });
+
+    const captureStream = (video as any).captureStream || anyWindow.HTMLVideoElement?.prototype?.mozCaptureStream?.bind(video);
+    if (typeof captureStream !== 'function') {
+      throw new Error('Tu navegador no puede dividir videos largos — usa Chrome o sube clips de máx 10s directamente.');
+    }
+    const stream: MediaStream = captureStream.call(video);
+
+    const mimeType = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
+      .find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm';
+
+    const duration = video.duration;
+    const totalParts = Math.ceil(duration / segmentSeconds);
+    const baseName = file.name.replace(/\.[^.]+$/, '') || 'clip';
+    const clips: File[] = [];
+
+    for (let i = 0; i < totalParts; i++) {
+      const start = i * segmentSeconds;
+      const end = Math.min(start + segmentSeconds, duration);
+
+      await new Promise<void>(resolve => {
+        const onSeeked = () => { video.removeEventListener('seeked', onSeeked); resolve(); };
+        video.addEventListener('seeked', onSeeked);
+        video.currentTime = start;
+      });
+
+      const chunks: Blob[] = [];
+      const recorder = new MediaRecorder(stream, { mimeType });
+      recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        recorder.onerror = () => reject(new Error('Falló al grabar un tramo del video'));
+        recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
+        recorder.start();
+        video.play().catch(reject);
+        const tick = () => {
+          if (video.currentTime >= end - 0.05 || video.ended) {
+            video.pause();
+            recorder.stop();
+          } else {
+            requestAnimationFrame(tick);
+          }
+        };
+        requestAnimationFrame(tick);
+      });
+
+      clips.push(new File([blob], `${baseName}-parte${i + 1}.webm`, { type: mimeType }));
+    }
+
+    return clips;
+  } finally {
+    document.body.removeChild(video);
+    URL.revokeObjectURL(url);
+  }
 }
 
 /** Devuelve el detalle del intento — antes solo se sabía "falló", sin
@@ -66,6 +159,13 @@ export default function Photos() {
   const [pending, setPending] = useState<PendingFile | null>(null);
   const [nameInput, setNameInput] = useState(() => sessionStorage.getItem(NAME_KEY) || '');
   const [clearing, setClearing] = useState(false);
+  const [splitting, setSplitting] = useState(false);
+  // Cuando pending.parts.length > 1: qué tramo se está subiendo ahora mismo.
+  const [uploadPart, setUploadPart] = useState(0);
+  // Elegir sección ya NO sube al toque — solo selecciona, hace falta
+  // tocar "Cargar" después.
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const loadPhotos = async (u: string, p: string) => {
     try {
@@ -120,57 +220,113 @@ export default function Photos() {
         setUploadError(`El video pesa demasiado (máx ${VIDEO_MAX_BYTES / 1024 / 1024}MB)`);
         return;
       }
+      let duration: number;
       try {
-        const duration = await readVideoDuration(file);
-        if (duration > VIDEO_MAX_SECONDS) {
-          setUploadError(`El video dura ${duration.toFixed(1)}s — máximo ${VIDEO_MAX_SECONDS}s`);
-          return;
-        }
+        duration = await readVideoDuration(file);
       } catch {
         setUploadError('No se pudo leer ese video, intenta con otro');
         return;
       }
+
+      if (duration <= VIDEO_MAX_SECONDS) {
+        setPending({ parts: [file], previewUrl: URL.createObjectURL(file), isVideo: true });
+        return;
+      }
+
+      if (duration > MAX_SPLITTABLE_SECONDS) {
+        setUploadError(`El video dura ${Math.round(duration)}s — máximo ${MAX_SPLITTABLE_SECONDS}s para poder dividirlo en partes de ${VIDEO_MAX_SECONDS}s`);
+        return;
+      }
+
+      // Más de 10s pero dividible — se corta en clips de máx 10s cada uno
+      // y se suben todos como pedidos separados.
+      setSplitting(true);
+      try {
+        const clips = await splitVideoIntoClips(file, VIDEO_MAX_SECONDS);
+        setPending({ parts: clips, previewUrl: URL.createObjectURL(clips[0]), isVideo: true });
+      } catch (err: any) {
+        setUploadError(err?.message || 'No se pudo dividir el video, intenta con otro');
+      }
+      setSplitting(false);
+      return;
     }
 
     // Archivo validado — ahora se pide la sección antes de subir de verdad.
-    setPending({ file, previewUrl: URL.createObjectURL(file), isVideo });
+    setPending({ parts: [file], previewUrl: URL.createObjectURL(file), isVideo: false });
   };
 
-  const confirmUpload = async (category: string) => {
-    if (!pending || !nameInput.trim()) return;
-    const { file } = pending;
-    sessionStorage.setItem(NAME_KEY, nameInput.trim());
+  const confirmUpload = async () => {
+    if (!pending || !nameInput.trim() || !selectedCategory) return;
+    const category = selectedCategory;
+    const name = nameInput.trim();
+    sessionStorage.setItem(NAME_KEY, name);
     setUploading(true);
     setUploadError('');
-    try {
-      const res = await fetch('/api/photos', {
-        method: 'POST',
-        headers: {
-          'Content-Type': file.type || 'image/jpeg',
-          'x-photos-user': user, 'x-photos-pass': pass,
-          'x-photos-category': category === SIN_CLASIFICAR ? '' : category,
-          'x-photos-name': nameInput.trim(),
-        },
-        body: file,
-      });
-      const json = await res.json();
-      if (json.ok) {
-        loadPhotos(user, pass);
-        URL.revokeObjectURL(pending.previewUrl);
-        setPending(null);
-      } else {
-        setUploadError(json.error || 'No se pudo subir el archivo');
+
+    const { parts } = pending;
+    for (let i = 0; i < parts.length; i++) {
+      setUploadPart(i + 1);
+      const file = parts[i];
+      const partName = parts.length > 1 ? `${name} (parte ${i + 1}/${parts.length})` : name;
+      try {
+        const res = await fetch('/api/photos', {
+          method: 'POST',
+          headers: {
+            'Content-Type': file.type || 'image/jpeg',
+            'x-photos-user': user, 'x-photos-pass': pass,
+            'x-photos-category': category === SIN_CLASIFICAR ? '' : category,
+            'x-photos-name': partName,
+          },
+          body: file,
+        });
+        const json = await res.json();
+        if (!json.ok) {
+          setUploadError(`${json.error || 'No se pudo subir el archivo'}${parts.length > 1 ? ` (tramo ${i + 1}/${parts.length})` : ''}`);
+          setUploading(false);
+          return;
+        }
+      } catch {
+        setUploadError(`No se pudo conectar${parts.length > 1 ? ` (tramo ${i + 1}/${parts.length})` : ''}. Intenta de nuevo.`);
+        setUploading(false);
+        return;
       }
-    } catch {
-      setUploadError('No se pudo conectar. Intenta de nuevo.');
     }
+
+    loadPhotos(user, pass);
+    URL.revokeObjectURL(pending.previewUrl);
+    setPending(null);
+    setSelectedCategory(null);
     setUploading(false);
+    setUploadPart(0);
   };
 
   const cancelPending = () => {
     if (pending) URL.revokeObjectURL(pending.previewUrl);
     setPending(null);
+    setSelectedCategory(null);
     setUploadError('');
+  };
+
+  const handleDeleteOne = async (id: number) => {
+    if (!window.confirm('¿Borrar esta foto/video? No se puede deshacer.')) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch('/api/photos', {
+        method: 'DELETE',
+        headers: { 'x-photos-user': user, 'x-photos-pass': pass, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        setPhotos(prev => prev.filter(p => p.id !== id));
+        setOpenItem(null);
+      } else {
+        setUploadError(json.error || 'No se pudo borrar');
+      }
+    } catch {
+      setUploadError('No se pudo conectar. Intenta de nuevo.');
+    }
+    setDeletingId(null);
   };
 
   const handleClearAll = async () => {
@@ -232,7 +388,8 @@ export default function Photos() {
           ⬆️ Subir foto o video
           <input type="file" accept="image/*,video/*" onChange={handleFileSelected} hidden />
         </label>
-        <p className="photos-hint">Fotos o videos cortos (máx {VIDEO_MAX_SECONDS}s)</p>
+        <p className="photos-hint">Fotos o videos — los de más de {VIDEO_MAX_SECONDS}s se dividen solos en partes</p>
+        {splitting && <p className="photos-hint">✂️ Dividiendo el video en partes de {VIDEO_MAX_SECONDS}s…</p>}
         {photos.length > 0 && (
           <button className="photos-clear-btn" onClick={handleClearAll} disabled={clearing}>
             {clearing ? 'Borrando…' : '🗑️ Borrar fotos anteriores'}
@@ -268,6 +425,13 @@ export default function Photos() {
             {openItem.uploaded_name && <p className="photos-lightbox-name">{openItem.uploaded_name}</p>}
             <p className="photos-lightbox-category">{openItem.category || SIN_CLASIFICAR}</p>
           </div>
+          <button
+            className="photos-lightbox-delete"
+            onClick={e => { e.stopPropagation(); handleDeleteOne(openItem.id); }}
+            disabled={deletingId === openItem.id}
+          >
+            {deletingId === openItem.id ? 'Borrando…' : '🗑️ Borrar'}
+          </button>
         </div>
       )}
 
@@ -280,6 +444,9 @@ export default function Photos() {
               <video src={pending.previewUrl} muted playsInline autoPlay loop className="photos-category-preview" />
             ) : (
               <img src={pending.previewUrl} alt="" className="photos-category-preview" />
+            )}
+            {pending.parts.length > 1 && (
+              <p className="photos-hint">✂️ Se dividió en {pending.parts.length} partes de máx {VIDEO_MAX_SECONDS}s cada una</p>
             )}
             <input
               className="photos-category-name-input"
@@ -295,15 +462,24 @@ export default function Photos() {
               {[SIN_CLASIFICAR, ...CATEGORIES].map(cat => (
                 <button
                   key={cat}
-                  className="photos-category-option"
-                  disabled={uploading || !nameInput.trim()}
-                  onClick={() => confirmUpload(cat)}
+                  className={`photos-category-option ${selectedCategory === cat ? 'is-selected' : ''}`}
+                  disabled={uploading}
+                  onClick={() => setSelectedCategory(cat)}
                 >
-                  {uploading ? 'Subiendo…' : cat}
+                  {cat}
                 </button>
               ))}
             </div>
-            {!nameInput.trim() && <p className="photos-hint">Escribe tu nombre para poder subir</p>}
+            {!nameInput.trim() && <p className="photos-hint">Escribe tu nombre para poder cargar</p>}
+            <button
+              className="photos-category-load"
+              disabled={uploading || !nameInput.trim() || !selectedCategory}
+              onClick={confirmUpload}
+            >
+              {uploading
+                ? (pending.parts.length > 1 ? `Cargando parte ${uploadPart}/${pending.parts.length}…` : 'Cargando…')
+                : 'Cargar'}
+            </button>
             <button className="photos-category-cancel" onClick={cancelPending} disabled={uploading}>Cancelar</button>
           </div>
         </div>

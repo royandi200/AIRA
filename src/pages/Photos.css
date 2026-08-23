@@ -157,6 +157,15 @@
 }
 .photos-category-option:hover:not(:disabled) { background: rgba(225,254,82,0.12); border-color: rgba(225,254,82,0.4); }
 .photos-category-option:disabled { opacity: 0.6; cursor: default; }
+.photos-category-option.is-selected {
+  background: rgba(225,254,82,0.18); border-color: #e1fe52; color: #e1fe52;
+}
+.photos-category-load {
+  width: 100%; padding: 12px; border-radius: 12px; margin-top: 4px;
+  background: #e1fe52; border: none; color: #08080b;
+  font-size: 14px; font-weight: 800; cursor: pointer;
+}
+.photos-category-load:disabled { opacity: 0.4; cursor: default; }
 .photos-category-cancel {
   background: none; border: none; color: rgba(255,255,255,0.4);
   font-size: 13px; cursor: pointer; padding: 4px;
@@ -177,3 +186,10 @@
   background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
   color: #fff; font-size: 16px; cursor: pointer;
 }
+.photos-lightbox-delete {
+  position: absolute; top: 16px; left: 16px;
+  background: rgba(255,80,80,0.15); border: 1px solid rgba(255,80,80,0.4);
+  color: #ff8080; border-radius: 999px; padding: 8px 14px;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.photos-lightbox-delete:disabled { opacity: 0.6; cursor: default; }

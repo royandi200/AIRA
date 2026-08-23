@@ -155,10 +155,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ ok: true, url, bytesAntes: original.length, bytesDespues: buffer.length });
     }
 
-    // ── DELETE — "Borrar fotos anteriores": limpia TODO lo subido hasta
-    // ahora (botón de la página, no hay borrado individual a propósito —
-    // es para vaciar la tanda vieja/de prueba antes de la carga real). ──
+    // ── DELETE — con `id` borra solo esa foto; sin `id` (el botón
+    // "Borrar fotos anteriores") limpia TODO lo subido hasta ahora. ──
     if (req.method === 'DELETE') {
+      const id = (req.body as any)?.id ?? req.query.id;
+      if (id) {
+        const [rows]: any = await pool.query(`SELECT id, file_url FROM photos_uploads WHERE id = ?`, [id]);
+        if (!rows.length) return res.status(404).json({ ok: false, error: 'No existe esa foto' });
+        await del(rows[0].file_url).catch(() => {});
+        await pool.query(`DELETE FROM photos_uploads WHERE id = ?`, [id]);
+        return res.status(200).json({ ok: true, deleted: 1 });
+      }
+
       const [rows]: any = await pool.query(`SELECT id, file_url FROM photos_uploads`);
       for (const row of rows) {
         await del(row.file_url).catch(() => {});
