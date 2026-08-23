@@ -46,8 +46,15 @@ export async function ensureTable() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   // ALTERs separados por si la tabla ya existía de antes de estas columnas.
-  await pool.query(`ALTER TABLE photos_uploads ADD COLUMN IF NOT EXISTS category VARCHAR(30) NULL`).catch(() => {});
-  await pool.query(`ALTER TABLE photos_uploads ADD COLUMN IF NOT EXISTS uploaded_name VARCHAR(100) NULL`).catch(() => {});
+  // "ADD COLUMN IF NOT EXISTS" no lo soporta esta versión de MySQL/MariaDB
+  // — el ALTER completo fallaba por sintaxis, el .catch lo tragaba, y la
+  // columna nunca se creaba (aunque el SELECT sí la pedía -> 500 "Unknown
+  // column"). Plain ADD COLUMN + catch: si ya existe, el error es
+  // "Duplicate column" y se ignora igual; si es otro error, se ignora
+  // también a propósito porque esto corre en cada request y no puede
+  // tumbar el endpoint por una migración que ya se aplicó antes.
+  await pool.query(`ALTER TABLE photos_uploads ADD COLUMN category VARCHAR(30) NULL`).catch(() => {});
+  await pool.query(`ALTER TABLE photos_uploads ADD COLUMN uploaded_name VARCHAR(100) NULL`).catch(() => {});
 }
 
 /** Credenciales compartidas (no hay tabla de usuarios acá, a propósito —
