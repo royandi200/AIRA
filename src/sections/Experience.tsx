@@ -21,9 +21,9 @@ const ZONES: Zone[] = [
   {
     id: 1,
     tag: "ESCENARIO PRINCIPAL",
-    title: "Floating Stage",
+    title: "Japi Stage",
     subtitle: "La pista más épica del embalse",
-    description: "Una plataforma flotante en la mitad del embalse de Guatapé. Rodeado de agua, montañas y el cielo abierto, el Floating Stage es el corazón de AIRA — donde la música electrónica y la naturaleza se fusionan en algo que no existe en ningún otro festival.",
+    description: "Una plataforma flotante en la mitad del embalse de Guatapé. Rodeado de agua, montañas y el cielo abierto, el Japi Stage es el corazón de AIRA — donde la música electrónica y la naturaleza se fusionan en algo que no existe en ningún otro festival.",
     detail: "Música electrónica de alta potencia desde el anochecer hasta el amanecer, con producción de luces y sonido de nivel internacional. El reflejo de los visuales en el agua crea una experiencia que no se puede describir — solo vivir.",
     highlights: ["Sound system de clase mundial", "Producción visual inmersiva", "Vista 360° del embalse", "Capacidad 2.000+ personas"],
     images: [
@@ -55,10 +55,10 @@ const ZONES: Zone[] = [
   {
     id: 3,
     tag: "ZONA SOCIAL",
-    title: "Beach Stage",
+    title: "AIRA Stage",
     subtitle: "La playa del festival",
-    description: "Ubicado en la playa del hotel, el Beach Stage es el punto de encuentro de la comunidad AIRA. Música más relajada durante el día, sets de mayor energía al caer la tarde. El lugar ideal para conocer gente, bailar descalzo y vivir el festival a tu ritmo.",
-    detail: "El Beach Stage opera desde mediodía hasta la noche. Zona de descanso, hamacas, food trucks y bar. La energía aquí es diferente — más íntima, más conectada.",
+    description: "Ubicado en la playa del hotel, el AIRA Stage es el punto de encuentro de la comunidad AIRA. Música más relajada durante el día, sets de mayor energía al caer la tarde. El lugar ideal para conocer gente, bailar descalzo y vivir el festival a tu ritmo.",
+    detail: "El AIRA Stage opera desde mediodía hasta la noche. Zona de descanso, hamacas, food trucks y bar. La energía aquí es diferente — más íntima, más conectada.",
     highlights: ["Acceso directo al agua", "Food & drinks toda la tarde", "Sets diurnos y nocturnos", "Zona de descanso y hamacas"],
     images: [
       `${CLD}/IMG_7023_dbkww0`,
@@ -74,7 +74,7 @@ const ZONES: Zone[] = [
     title: "Lobby Stage",
     subtitle: "El epicentro de entrada al festival",
     description: "El Lobby Stage es el primer impacto. Cuando llegas a AIRA, la música ya está sonando. Diseñado como zona de bienvenida y encuentro, este escenario conecta todas las áreas del festival y sirve de punto de partida para explorar la experiencia completa.",
-    detail: "Durante las mañanas es punto de reunión para actividades grupales y meditación. A partir del mediodía empieza la programación musical y no para hasta que el último asistente se va al Floating Stage.",
+    detail: "Durante las mañanas es punto de reunión para actividades grupales y meditación. A partir del mediodía empieza la programación musical y no para hasta que el último asistente se va al Japi Stage.",
     highlights: ["Acceso incluido en todos los paquetes", "Actividades de bienestar en la mañana", "Música desde el mediodía", "Centro logístico del festival"],
     images: [
       `${CLD}/Bombillos_Amarillos_bqjry7`,
@@ -246,7 +246,7 @@ const Experience = () => {
           {/* Zone grid — asymmetric layout */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
 
-            {/* ZONE 1 — Floating Stage — large hero card */}
+            {/* ZONE 1 — Japi Stage — large hero card */}
             <ZoneCard
               zone={ZONES[0]}
               hovered={hovered}
@@ -268,7 +268,7 @@ const Experience = () => {
               titleSize="text-3xl"
             />
 
-            {/* ZONE 3 — Beach Stage */}
+            {/* ZONE 3 — AIRA Stage */}
             <ZoneCard
               zone={ZONES[2]}
               hovered={hovered}
