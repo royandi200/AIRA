@@ -480,8 +480,8 @@ export default function Partners() {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { title: 'Floating Stage', desc: 'Plataforma en la mitad de la represa.',                 icon: <Target className="w-6 h-6"/>, img: '/beach-party.jpg' },
-              { title: 'Beach Stage',    desc: 'Ubicado en la playa del hotel.',                         icon: <Waves className="w-6 h-6"/>,  img: '/main-stage.jpg'  },
+              { title: 'Japi Stage',     desc: 'Plataforma en la mitad de la represa.',                 icon: <Target className="w-6 h-6"/>, img: '/beach-party.jpg' },
+              { title: 'AIRA Stage',     desc: 'Ubicado en la playa del hotel.',                         icon: <Waves className="w-6 h-6"/>,  img: '/main-stage.jpg'  },
               { title: 'Lobby Stage',   desc: 'Epicentro de bienvenida en el hotel.',                   icon: <Building2 className="w-6 h-6"/>, img: '/celebration.jpg' },
               { title: 'Main Stage',    desc: 'A bordo del yate Majestic (el más grande de LATAM).',   icon: <Anchor className="w-6 h-6"/>,  img: '/yacht-party.jpg' },
             ].map((s, i) => (
@@ -504,7 +504,7 @@ export default function Partners() {
         {/* 3 días */}
         <div className="grid md:grid-cols-3 gap-6 mb-16">
           {[
-            { day: 'Día 1', title: 'Inmersión & Comunidad', desc: 'Activación en el Lobby Stage, tarde de Yacht Party en el Floating Stage y noche de inmersión en el Beach Stage.' },
+            { day: 'Día 1', title: 'Inmersión & Comunidad', desc: 'Activación en el Lobby Stage, tarde de Yacht Party en el Japi Stage y noche de inmersión en el AIRA Stage.' },
             { day: 'Día 2', title: 'Equilibrio & Adrenalina', desc: 'Meditación y deportes náuticos. Al anochecer, catarsis absoluta a bordo del "Majestic", el yate más grande de Latinoamérica.' },
             { day: 'Día 3', title: 'Wellness & Descubrimiento', desc: 'Recuperación integral y relajación. Cierre de experiencia con Open Deck: nuevos talentos y sonidos emergentes.' },
           ].map((d, i) => (
