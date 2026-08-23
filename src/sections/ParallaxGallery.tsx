@@ -34,6 +34,101 @@ function useUploadedPhotos() {
   return photos;
 }
 
+// ─── Galería de una zona (fotos subidas por el equipo en /photos) ─────────────
+// Reemplaza al modal de venta/descripción de la zona cuando ya hay
+// suficientes fotos de esa categoría — acá NO se vende nada, es la
+// vitrina de lo que subió la gente para esa sección.
+function ZoneGalleryModal({
+  title, photos, onClose,
+}: {
+  title: string;
+  photos: UploadedPhoto[];
+  onClose: () => void;
+}) {
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (openIdx !== null) setOpenIdx(null); else onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [openIdx, onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 lg:p-6"
+      style={{ background: 'rgba(3,6,18,0.92)', backdropFilter: 'blur(20px)' }}
+      onClick={onClose}>
+      <div className="relative w-full md:max-w-3xl max-h-[90vh] md:max-h-[85vh] flex flex-col rounded-t-3xl md:rounded-2xl overflow-hidden"
+        style={{ background: '#09101f', border: '1px solid rgba(255,255,255,0.08)' }}
+        onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 shrink-0">
+          <div>
+            <p className="font-mono-custom text-[9px] uppercase tracking-[0.35em] text-aira-lime/60">Galería</p>
+            <h3 className="font-display text-xl text-white leading-none">{title}</h3>
+          </div>
+          <button onClick={onClose}
+            className="w-9 h-9 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}>
+            <X className="w-4 h-4 text-white" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {photos.map((p, i) => (
+              <button key={p.id} onClick={() => setOpenIdx(i)}
+                className="relative aspect-square rounded-xl overflow-hidden group">
+                {p.is_video ? (
+                  <video src={p.file_url} muted playsInline preload="metadata" className="w-full h-full object-cover" />
+                ) : (
+                  <img src={p.file_url} alt="" loading="lazy" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                )}
+                {!!p.is_video && (
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/20">
+                    <Play className="w-6 h-6 text-white" fill="white" />
+                  </span>
+                )}
+                {p.uploaded_name && (
+                  <span className="absolute left-1.5 bottom-1.5 px-2 py-0.5 rounded-full text-[9px] font-bold"
+                    style={{ background: 'rgba(0,0,0,0.6)', color: '#fff' }}>
+                    {p.uploaded_name}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {openIdx !== null && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-6"
+          style={{ background: 'rgba(3,4,12,0.97)', backdropFilter: 'blur(24px)' }}
+          onClick={e => { e.stopPropagation(); setOpenIdx(null); }}>
+          {photos[openIdx].is_video ? (
+            <video src={photos[openIdx].file_url} controls autoPlay playsInline
+              className="max-w-full max-h-full rounded-2xl" onClick={e => e.stopPropagation()} />
+          ) : (
+            <img src={photos[openIdx].file_url} alt=""
+              className="max-w-full max-h-full object-contain rounded-2xl" onClick={e => e.stopPropagation()} />
+          )}
+          {photos[openIdx].uploaded_name && (
+            <p className="absolute bottom-8 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full text-sm font-bold"
+              style={{ background: 'rgba(0,0,0,0.6)', color: '#fff' }}>
+              {photos[openIdx].uploaded_name}
+            </p>
+          )}
+          <button onClick={() => setOpenIdx(null)}
+            className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.18)' }}>
+            <X className="w-5 h-5 text-white" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Photo Lightbox Modal ─────────────────────────────────────────────────────
 function PhotoModal({
   images, startIndex, onClose,
@@ -367,6 +462,10 @@ const ParallaxGallery = () => {
 
   const [photoModal, setPhotoModal] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
   const [expModal, setExpModal] = useState<{ open: boolean; zone: (typeof images)[0] | null; imgIdx: number }>({ open: false, zone: null, imgIdx: 0 });
+  // Cuando la zona ya tiene suficientes fotos subidas, se abre esto en vez
+  // del modal de venta/descripción — es la vitrina de lo que subió la
+  // gente, no un pitch de compra.
+  const [zoneGallery, setZoneGallery] = useState<{ title: string; photos: UploadedPhoto[] } | null>(null);
 
   const uploaded = useUploadedPhotos();
   const uncategorized = useMemo(() => uploaded.filter(p => !p.category), [uploaded]);
@@ -545,7 +644,14 @@ const ParallaxGallery = () => {
                 ref={el => { thumbRefs.current[index] = el; }}
                 className="relative flex-shrink-0 group cursor-pointer"
                 style={{ marginTop: index % 2 === 0 ? '0' : '60px' }}
-                onClick={() => setExpModal({ open: true, zone: { ...image, images: getZoneImages(image.title, image.images || []) }, imgIdx: 0 })}>
+                onClick={() => {
+                  const cat = byCategory[image.title];
+                  if (cat && cat.length >= MIN_ZONE_PHOTOS) {
+                    setZoneGallery({ title: image.title, photos: cat });
+                  } else {
+                    setExpModal({ open: true, zone: { ...image, images: getZoneImages(image.title, image.images || []) }, imgIdx: 0 });
+                  }
+                }}>
 
                 <div className="relative w-[450px] h-[300px] overflow-hidden rounded-xl">
                   <img src={image.src} alt={image.title}
@@ -700,6 +806,13 @@ const ParallaxGallery = () => {
     <>
       {mainJsx}
       <ExpModal />
+      {zoneGallery && (
+        <ZoneGalleryModal
+          title={zoneGallery.title}
+          photos={zoneGallery.photos}
+          onClose={() => setZoneGallery(null)}
+        />
+      )}
     </>
   );
 };
